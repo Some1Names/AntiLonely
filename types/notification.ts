@@ -17,7 +17,6 @@ export interface NotificationItem {
   timeAgoText: string;
   isRead: boolean;
   targetUrl: string;
-  isRecent: boolean;
 }
 
 export interface GroupedNotifications {

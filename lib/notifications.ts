@@ -14,12 +14,23 @@ export function filterNotifications(
   return notifications.filter((item) => item.type === category);
 }
 
+const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+
 export function groupNotifications(
-  notifications: NotificationItem[]
+  notifications: NotificationItem[],
+  now: number | Date = Date.now()
 ): GroupedNotifications {
+  const nowMs = typeof now === 'number' ? now : now.getTime();
+
   return {
-    recent: notifications.filter((item) => item.isRecent),
-    earlier: notifications.filter((item) => !item.isRecent),
+    recent: notifications.filter((item) => {
+      const itemTime = new Date(item.createdAt).getTime();
+      return !Number.isNaN(itemTime) && nowMs - itemTime < TWENTY_FOUR_HOURS_MS;
+    }),
+    earlier: notifications.filter((item) => {
+      const itemTime = new Date(item.createdAt).getTime();
+      return Number.isNaN(itemTime) || nowMs - itemTime >= TWENTY_FOUR_HOURS_MS;
+    }),
   };
 }
 

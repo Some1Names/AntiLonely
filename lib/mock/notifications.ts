@@ -13,7 +13,6 @@ export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     timeAgoText: '2 นาที',
     isRead: false,
     targetUrl: '/boards/talk/posts/post-101',
-    isRecent: true,
   },
   {
     id: 'notif-2',
@@ -27,7 +26,6 @@ export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     timeAgoText: '18 นาที',
     isRead: false,
     targetUrl: '/boards/study/posts/post-102',
-    isRecent: true,
   },
   {
     id: 'notif-3',
@@ -41,7 +39,6 @@ export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     timeAgoText: '1 วัน',
     isRead: true,
     targetUrl: '/boards/talk/posts/post-103',
-    isRecent: false,
   },
   {
     id: 'notif-4',
@@ -55,7 +52,6 @@ export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     timeAgoText: '3 วัน',
     isRead: true,
     targetUrl: '/boards/random/posts/post-104',
-    isRecent: false,
   },
   {
     id: 'notif-5',
@@ -69,7 +65,6 @@ export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     timeAgoText: '5 วัน',
     isRead: true,
     targetUrl: '/boards/general/posts/post-105',
-    isRecent: false,
   },
   {
     id: 'notif-6',
@@ -83,6 +78,5 @@ export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     timeAgoText: '6 วัน',
     isRead: true,
     targetUrl: '/reports/rep-001',
-    isRecent: false,
   },
 ];

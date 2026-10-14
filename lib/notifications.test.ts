@@ -9,6 +9,8 @@ import {
 } from './notifications.ts';
 import type { NotificationItem } from '../types/notification.ts';
 
+const baseTime = new Date('2026-10-13T10:00:00.000Z');
+
 const sampleNotifications: NotificationItem[] = [
   {
     id: 'n1',
@@ -16,11 +18,10 @@ const sampleNotifications: NotificationItem[] = [
     actor: { name: 'แมวส้มนอนดึก' },
     actionText: 'ตอบกระทู้ของคุณในห้องคุยเล่น',
     contentPreview: '“ปวดหลังเหมือนกันเลยพี่”',
-    createdAt: '2026-10-13T09:10:00Z',
-    timeAgoText: '2 นาที',
+    createdAt: '2026-10-13T09:10:00.000Z', // 50 mins ago (< 24h)
+    timeAgoText: '50 นาที',
     isRead: false,
     targetUrl: '/boards/talk/posts/p1',
-    isRecent: true,
   },
   {
     id: 'n2',
@@ -28,28 +29,36 @@ const sampleNotifications: NotificationItem[] = [
     actor: { name: 'user_017' },
     actionText: 'กล่าวถึงคุณใน “Study Group”',
     contentPreview: '“@anon_884 can you share your notes?”',
-    createdAt: '2026-10-13T08:50:00Z',
-    timeAgoText: '18 นาที',
+    createdAt: '2026-10-13T08:50:00.000Z', // 70 mins ago (< 24h)
+    timeAgoText: '1 ชั่วโมงที่แล้ว',
     isRead: false,
     targetUrl: '/boards/study/posts/p2',
-    isRecent: true,
   },
   {
     id: 'n3',
     type: 'reaction',
     actor: { name: 'anon_999' },
     actionText: 'ถูกใจโพสต์ของคุณในห้องอ่านหนังสือ',
-    createdAt: '2026-10-11T12:00:00Z',
+    createdAt: '2026-10-11T12:00:00.000Z', // ~46 hours ago (>= 24h)
     timeAgoText: '2 วันที่แล้ว',
     isRead: true,
     targetUrl: '/boards/study/posts/p3',
-    isRecent: false,
+  },
+  {
+    id: 'n4_invalid',
+    type: 'report',
+    actor: { name: 'ฝ่ายดูแลระบบ' },
+    actionText: 'รายงานของคุณได้รับการตรวจสอบแล้ว',
+    createdAt: 'invalid-date-string',
+    timeAgoText: 'ไม่ระบุเวลา',
+    isRead: true,
+    targetUrl: '/reports/r1',
   },
 ];
 
 test('filterNotifications filters by category correctly', () => {
   const all = filterNotifications(sampleNotifications, 'all');
-  assert.equal(all.length, 3);
+  assert.equal(all.length, 4);
 
   const replies = filterNotifications(sampleNotifications, 'reply');
   assert.equal(replies.length, 1);
@@ -60,14 +69,44 @@ test('filterNotifications filters by category correctly', () => {
   assert.equal(mentions[0].id, 'n2');
 
   const reports = filterNotifications(sampleNotifications, 'report');
-  assert.equal(reports.length, 0);
+  assert.equal(reports.length, 1);
+  assert.equal(reports[0].id, 'n4_invalid');
 });
 
-test('groupNotifications partitions into recent and earlier', () => {
-  const grouped = groupNotifications(sampleNotifications);
+test('groupNotifications partitions based on createdAt within 24 hours and preserves order', () => {
+  const grouped = groupNotifications(sampleNotifications, baseTime);
   assert.equal(grouped.recent.length, 2);
-  assert.equal(grouped.earlier.length, 1);
+  assert.equal(grouped.recent[0].id, 'n1');
+  assert.equal(grouped.recent[1].id, 'n2');
+
+  assert.equal(grouped.earlier.length, 2);
   assert.equal(grouped.earlier[0].id, 'n3');
+  assert.equal(grouped.earlier[1].id, 'n4_invalid');
+});
+
+test('groupNotifications handles 24-hour boundary correctly', () => {
+  const exact24hAgo = new Date(baseTime.getTime() - 24 * 60 * 60 * 1000).toISOString();
+  const justUnder24hAgo = new Date(baseTime.getTime() - (24 * 60 * 60 * 1000 - 1000)).toISOString();
+
+  const boundaryItems: NotificationItem[] = [
+    {
+      ...sampleNotifications[0],
+      id: 'just-under',
+      createdAt: justUnder24hAgo,
+    },
+    {
+      ...sampleNotifications[0],
+      id: 'exact-24h',
+      createdAt: exact24hAgo,
+    },
+  ];
+
+  const grouped = groupNotifications(boundaryItems, baseTime);
+  assert.equal(grouped.recent.length, 1);
+  assert.equal(grouped.recent[0].id, 'just-under');
+
+  assert.equal(grouped.earlier.length, 1);
+  assert.equal(grouped.earlier[0].id, 'exact-24h');
 });
 
 test('markNotificationAsRead updates only the targeted notification', () => {

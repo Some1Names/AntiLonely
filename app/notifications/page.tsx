@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, Suspense } from 'react';
 import type { NotificationCategory } from '@/types/notification';
 import {
   filterNotifications,
@@ -16,6 +16,14 @@ import { EmptyState } from '@/components/notifications/EmptyState';
 import { NotificationSettingsButton } from '@/components/notifications/NotificationSettingsButton';
 
 export default function NotificationsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#fafafa]" />}>
+      <NotificationsContent />
+    </Suspense>
+  );
+}
+
+function NotificationsContent() {
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
   const [activeCategory, setActiveCategory] =
     useState<NotificationCategory>('all');
@@ -75,10 +83,6 @@ export default function NotificationsPage() {
 
   
   const handleMarkAllAsRead = () => {
-    if (totalUnreadCount === 0) {
-      showToast('ไม่มีรายการแจ้งเตือนที่ยังไม่ได้อ่าน');
-      return;
-    }
     setNotifications((prev) => markAllNotificationsAsRead(prev));
     showToast('ทำเครื่องหมายว่าอ่านแล้วทั้งหมดเรียบร้อยแล้ว');
   };
