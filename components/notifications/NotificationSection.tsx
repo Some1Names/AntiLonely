@@ -21,7 +21,7 @@ export function NotificationSection({
 
   return (
     <section className="space-y-2">
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 px-1">
+      <h2 className="text-sm font-semibold text-zinc-700 px-1">
         {title}
       </h2>
       <div className="bg-white rounded-2xl border border-zinc-200 divide-y divide-zinc-200 overflow-hidden shadow-xs">

@@ -17,7 +17,7 @@ export interface NotificationItem {
   timeAgoText: string;
   isRead: boolean;
   targetUrl: string;
-  isRecent: boolean; // true for 'ใหม่' (recent), false for 'ก่อนหน้านี้' (earlier)
+  isRecent: boolean;
 }
 
 export interface GroupedNotifications {
