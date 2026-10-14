@@ -6,6 +6,7 @@ import {
   markNotificationAsRead,
   markAllNotificationsAsRead,
   countUnreadNotifications,
+  formatTimeAgo,
 } from './notifications.ts';
 import type { NotificationItem } from '../types/notification.ts';
 
@@ -122,4 +123,27 @@ test('markAllNotificationsAsRead marks all as read', () => {
 
 test('countUnreadNotifications counts unread items', () => {
   assert.equal(countUnreadNotifications(sampleNotifications), 2);
+});
+
+test('formatTimeAgo formats relative time accurately across intervals', () => {
+  const now = new Date('2026-10-14T12:00:00.000Z');
+
+  // < 1 min
+  const justNow = new Date(now.getTime() - 30 * 1000).toISOString();
+  assert.equal(formatTimeAgo(justNow, now), 'เมื่อสักครู่');
+
+  // Minutes
+  const fiveMinsAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString();
+  assert.equal(formatTimeAgo(fiveMinsAgo, now), '5 นาที');
+
+  // Hours
+  const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString();
+  assert.equal(formatTimeAgo(twoHoursAgo, now), '2 ชั่วโมง');
+
+  // Days
+  const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString();
+  assert.equal(formatTimeAgo(threeDaysAgo, now), '3 วัน');
+
+  // Invalid date
+  assert.equal(formatTimeAgo('invalid-date', now), 'ไม่ระบุเวลา');
 });

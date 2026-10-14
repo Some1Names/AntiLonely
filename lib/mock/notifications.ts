@@ -80,3 +80,10 @@ export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     targetUrl: '/reports/rep-001',
   },
 ];
+
+export function getMockNotificationsFeed(referenceTime: number = Date.now()) {
+  return {
+    items: INITIAL_NOTIFICATIONS,
+    serverTime: new Date(referenceTime).toISOString(),
+  };
+}

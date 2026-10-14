@@ -34,10 +34,11 @@ export function NotificationTabs({
               key={tab.id}
               type="button"
               onClick={() => onSelectCategory(tab.id)}
-              className={`relative pb-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1.5 flex-shrink-0 ${isActive
-                ? 'text-zinc-900 border-b-2 border-zinc-900 -mb-px'
-                : 'text-zinc-500 hover:text-zinc-900'
-                }`}
+              className={`relative pb-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1.5 flex-shrink-0 ${
+                isActive
+                  ? 'text-zinc-900 border-b-2 border-zinc-900 -mb-px'
+                  : 'text-zinc-500 hover:text-zinc-900'
+              }`}
             >
               <span>{tab.label}</span>
               {unreadCount > 0 && (
@@ -50,7 +51,7 @@ export function NotificationTabs({
         })}
       </div>
 
-      { }
+      {/* Subtle fade edge on right for mobile affordance */}
       <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#fafafa] to-transparent pointer-events-none sm:hidden" />
     </div>
   );

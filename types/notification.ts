@@ -13,7 +13,7 @@ export interface NotificationItem {
   actor: NotificationActor;
   actionText: string;
   contentPreview?: string;
-  createdAt: string;
+  createdAt: string; // ISO 8601 string, e.g. "2026-10-14T10:00:00.000Z"
   timeAgoText: string;
   isRead: boolean;
   targetUrl: string;
@@ -22,4 +22,10 @@ export interface NotificationItem {
 export interface GroupedNotifications {
   recent: NotificationItem[];
   earlier: NotificationItem[];
+}
+
+export interface NotificationsFeedResponse {
+  items: NotificationItem[];
+  unreadCountsByCategory: Record<NotificationCategory, number>;
+  serverTime: string;
 }

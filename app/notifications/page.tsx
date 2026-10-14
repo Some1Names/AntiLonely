@@ -55,17 +55,18 @@ function NotificationsContent() {
   }, [notifications]);
 
   
+  const [referenceTime] = useState<number>(() => Date.now());
+
   const displayedNotifications = useMemo(() => {
     return filterNotifications(notifications, activeCategory);
   }, [notifications, activeCategory]);
 
   const grouped = useMemo(() => {
-    return groupNotifications(displayedNotifications);
-  }, [displayedNotifications]);
+    return groupNotifications(displayedNotifications, referenceTime);
+  }, [displayedNotifications, referenceTime]);
 
   const totalUnreadCount = unreadCountsByCategory.all;
 
-  
   const showToast = (message: string) => {
     setToastMessage(message);
     setTimeout(() => {
@@ -73,7 +74,6 @@ function NotificationsContent() {
     }, 3000);
   };
 
-  
   const handleItemClick = (id: string) => {
     const target = notifications.find((n) => n.id === id);
     if (target && !target.isRead) {
@@ -81,7 +81,6 @@ function NotificationsContent() {
     }
   };
 
-  
   const handleMarkAllAsRead = () => {
     setNotifications((prev) => markAllNotificationsAsRead(prev));
     showToast('ทำเครื่องหมายว่าอ่านแล้วทั้งหมดเรียบร้อยแล้ว');
@@ -90,7 +89,7 @@ function NotificationsContent() {
   return (
     <div className="min-h-screen bg-[#fafafa] text-zinc-900 font-sans">
       <main className="max-w-[720px] mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-6">
-        {}
+        {/* Header with Title and Mark all as read button */}
         <header className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900">
@@ -112,14 +111,14 @@ function NotificationsContent() {
           </button>
         </header>
 
-        {}
+        {/* Category Filter Tabs */}
         <NotificationTabs
           activeCategory={activeCategory}
           onSelectCategory={setActiveCategory}
           unreadCountsByCategory={unreadCountsByCategory}
         />
 
-        {}
+        {/* Notifications Grouped List or Empty State */}
         <div className="space-y-6 pt-1">
           {displayedNotifications.length === 0 ? (
             <EmptyState />
@@ -140,13 +139,13 @@ function NotificationsContent() {
           )}
         </div>
 
-        {}
+        {/* Footer notification settings link */}
         <NotificationSettingsButton
           onClick={() => showToast('ลิงก์ไปยังหน้าตั้งค่าโปรไฟล์')}
         />
       </main>
 
-      {}
+      {/* Floating feedback toast */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-zinc-900 text-white text-sm px-4 py-3 rounded-xl shadow-lg border border-zinc-800 flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
           <svg
