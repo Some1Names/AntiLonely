@@ -24,7 +24,11 @@ export function NotificationTabs({
 }: NotificationTabsProps) {
   return (
     <div className="relative border-b border-zinc-200">
-      <div className="flex items-center gap-4 sm:gap-6 overflow-x-auto overflow-y-hidden no-scrollbar pr-8 sm:pr-0 scroll-smooth">
+      <div
+        role="tablist"
+        aria-label="ตัวกรองประเภทการแจ้งเตือน"
+        className="flex items-center gap-4 sm:gap-6 overflow-x-auto overflow-y-hidden no-scrollbar pr-8 sm:pr-0 scroll-smooth"
+      >
         {TABS.map((tab) => {
           const isActive = activeCategory === tab.id;
           const unreadCount = unreadCountsByCategory[tab.id];
@@ -32,6 +36,8 @@ export function NotificationTabs({
           return (
             <button
               key={tab.id}
+              role="tab"
+              aria-selected={isActive}
               type="button"
               onClick={() => onSelectCategory(tab.id)}
               className={`relative pb-3 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-1.5 flex-shrink-0 ${

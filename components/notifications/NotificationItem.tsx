@@ -2,20 +2,24 @@
 
 import React from 'react';
 import type { NotificationItem as NotificationItemType } from '@/types/notification';
+import { formatTimeAgo } from '@/lib/notifications';
 
 interface NotificationItemProps {
   notification: NotificationItemType;
   onClick: (id: string) => void;
+  referenceTime?: number | Date;
 }
 
 export function NotificationItem({
   notification,
   onClick,
+  referenceTime,
 }: NotificationItemProps) {
-  const { id, actor, actionText, contentPreview, timeAgoText, isRead } =
+  const { id, actor, actionText, contentPreview, createdAt, timeAgoText, isRead } =
     notification;
 
   const initial = actor.name ? actor.name.charAt(0) : '?';
+  const displayedTime = timeAgoText ?? formatTimeAgo(createdAt, referenceTime);
 
   return (
     <div
@@ -28,9 +32,7 @@ export function NotificationItem({
           onClick(id);
         }
       }}
-      className={`group flex items-start gap-3 p-4 sm:p-5 transition-colors cursor-pointer text-left ${
-        isRead ? 'bg-white hover:bg-zinc-50' : 'bg-white hover:bg-zinc-50/80'
-      }`}
+      className="group flex items-start gap-3 p-4 sm:p-5 transition-colors cursor-pointer text-left bg-white hover:bg-zinc-50"
     >
       {/* Unread indicator dot */}
       <div className="pt-2 flex-shrink-0 w-2.5 flex justify-center">
@@ -74,7 +76,7 @@ export function NotificationItem({
 
       {/* Time */}
       <div className="flex-shrink-0 text-xs text-zinc-400 whitespace-nowrap pt-0.5">
-        {timeAgoText}
+        {displayedTime}
       </div>
     </div>
   );

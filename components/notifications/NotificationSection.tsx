@@ -8,12 +8,14 @@ interface NotificationSectionProps {
   title: string;
   items: NotificationItemType[];
   onItemClick: (id: string) => void;
+  referenceTime?: number | Date;
 }
 
 export function NotificationSection({
   title,
   items,
   onItemClick,
+  referenceTime,
 }: NotificationSectionProps) {
   if (items.length === 0) {
     return null;
@@ -30,6 +32,7 @@ export function NotificationSection({
             key={item.id}
             notification={item}
             onClick={onItemClick}
+            referenceTime={referenceTime}
           />
         ))}
       </div>

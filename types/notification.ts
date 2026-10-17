@@ -14,7 +14,7 @@ export interface NotificationItem {
   actionText: string;
   contentPreview?: string;
   createdAt: string; // ISO 8601 string, e.g. "2026-10-14T10:00:00.000Z"
-  timeAgoText: string;
+  timeAgoText?: string;
   isRead: boolean;
   targetUrl: string;
 }
@@ -26,6 +26,6 @@ export interface GroupedNotifications {
 
 export interface NotificationsFeedResponse {
   items: NotificationItem[];
-  unreadCountsByCategory: Record<NotificationCategory, number>;
   serverTime: string;
+  unreadCountsByCategory?: Record<NotificationCategory, number>;
 }

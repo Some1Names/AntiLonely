@@ -8,6 +8,7 @@ import {
   countUnreadNotifications,
   formatTimeAgo,
 } from './notifications.ts';
+import { getMockNotificationsFeed } from './mock/notifications.ts';
 import type { NotificationItem } from '../types/notification.ts';
 
 const baseTime = new Date('2026-10-13T10:00:00.000Z');
@@ -147,3 +148,26 @@ test('formatTimeAgo formats relative time accurately across intervals', () => {
   // Invalid date
   assert.equal(formatTimeAgo('invalid-date', now), 'ไม่ระบุเวลา');
 });
+
+test('getMockNotificationsFeed produces deterministic feed with 2 recent and 4 earlier items', () => {
+  const feed = getMockNotificationsFeed(baseTime.getTime());
+  assert.equal(feed.items.length, 6);
+  assert.equal(feed.serverTime, baseTime.toISOString());
+
+  const grouped = groupNotifications(feed.items, baseTime);
+  assert.equal(grouped.recent.length, 2);
+  assert.equal(grouped.earlier.length, 4);
+
+  // Recent items are < 24h
+  assert.deepEqual(
+    grouped.recent.map((item) => item.id),
+    ['notif-1', 'notif-2']
+  );
+
+  // Earlier items are >= 24h
+  assert.deepEqual(
+    grouped.earlier.map((item) => item.id),
+    ['notif-3', 'notif-4', 'notif-5', 'notif-6']
+  );
+});
+
