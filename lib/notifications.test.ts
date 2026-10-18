@@ -205,6 +205,16 @@ test('getMockNotificationsFeed produces deterministic feed matching mockup layou
   assert.equal(grouped.recent[0].badge?.text, 'สำคัญ');
   assert.equal(grouped.recent[0].systemIcon, 'alert');
 
+  // Once notif-0 is marked read, it unpins and returns to chronological order (2m, 5m, 18m)
+  const afterRead = groupNotifications(
+    markNotificationAsRead(feed.items, 'notif-0'),
+    baseTime
+  );
+  assert.deepEqual(
+    afterRead.recent.map((item) => item.id),
+    ['notif-1', 'notif-0', 'notif-2']
+  );
+
   // Earlier items are >= 24h (notif-6 with shield icon is first)
   assert.deepEqual(
     grouped.earlier.map((item) => item.id),

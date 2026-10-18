@@ -8,6 +8,18 @@ export function getMockNotificationsFeed(
 ): NotificationsFeedResponse {
   const items: NotificationItem[] = [
     {
+      id: 'notif-1',
+      type: 'reply',
+      actor: {
+        name: 'แมวส้มนอนดึก',
+      },
+      actionText: 'ตอบกระทู้ของคุณในห้องคุยเล่น',
+      contentPreview: '“ปวดหลังเหมือนกันเลยพี่”',
+      createdAt: new Date(referenceTime - 2 * 60 * 1000).toISOString(),
+      isRead: false,
+      targetUrl: '/boards/talk/posts/post-101',
+    },
+    {
       id: 'notif-0',
       type: 'report',
       actor: {
@@ -25,18 +37,6 @@ export function getMockNotificationsFeed(
       targetUrl: '/reports/account-action-101',
       isImportant: true,
       systemIcon: 'alert',
-    },
-    {
-      id: 'notif-1',
-      type: 'reply',
-      actor: {
-        name: 'แมวส้มนอนดึก',
-      },
-      actionText: 'ตอบกระทู้ของคุณในห้องคุยเล่น',
-      contentPreview: '“ปวดหลังเหมือนกันเลยพี่”',
-      createdAt: new Date(referenceTime - 2 * 60 * 1000).toISOString(),
-      isRead: false,
-      targetUrl: '/boards/talk/posts/post-101',
     },
     {
       id: 'notif-2',
