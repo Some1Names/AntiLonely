@@ -15,7 +15,6 @@ import {
 import { NotificationTabs } from '@/components/notifications/NotificationTabs';
 import { NotificationSection } from '@/components/notifications/NotificationSection';
 import { EmptyState } from '@/components/notifications/EmptyState';
-import { NotificationSettingsButton } from '@/components/notifications/NotificationSettingsButton';
 
 interface NotificationsClientProps {
   initialItems: NotificationItem[];
@@ -157,11 +156,6 @@ export function NotificationsClient({
             </>
           )}
         </div>
-
-        {/* Footer notification settings link */}
-        <NotificationSettingsButton
-          onClick={() => showToast('ลิงก์ไปยังหน้าตั้งค่าโปรไฟล์')}
-        />
       </main>
 
       {/* Floating feedback toast */}

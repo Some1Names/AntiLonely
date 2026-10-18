@@ -8,6 +8,25 @@ export function getMockNotificationsFeed(
 ): NotificationsFeedResponse {
   const items: NotificationItem[] = [
     {
+      id: 'notif-0',
+      type: 'report',
+      actor: {
+        name: 'ฝ่ายดูแลระบบ',
+      },
+      badge: {
+        text: 'สำคัญ',
+        variant: 'important',
+      },
+      actionText: 'ได้ระงับโพสต์ของคุณเนื่องจากได้รับการรายงาน',
+      contentPreview:
+        '“โพสต์ของคุณในห้องคุยเล่นถูกรายงานว่าไม่เหมาะสมและถูกนำออกชั่วคราว หากมีข้อสงสัยสามารถติดต่อทีมงานได้”',
+      createdAt: new Date(referenceTime - 5 * 60 * 1000).toISOString(),
+      isRead: false,
+      targetUrl: '/reports/account-action-101',
+      isImportant: true,
+      systemIcon: 'alert',
+    },
+    {
       id: 'notif-1',
       type: 'reply',
       actor: {

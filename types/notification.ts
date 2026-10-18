@@ -7,16 +7,24 @@ export interface NotificationActor {
   avatarUrl?: string;
 }
 
+export interface NotificationBadge {
+  text: string;
+  variant?: 'important' | 'warning' | 'default';
+}
+
 export interface NotificationItem {
   id: string;
   type: NotificationType;
   actor: NotificationActor;
+  badge?: NotificationBadge;
   actionText: string;
   contentPreview?: string;
   createdAt: string; // ISO 8601 string, e.g. "2026-10-14T10:00:00.000Z"
   timeAgoText?: string;
   isRead: boolean;
   targetUrl: string;
+  isImportant?: boolean;
+  systemIcon?: 'alert';
 }
 
 export interface GroupedNotifications {

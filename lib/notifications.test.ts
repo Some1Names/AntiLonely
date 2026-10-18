@@ -86,6 +86,42 @@ test('groupNotifications partitions based on createdAt within 24 hours and prese
   assert.equal(grouped.earlier[1].id, 'n4_invalid');
 });
 
+test('groupNotifications pins unread important items to the top of recent group', () => {
+  const items: NotificationItem[] = [
+    {
+      id: 'reg-new',
+      type: 'reply',
+      actor: { name: 'Cat' },
+      actionText: 'replied',
+      createdAt: '2026-10-13T09:55:00.000Z', // 5m ago
+      isRead: false,
+      targetUrl: '/p1',
+    },
+    {
+      id: 'important-older',
+      type: 'report',
+      actor: { name: 'Admin' },
+      actionText: 'action taken',
+      createdAt: '2026-10-13T09:00:00.000Z', // 60m ago
+      isRead: false,
+      isImportant: true,
+      targetUrl: '/p2',
+    },
+  ];
+
+  const grouped = groupNotifications(items, baseTime);
+  assert.equal(grouped.recent[0].id, 'important-older');
+  assert.equal(grouped.recent[1].id, 'reg-new');
+
+  // Once marked read, it unpins and follows chronological order
+  const readGrouped = groupNotifications(
+    items.map((i) => (i.id === 'important-older' ? { ...i, isRead: true } : i)),
+    baseTime
+  );
+  assert.equal(readGrouped.recent[0].id, 'reg-new');
+  assert.equal(readGrouped.recent[1].id, 'important-older');
+});
+
 test('groupNotifications handles 24-hour boundary correctly', () => {
   const exact24hAgo = new Date(baseTime.getTime() - 24 * 60 * 60 * 1000).toISOString();
   const justUnder24hAgo = new Date(baseTime.getTime() - (24 * 60 * 60 * 1000 - 1000)).toISOString();
@@ -149,20 +185,24 @@ test('formatTimeAgo formats relative time accurately across intervals', () => {
   assert.equal(formatTimeAgo('invalid-date', now), 'ไม่ระบุเวลา');
 });
 
-test('getMockNotificationsFeed produces deterministic feed with 2 recent and 4 earlier items', () => {
+test('getMockNotificationsFeed produces deterministic feed with 3 recent and 4 earlier items', () => {
   const feed = getMockNotificationsFeed(baseTime.getTime());
-  assert.equal(feed.items.length, 6);
+  assert.equal(feed.items.length, 7);
   assert.equal(feed.serverTime, baseTime.toISOString());
 
   const grouped = groupNotifications(feed.items, baseTime);
-  assert.equal(grouped.recent.length, 2);
+  assert.equal(grouped.recent.length, 3);
   assert.equal(grouped.earlier.length, 4);
 
-  // Recent items are < 24h
+  // Recent items are < 24h (notif-0 is pinned unread important item)
   assert.deepEqual(
     grouped.recent.map((item) => item.id),
-    ['notif-1', 'notif-2']
+    ['notif-0', 'notif-1', 'notif-2']
   );
+
+  assert.equal(grouped.recent[0].actor.name, 'ฝ่ายดูแลระบบ');
+  assert.equal(grouped.recent[0].actionText, 'ได้ระงับโพสต์ของคุณเนื่องจากได้รับการรายงาน');
+  assert.equal(grouped.recent[0].badge?.text, 'สำคัญ');
 
   // Earlier items are >= 24h
   assert.deepEqual(

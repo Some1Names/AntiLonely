@@ -21,10 +21,16 @@ export function groupNotifications(
   now: number | Date = Date.now()
 ): GroupedNotifications {
   const nowMs = typeof now === 'number' ? now : now.getTime();
+  const pinned: NotificationItem[] = [];
   const recent: NotificationItem[] = [];
   const earlier: NotificationItem[] = [];
 
   for (const item of notifications) {
+    if (item.isImportant && !item.isRead) {
+      pinned.push(item);
+      continue;
+    }
+
     const itemTime = new Date(item.createdAt).getTime();
     if (!Number.isNaN(itemTime) && nowMs - itemTime < TWENTY_FOUR_HOURS_MS) {
       recent.push(item);
@@ -33,7 +39,7 @@ export function groupNotifications(
     }
   }
 
-  return { recent, earlier };
+  return { recent: [...pinned, ...recent], earlier };
 }
 
 export function formatTimeAgo(
