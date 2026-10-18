@@ -185,14 +185,14 @@ test('formatTimeAgo formats relative time accurately across intervals', () => {
   assert.equal(formatTimeAgo('invalid-date', now), 'ไม่ระบุเวลา');
 });
 
-test('getMockNotificationsFeed produces deterministic feed with 3 recent and 4 earlier items', () => {
+test('getMockNotificationsFeed produces deterministic feed matching mockup layout', () => {
   const feed = getMockNotificationsFeed(baseTime.getTime());
-  assert.equal(feed.items.length, 7);
+  assert.equal(feed.items.length, 6);
   assert.equal(feed.serverTime, baseTime.toISOString());
 
   const grouped = groupNotifications(feed.items, baseTime);
   assert.equal(grouped.recent.length, 3);
-  assert.equal(grouped.earlier.length, 4);
+  assert.equal(grouped.earlier.length, 3);
 
   // Recent items are < 24h (notif-0 is pinned unread important item)
   assert.deepEqual(
@@ -203,11 +203,15 @@ test('getMockNotificationsFeed produces deterministic feed with 3 recent and 4 e
   assert.equal(grouped.recent[0].actor.name, 'ฝ่ายดูแลระบบ');
   assert.equal(grouped.recent[0].actionText, 'ได้ระงับโพสต์ของคุณเนื่องจากได้รับการรายงาน');
   assert.equal(grouped.recent[0].badge?.text, 'สำคัญ');
+  assert.equal(grouped.recent[0].systemIcon, 'alert');
 
-  // Earlier items are >= 24h
+  // Earlier items are >= 24h (notif-6 with shield icon is first)
   assert.deepEqual(
     grouped.earlier.map((item) => item.id),
-    ['notif-3', 'notif-4', 'notif-5', 'notif-6']
+    ['notif-6', 'notif-4', 'notif-5']
   );
+
+  assert.equal(grouped.earlier[0].actor.name, 'ฝ่ายดูแลระบบ');
+  assert.equal(grouped.earlier[0].systemIcon, 'shield');
 });
 

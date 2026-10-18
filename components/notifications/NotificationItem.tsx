@@ -79,6 +79,22 @@ export function NotificationItem({
             />
           </svg>
         </div>
+      ) : systemIcon === 'shield' ? (
+        <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-zinc-900 text-white select-none">
+          <svg
+            className="w-5 h-5 text-white"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
+            />
+          </svg>
+        </div>
       ) : (
         <div className="flex-shrink-0 w-10 h-10 rounded-full bg-zinc-200 select-none overflow-hidden flex items-center justify-center">
           {actor.avatarUrl ? (

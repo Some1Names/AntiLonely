@@ -24,7 +24,7 @@ export interface NotificationItem {
   isRead: boolean;
   targetUrl: string;
   isImportant?: boolean;
-  systemIcon?: 'alert';
+  systemIcon?: 'alert' | 'shield';
 }
 
 export interface GroupedNotifications {
