@@ -1,26 +1,83 @@
 @import "tailwindcss";
 
+/* KMUTT web colors (kmutt.ac.th corporate identity): yellow #FFC72C,
+   orange #FA4616, blue grey #7B8189. The pastels are tints of those.
+   kmutt-orange fails contrast behind small white text, so badges and
+   orange text use kmutt-orange-dark instead. */
+@theme {
+  --color-kmutt-yellow: #ffc72c;
+  --color-kmutt-yellow-dark: #e8a200;
+  --color-kmutt-orange: #fa4616;
+  --color-kmutt-orange-dark: #b3340e;
+  --color-kmutt-grey: #7b8189;
+
+  --color-cream: #fff8ee;
+  --color-butter: #fff1c9;
+  --color-butter-edge: #f2d78a;
+  --color-peach: #ffe4d9;
+  --color-peach-edge: #ffb89e;
+  --color-mist: #eef0f2;
+  --color-mist-ink: #4f555c;
+  --color-highlight: #ffe07a;
+
+  --color-ink: #3b2a20;
+  --color-ink-soft: #6e625a;
+  --color-edge: #f0dcc8;
+  --color-edge-strong: #dcc2aa;
+
+  --shadow-press: 0 2px 0 var(--color-kmutt-yellow-dark);
+  --shadow-paper: 2px 3px 0 rgb(59 42 32 / 0.07);
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: var(--color-cream);
+  --foreground: var(--color-ink);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-plex-looped);
+  --font-display: var(--font-mali);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Notebook paper: ruled lines everywhere. The margin line and punch holes
+   only appear once there is a gutter left of the max-w-7xl content, so
+   they never run through the sidebar. */
 body {
-  background: var(--background);
+  background-color: var(--background);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 31px,
+    rgb(123 129 137 / 0.15) 31px 32px
+  );
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), sans-serif;
+}
+
+@media (min-width: 1400px) {
+  body {
+    background-image:
+      radial-gradient(
+        circle at 18px 120px,
+        #fff 0 6px,
+        var(--color-edge-strong) 6px 7.5px,
+        transparent 8px
+      ),
+      linear-gradient(
+        to right,
+        transparent 39px,
+        rgb(250 70 22 / 0.35) 39px 41px,
+        transparent 41px 44px,
+        rgb(250 70 22 / 0.2) 44px 45px,
+        transparent 45px
+      ),
+      repeating-linear-gradient(
+        to bottom,
+        transparent 0 31px,
+        rgb(123 129 137 / 0.15) 31px 32px
+      );
+    background-size: 36px 240px, auto, auto;
+    background-repeat: repeat-y, no-repeat, repeat;
+  }
 }
