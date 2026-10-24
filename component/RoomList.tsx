@@ -1,6 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import {
+  ViewTransition,
+  addTransitionType,
+  startTransition,
+  useRef,
+  useState,
+} from "react";
 import EmptyRooms from "@/component/EmptyRooms";
 import RoomCard from "@/component/RoomCard";
 import type { Room } from "@/lib/mock";
@@ -21,6 +27,13 @@ function matchesFilter(room: Room, filter: FilterId) {
   return true;
 }
 
+// Cards only animate in a transition tagged "room-filter". Other transitions,
+// like the navigation that opens the login modal, leave them alone. Typing in
+// search isn't a transition at all, so the cards update instantly there.
+function onFilterChange(className: string) {
+  return { "room-filter": className, default: "none" };
+}
+
 export default function RoomList({
   rooms,
   memberRoomIds,
@@ -39,11 +52,20 @@ export default function RoomList({
     (room) => matchesFilter(room, filter) && roomMatchesQuery(room, search),
   );
 
+  function changeFilter(update: () => void) {
+    startTransition(() => {
+      addTransitionType("room-filter");
+      update();
+    });
+  }
+
   // The empty state's button goes away once pressed, so focus moves to the
   // ทั้งหมด filter, which is the pressed one again.
   function reset() {
-    setFilter("all");
-    onClearQuery();
+    changeFilter(() => {
+      setFilter("all");
+      onClearQuery();
+    });
     allFilterRef.current?.focus();
   }
 
@@ -53,7 +75,7 @@ export default function RoomList({
         <div>
           <h2 className="font-display text-xl font-semibold">
             <span
-              className={`${highlightClass} [--mark:var(--color-peach-edge)]`}
+              className={`${highlightClass} [--mark:var(--color-peach-edge)] [--mark-delay:450ms]`}
             >
               ห้องน่าแวะ
             </span>
@@ -78,7 +100,7 @@ export default function RoomList({
               ref={id === "all" ? allFilterRef : undefined}
               type="button"
               aria-pressed={filter === id}
-              onClick={() => setFilter(id)}
+              onClick={() => changeFilter(() => setFilter(id))}
               className={`rounded-md border-[1.5px] px-3 py-1 text-sm ${
                 filter === id
                   ? "border-kmutt-orange-dark bg-kmutt-orange-dark font-semibold text-white"
@@ -94,12 +116,19 @@ export default function RoomList({
         <>
           <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {shown.map((room) => (
-              <li key={room.id}>
-                <RoomCard
-                  room={room}
-                  isMember={memberRoomIds.includes(room.id)}
-                />
-              </li>
+              <ViewTransition
+                key={room.id}
+                enter={onFilterChange("room-in")}
+                exit={onFilterChange("room-out")}
+                default={onFilterChange("room-move")}
+              >
+                <li>
+                  <RoomCard
+                    room={room}
+                    isMember={memberRoomIds.includes(room.id)}
+                  />
+                </li>
+              </ViewTransition>
             ))}
           </ul>
           <button
