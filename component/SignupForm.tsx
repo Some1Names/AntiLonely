@@ -8,10 +8,14 @@ const MIN_PASSWORD_LENGTH = 8;
 
 export default function SignupForm({ inModal = false }: { inModal?: boolean }) {
   const [password, setPassword] = useState("");
+  const [leftPassword, setLeftPassword] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  // Don't scold while someone is still typing: show the length as a hint
+  // first, and only turn it into an error after they leave the field or
+  // submit. From then on it clears as soon as the password is long enough.
   const showPasswordError =
     password.length < MIN_PASSWORD_LENGTH &&
-    (submitted || password.length > 0);
+    (submitted || (leftPassword && password.length > 0));
 
   return (
     <AuthCard
@@ -73,18 +77,20 @@ export default function SignupForm({ inModal = false }: { inModal?: boolean }) {
             autoComplete="new-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
+            onBlur={() => setLeftPassword(true)}
             invalid={showPasswordError}
-            aria-describedby={
-              showPasswordError ? "signup-password-error" : undefined
-            }
+            aria-describedby="signup-password-hint"
           />
-          {showPasswordError && (
-            <p id="signup-password-error" className="text-xs text-red-600">
-              ขอยาวอีกนิดนะ อย่างน้อย {MIN_PASSWORD_LENGTH} ตัวอักษร
-            </p>
-          )}
+          <p
+            id="signup-password-hint"
+            className={`text-xs ${showPasswordError ? "text-red-600" : "text-zinc-500"}`}
+          >
+            {showPasswordError
+              ? `ขอยาวอีกนิดนะ อย่างน้อย ${MIN_PASSWORD_LENGTH} ตัวอักษร`
+              : `อย่างน้อย ${MIN_PASSWORD_LENGTH} ตัวอักษร`}
+          </p>
         </div>
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 py-1 text-sm">
           <input type="checkbox" name="terms" required className="size-4" />
           <span>
             ฉันอ่านและยอมรับ <span className="underline">กติกาของชุมชน</span> แล้ว

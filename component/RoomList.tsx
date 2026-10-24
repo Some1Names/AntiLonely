@@ -18,7 +18,13 @@ function matches(room: Room, filter: FilterId) {
   return true;
 }
 
-export default function RoomList({ rooms }: { rooms: Room[] }) {
+export default function RoomList({
+  rooms,
+  memberRoomIds,
+}: {
+  rooms: Room[];
+  memberRoomIds: string[];
+}) {
   const [filter, setFilter] = useState<FilterId>("all");
   const shown = rooms.filter((room) => matches(room, filter));
 
@@ -44,10 +50,13 @@ export default function RoomList({ rooms }: { rooms: Room[] }) {
           ))}
         </div>
       </div>
-      <ul className="grid gap-4 sm:grid-cols-2">
+      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {shown.map((room) => (
           <li key={room.id}>
-            <RoomCard room={room} />
+            <RoomCard
+              room={room}
+              isMember={memberRoomIds.includes(room.id)}
+            />
           </li>
         ))}
       </ul>

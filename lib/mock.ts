@@ -29,7 +29,7 @@ export const myRooms: MyRoom[] = [
   { id: "games", name: "เล่นเกมส์กัก", unread: 0, isPrivate: false },
 ];
 
-export const recommendedRooms: Room[] = [
+export const rooms: Room[] = [
   {
     id: "chat",
     name: "คุยเล่น",

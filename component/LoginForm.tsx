@@ -34,7 +34,7 @@ export default function LoginForm({ inModal = false }: { inModal?: boolean }) {
             <label htmlFor="login-password" className="text-sm font-semibold">
               รหัสผ่าน
             </label>
-            <button type="button" className="text-xs text-zinc-500">
+            <button type="button" className="py-1 text-xs text-zinc-500">
               ลืมรหัสผ่าน?
             </button>
           </div>

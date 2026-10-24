@@ -1,23 +1,18 @@
+import Link from "next/link";
 import type { MyRoom } from "@/lib/mock";
 
-export default function Sidebar({
-  rooms,
-  activeRoomId,
-}: {
-  rooms: MyRoom[];
-  activeRoomId: string;
-}) {
+export default function Sidebar({ rooms }: { rooms: MyRoom[] }) {
   return (
-    <aside className="flex flex-col gap-1">
-      <h2 className="px-2 pb-1 text-xs text-zinc-500">ห้องของฉัน</h2>
+    <nav aria-labelledby="my-rooms-label" className="flex flex-col gap-1">
+      <p id="my-rooms-label" className="px-2 pb-1 text-xs text-zinc-500">
+        ห้องของฉัน
+      </p>
       <ul className="flex flex-col gap-1">
         {rooms.map((room) => (
           <li key={room.id}>
-            <button
-              type="button"
-              className={`flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm ${
-                room.id === activeRoomId ? "bg-zinc-200" : "hover:bg-zinc-100"
-              }`}
+            <Link
+              href={`/rooms/${room.id}`}
+              className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm hover:bg-zinc-100"
             >
               <span className="size-7 shrink-0 rounded bg-zinc-300" />
               <span className="flex-1 truncate">{room.name}</span>
@@ -30,22 +25,22 @@ export default function Sidebar({
                   ส่วนตัว
                 </span>
               ) : null}
-            </button>
+            </Link>
           </li>
         ))}
       </ul>
       <button
         type="button"
-        className="px-2 py-2 text-left text-sm text-zinc-600 hover:bg-zinc-100"
+        className="rounded-md px-2 py-2 text-left text-sm text-zinc-600 hover:bg-zinc-100"
       >
         + สร้างห้องใหม่
       </button>
       <button
         type="button"
-        className="rounded-md bg-zinc-200 px-2 py-2 text-left text-sm"
+        className="rounded-md border border-zinc-300 bg-white px-2 py-2 text-sm hover:bg-zinc-100"
       >
         สุ่มห้องเลย
       </button>
-    </aside>
+    </nav>
   );
 }

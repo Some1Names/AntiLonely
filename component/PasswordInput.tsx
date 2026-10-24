@@ -24,7 +24,7 @@ export default function PasswordInput({
         type="button"
         aria-pressed={visible}
         onClick={() => setVisible(!visible)}
-        className="px-3 text-sm text-zinc-500"
+        className="self-stretch px-3 text-sm text-zinc-500"
       >
         {visible ? "ซ่อน" : "แสดง"}
       </button>

@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function Header({ notifications }: { notifications: number }) {
   return (
     <header className="border-b border-zinc-200 bg-white">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
         <Link href="/" className="text-lg font-semibold">
           AntiLonely
         </Link>
@@ -14,7 +14,7 @@ export default function Header({ notifications }: { notifications: number }) {
           >
             + สร้าง
           </button>
-          <button type="button" className="flex items-center gap-2 text-sm">
+          <button type="button" className="flex h-9 items-center gap-2 text-sm">
             โนติ
             <span className="rounded-full bg-zinc-800 px-2 text-xs text-white">
               {notifications}
