@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { primaryButtonClass } from "@/lib/styles";
 
 type Status = "joined" | "requested" | "none";
 
@@ -29,10 +30,10 @@ export default function JoinButton({
           status !== "none" ? "none" : isPrivate ? "requested" : "joined",
         )
       }
-      className={`rounded-md border px-4 py-2 text-sm font-semibold ${
+      className={`px-4 py-2 ${
         status === "none"
-          ? "border-zinc-800 bg-zinc-800 text-white"
-          : "border-zinc-300 bg-white"
+          ? primaryButtonClass
+          : "rounded-md border-[1.5px] border-peach-edge bg-peach text-sm font-semibold text-kmutt-orange-dark"
       }`}
     >
       {label}

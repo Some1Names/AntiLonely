@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import AuthCard, { AuthLink, inputClass } from "@/component/AuthCard";
+import AuthCard, { AuthLink } from "@/component/AuthCard";
 import PasswordInput from "@/component/PasswordInput";
+import { inputClass, primaryButtonClass } from "@/lib/styles";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -45,7 +46,7 @@ export default function SignupForm({ inModal = false }: { inModal?: boolean }) {
             aria-describedby="signup-name-hint"
             className={inputClass}
           />
-          <p id="signup-name-hint" className="text-xs text-zinc-500">
+          <p id="signup-name-hint" className="text-xs text-ink-soft">
             ไม่ต้องใช้ชื่อจริงนะ ตั้งอะไรก็ได้ที่ชอบ
           </p>
         </div>
@@ -63,7 +64,7 @@ export default function SignupForm({ inModal = false }: { inModal?: boolean }) {
             aria-describedby="signup-email-hint"
             className={inputClass}
           />
-          <p id="signup-email-hint" className="text-xs text-zinc-500">
+          <p id="signup-email-hint" className="text-xs text-ink-soft">
             ใช้แค่ตอนล็อกอินกับลืมรหัสผ่านเท่านั้น
           </p>
         </div>
@@ -83,7 +84,7 @@ export default function SignupForm({ inModal = false }: { inModal?: boolean }) {
           />
           <p
             id="signup-password-hint"
-            className={`text-xs ${showPasswordError ? "text-red-600" : "text-zinc-500"}`}
+            className={`text-xs ${showPasswordError ? "text-red-600" : "text-ink-soft"}`}
           >
             {showPasswordError
               ? `ขอยาวอีกนิดนะ อย่างน้อย ${MIN_PASSWORD_LENGTH} ตัวอักษร`
@@ -91,19 +92,19 @@ export default function SignupForm({ inModal = false }: { inModal?: boolean }) {
           </p>
         </div>
         <label className="flex items-center gap-2 py-1 text-sm">
-          <input type="checkbox" name="terms" required className="size-4" />
+          <input type="checkbox" name="terms" required className="size-4 accent-kmutt-orange-dark" />
           <span>
-            ฉันอ่านและยอมรับ <span className="underline">กติกาของชุมชน</span> แล้ว
+            ฉันอ่านและยอมรับ <span className="underline decoration-kmutt-orange decoration-2 underline-offset-2">กติกาของชุมชน</span> แล้ว
           </span>
         </label>
         <button
           type="submit"
-          className="rounded-md bg-zinc-800 py-2.5 text-sm font-semibold text-white"
+          className={`py-2.5 ${primaryButtonClass}`}
         >
           สมัครเลยยย
         </button>
       </form>
-      <p className="mt-4 text-center text-sm text-zinc-500">
+      <p className="mt-4 text-center text-sm text-ink-soft">
         มีบัญชีอยู่แล้ว?{" "}
         <AuthLink href="/login" inModal={inModal}>
           เข้าสู่ระบบ

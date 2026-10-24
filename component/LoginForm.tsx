@@ -1,7 +1,8 @@
 "use client";
 
-import AuthCard, { AuthLink, inputClass } from "@/component/AuthCard";
+import AuthCard, { AuthLink } from "@/component/AuthCard";
 import PasswordInput from "@/component/PasswordInput";
+import { inputClass, primaryButtonClass } from "@/lib/styles";
 
 export default function LoginForm({ inModal = false }: { inModal?: boolean }) {
   return (
@@ -34,7 +35,10 @@ export default function LoginForm({ inModal = false }: { inModal?: boolean }) {
             <label htmlFor="login-password" className="text-sm font-semibold">
               รหัสผ่าน
             </label>
-            <button type="button" className="py-1 text-xs text-zinc-500">
+            <button
+              type="button"
+              className="py-1 text-xs text-ink-soft hover:text-kmutt-orange-dark"
+            >
               ลืมรหัสผ่าน?
             </button>
           </div>
@@ -47,12 +51,12 @@ export default function LoginForm({ inModal = false }: { inModal?: boolean }) {
         </div>
         <button
           type="submit"
-          className="rounded-md bg-zinc-800 py-2.5 text-sm font-semibold text-white"
+          className={`py-2.5 ${primaryButtonClass}`}
         >
           เข้าสู่ระบบ
         </button>
       </form>
-      <p className="mt-4 text-center text-sm text-zinc-500">
+      <p className="mt-4 text-center text-sm text-ink-soft">
         ยังไม่มีบัญชีเหรอ?{" "}
         <AuthLink href="/signup" inModal={inModal}>
           สมัครเลย

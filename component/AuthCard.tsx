@@ -1,8 +1,7 @@
 import Link from "next/link";
+import Tape from "@/component/Tape";
 
-export const inputClass =
-  "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500";
-
+// A sheet of paper taped onto the notebook background.
 export default function AuthCard({
   titleId,
   title,
@@ -15,12 +14,15 @@ export default function AuthCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-6">
-      <p className="font-semibold">AntiLonely</p>
-      <h1 id={titleId} className="mt-4 text-2xl font-semibold">
+    <div className="relative w-full max-w-sm rounded-xs border border-edge bg-white p-6 shadow-paper">
+      <Tape />
+      <p className="font-display text-lg font-semibold">
+        Anti<span className="text-kmutt-orange">Lonely</span>
+      </p>
+      <h1 id={titleId} className="mt-4 font-display text-2xl font-semibold">
         {title}
       </h1>
-      <p className="mt-1 text-sm text-zinc-500">{subtitle}</p>
+      <p className="mt-1 text-sm text-ink-soft">{subtitle}</p>
       <div className="mt-6">{children}</div>
     </div>
   );
@@ -38,7 +40,8 @@ export function AuthLink({
   inModal: boolean;
   children: React.ReactNode;
 }) {
-  const className = "font-semibold text-zinc-900";
+  const className =
+    "font-semibold text-kmutt-orange-dark underline-offset-4 hover:underline";
   return inModal ? (
     <Link href={href} replace className={className}>
       {children}

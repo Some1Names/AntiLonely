@@ -3,6 +3,7 @@
 import { useState } from "react";
 import RoomCard from "@/component/RoomCard";
 import type { Room } from "@/lib/mock";
+import { highlightClass } from "@/lib/styles";
 
 const filters = [
   { id: "all", label: "ทั้งหมด" },
@@ -31,7 +32,13 @@ export default function RoomList({
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold">ห้องน่าแวะ</h2>
+        <h2 className="font-display text-xl font-semibold">
+          <span
+            className={`${highlightClass} [--mark:var(--color-peach-edge)]`}
+          >
+            ห้องน่าแวะ
+          </span>
+        </h2>
         <div className="flex gap-2">
           {filters.map(({ id, label }) => (
             <button
@@ -39,10 +46,10 @@ export default function RoomList({
               type="button"
               aria-pressed={filter === id}
               onClick={() => setFilter(id)}
-              className={`rounded-full border px-3 py-1 text-sm ${
+              className={`rounded-md border-[1.5px] px-3 py-1 text-sm ${
                 filter === id
-                  ? "border-zinc-800 bg-zinc-800 text-white"
-                  : "border-zinc-300 bg-white"
+                  ? "border-kmutt-orange-dark bg-kmutt-orange-dark font-semibold text-white"
+                  : "border-edge-strong bg-white hover:bg-butter"
               }`}
             >
               {label}
@@ -60,7 +67,10 @@ export default function RoomList({
           </li>
         ))}
       </ul>
-      <button type="button" className="self-center py-2 text-sm text-zinc-600">
+      <button
+        type="button"
+        className="self-center py-2 text-sm font-semibold text-kmutt-orange-dark underline-offset-4 hover:underline"
+      >
         ดูห้องเพิ่ม
       </button>
     </section>

@@ -59,7 +59,7 @@ export default function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4 backdrop-blur-sm"
       onClick={(event) => {
         if (event.target === event.currentTarget) router.back();
       }}
@@ -76,7 +76,7 @@ export default function Modal({
           type="button"
           aria-label="ปิด"
           onClick={() => router.back()}
-          className="absolute right-3 top-3 flex size-8 items-center justify-center rounded-md text-xl text-zinc-500 hover:bg-zinc-100"
+          className="absolute right-3 top-3 z-10 flex size-8 items-center justify-center rounded-md text-xl text-ink-soft hover:bg-butter"
         >
           ×
         </button>
