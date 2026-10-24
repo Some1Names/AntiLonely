@@ -1,0 +1,219 @@
+import type {
+  CommentSortOrder,
+  PostThread,
+  ReactionItem,
+  ThreadAuthor,
+  ThreadComment,
+  ThreadReply,
+} from '@/types/post-thread';
+
+export const PRESET_REACTION_EMOJIS: readonly string[] = [
+  '😣',
+  '😭',
+  '😢',
+  '😂',
+  '🤩',
+  '❤️',
+  '👍',
+  '🔥',
+];
+
+export function toggleReaction(
+  reactions: ReactionItem[],
+  emoji: string
+): ReactionItem[] {
+  const normalized = emoji.trim();
+  if (!normalized) {
+    return reactions;
+  }
+
+  const existingIndex = reactions.findIndex((item) => item.emoji === normalized);
+  if (existingIndex === -1) {
+    return [
+      ...reactions,
+      {
+        emoji: normalized,
+        count: 1,
+        reactedByMe: true,
+      },
+    ];
+  }
+
+  const result: ReactionItem[] = [];
+  for (let i = 0; i < reactions.length; i++) {
+    const current = reactions[i];
+    if (i !== existingIndex) {
+      result.push(current);
+      continue;
+    }
+
+    const nextCount = current.reactedByMe ? current.count - 1 : current.count + 1;
+    if (nextCount > 0) {
+      result.push({
+        ...current,
+        count: nextCount,
+        reactedByMe: !current.reactedByMe,
+      });
+    }
+  }
+
+  return result;
+}
+
+export function togglePostReaction(
+  thread: PostThread,
+  emoji: string
+): PostThread {
+  return {
+    ...thread,
+    reactions: toggleReaction(thread.reactions, emoji),
+  };
+}
+
+export function toggleCommentReaction(
+  comments: ThreadComment[],
+  targetId: string,
+  emoji: string
+): ThreadComment[] {
+  return comments.map((comment) => {
+    if (comment.id === targetId) {
+      return {
+        ...comment,
+        reactions: toggleReaction(comment.reactions, emoji),
+      };
+    }
+
+    const hasMatchingReply = comment.replies.some((r) => r.id === targetId);
+    if (!hasMatchingReply) {
+      return comment;
+    }
+
+    return {
+      ...comment,
+      replies: comment.replies.map((reply) =>
+        reply.id === targetId
+          ? {
+              ...reply,
+              reactions: toggleReaction(reply.reactions, emoji),
+            }
+          : reply
+      ),
+    };
+  });
+}
+
+export function addTopLevelComment(
+  comments: ThreadComment[],
+  content: string,
+  author: ThreadAuthor,
+  nowIso: string = new Date().toISOString(),
+  postAuthorId?: string
+): ThreadComment[] {
+  const trimmed = content.trim();
+  if (!trimmed) {
+    return comments;
+  }
+
+  const newComment: ThreadComment = {
+    id: `comment-${Date.now()}-${comments.length + 1}`,
+    author,
+    isPostAuthor: Boolean(postAuthorId && author.id === postAuthorId),
+    content: trimmed,
+    createdAt: nowIso,
+    reactions: [],
+    replies: [],
+  };
+
+  return [...comments, newComment];
+}
+
+export function addNestedReply(
+  comments: ThreadComment[],
+  targetCommentOrReplyId: string,
+  content: string,
+  author: ThreadAuthor,
+  nowIso: string = new Date().toISOString(),
+  postAuthorId?: string
+): ThreadComment[] {
+  const trimmed = content.trim();
+  if (!trimmed) {
+    return comments;
+  }
+
+  return comments.map((comment) => {
+    const matchesParent = comment.id === targetCommentOrReplyId;
+    const matchesChild = comment.replies.some(
+      (reply) => reply.id === targetCommentOrReplyId
+    );
+
+    if (!matchesParent && !matchesChild) {
+      return comment;
+    }
+
+    const newReply: ThreadReply = {
+      id: `reply-${Date.now()}-${comment.replies.length + 1}`,
+      author,
+      isPostAuthor: Boolean(postAuthorId && author.id === postAuthorId),
+      content: trimmed,
+      createdAt: nowIso,
+      reactions: [],
+    };
+
+    return {
+      ...comment,
+      replies: [...comment.replies, newReply],
+    };
+  });
+}
+
+export function sortComments(
+  comments: ThreadComment[],
+  order: CommentSortOrder
+): ThreadComment[] {
+  return [...comments].sort((a, b) => {
+    const timeA = new Date(a.createdAt).getTime();
+    const timeB = new Date(b.createdAt).getTime();
+    if (order === 'newest') {
+      return timeB - timeA;
+    }
+    return timeA - timeB;
+  });
+}
+
+export function countTotalComments(comments: ThreadComment[]): number {
+  return comments.reduce(
+    (sum, comment) => sum + 1 + comment.replies.length,
+    0
+  );
+}
+
+export function formatRelativeTimeThai(
+  dateString: string,
+  now: number | Date = Date.now()
+): string {
+  const nowMs = typeof now === 'number' ? now : now.getTime();
+  const itemTime = new Date(dateString).getTime();
+
+  if (Number.isNaN(itemTime)) {
+    return 'ไม่ระบุเวลา';
+  }
+
+  const diffMs = Math.max(0, nowMs - itemTime);
+  const diffMinutes = Math.floor(diffMs / (60 * 1000));
+  const diffHours = Math.floor(diffMs / (60 * 60 * 1000));
+  const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+
+  if (diffMinutes < 1) {
+    return 'เมื่อสักครู่';
+  }
+  if (diffMinutes < 60) {
+    return `${diffMinutes} นาที ที่แล้ว`;
+  }
+  if (diffHours < 24) {
+    return `${diffHours} ชม. ที่แล้ว`;
+  }
+  if (diffDays < 7) {
+    return `${diffDays} วัน ที่แล้ว`;
+  }
+  return new Date(itemTime).toLocaleDateString('th-TH');
+}
