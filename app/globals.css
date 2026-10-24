@@ -27,6 +27,53 @@
 
   --shadow-press: 0 2px 0 var(--color-kmutt-yellow-dark);
   --shadow-paper: 2px 3px 0 rgb(59 42 32 / 0.07);
+
+  /* The highlighter swipe draws itself in, left to right, once on arrival.
+     --animate-highlight-draw is in the inline block below. */
+  @keyframes highlight-draw {
+    from {
+      background-size: 0% 100%;
+    }
+    to {
+      background-size: 100% 100%;
+    }
+  }
+
+  /* Login/signup modal: the sheet drops in from a little above, slightly
+     tilted, and lifts out a bit faster on close. The backdrop fades with it. */
+  --animate-sheet-drop: sheet-drop 260ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  --animate-sheet-lift: sheet-lift 160ms ease-in both;
+  --animate-backdrop-in: backdrop-in 200ms ease-out both;
+  --animate-backdrop-out: backdrop-out 160ms ease-in both;
+
+  @keyframes sheet-drop {
+    from {
+      opacity: 0;
+      translate: 0 -16px;
+      rotate: -2deg;
+    }
+  }
+
+  @keyframes sheet-lift {
+    to {
+      opacity: 0;
+      translate: 0 8px;
+    }
+  }
+
+  @keyframes backdrop-in {
+    from {
+      background-color: transparent;
+      backdrop-filter: none;
+    }
+  }
+
+  @keyframes backdrop-out {
+    to {
+      background-color: transparent;
+      backdrop-filter: none;
+    }
+  }
 }
 
 :root {
@@ -39,6 +86,30 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-plex-looped);
   --font-display: var(--font-mali);
+
+  /* Inline so --mark-delay is read on the highlighted element itself, which
+     lets an element stagger its swipe. */
+  --animate-highlight-draw: highlight-draw 500ms ease-out
+    var(--mark-delay, 150ms) both;
+}
+
+/* Always keep room for the scrollbar, so the page doesn't shift sideways
+   when it gets short enough to lose it (filtering rooms, opening a modal). */
+html {
+  scrollbar-gutter: stable;
+}
+
+/* While a modal is shown the page can't scroll, so the scrollbar goes but
+   its gutter stays, outside the backdrop's reach. Tint it like the backdrop
+   so it isn't a light strip down the right edge. */
+html:has([data-modal="open"], [data-modal="switch"]) {
+  background-color: color-mix(in srgb, var(--color-cream), var(--color-ink) 40%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    transition: background-color 200ms ease-out;
+  }
 }
 
 /* Notebook paper: ruled lines everywhere. The margin line and punch holes
@@ -79,5 +150,53 @@ body {
       );
     background-size: 36px 240px, auto, auto;
     background-repeat: repeat-y, no-repeat, repeat;
+  }
+}
+
+/* View transitions: room cards on a filter change (RoomList) and the
+   login/signup morph (Modal, browser defaults). The classes come from
+   <ViewTransition> props. */
+
+/* Let clicks reach the live page while an animation is still running. */
+::view-transition {
+  pointer-events: none;
+}
+
+/* Room cards on a filter change: the ones that stay slide to their new
+   spot, leaving ones shrink away, new ones settle in. */
+::view-transition-group(.room-move) {
+  animation-duration: 250ms;
+  animation-timing-function: ease-out;
+}
+::view-transition-new(.room-in) {
+  animation: card-in 220ms ease-out both;
+}
+::view-transition-old(.room-out) {
+  animation: card-out 150ms ease-in both;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    scale: 0.96;
+    translate: 0 6px;
+  }
+}
+
+@keyframes card-out {
+  to {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+
+/* With reduced motion everything just swaps, as it would without view
+   transitions. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
   }
 }
