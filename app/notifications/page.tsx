@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { connection } from 'next/server';
-import { NotificationsClient } from '@/components/notifications/NotificationsClient';
+import Header from '@/component/Header';
+import { NotificationsClient } from '@/component/notifications/NotificationsClient';
 import { getMockNotificationsFeed } from '@/lib/mock/notifications';
 
 export const metadata = {
@@ -22,7 +23,13 @@ async function NotificationsFeed() {
 
 export default function NotificationsPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#fafafa]" />}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex flex-col bg-[#fafafa]">
+          <Header notifications={0} />
+        </div>
+      }
+    >
       <NotificationsFeed />
     </Suspense>
   );

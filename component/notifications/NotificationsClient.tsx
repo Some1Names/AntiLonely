@@ -12,9 +12,10 @@ import {
   markAllNotificationsAsRead,
   countUnreadNotifications,
 } from '@/lib/notifications';
-import { NotificationTabs } from '@/components/notifications/NotificationTabs';
-import { NotificationSection } from '@/components/notifications/NotificationSection';
-import { EmptyState } from '@/components/notifications/EmptyState';
+import Header from '@/component/Header';
+import { NotificationTabs } from './NotificationTabs';
+import { NotificationSection } from './NotificationSection';
+import { EmptyState } from './EmptyState';
 
 interface NotificationsClientProps {
   initialItems: NotificationItem[];
@@ -103,8 +104,9 @@ export function NotificationsClient({
   };
 
   return (
-    <div className="min-h-screen bg-[#fafafa] text-zinc-900 font-sans">
-      <main className="max-w-[720px] mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-6">
+    <div className="min-h-screen flex flex-col bg-[#fafafa] text-zinc-900 font-sans">
+      <Header notifications={totalUnreadCount} />
+      <main className="w-full max-w-[720px] mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-6 flex-1">
         {/* Header with Title and Mark all as read button */}
         <header className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">

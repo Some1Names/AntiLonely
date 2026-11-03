@@ -19,7 +19,7 @@ export interface NotificationItem {
   badge?: NotificationBadge;
   actionText: string;
   contentPreview?: string;
-  createdAt: string; // ISO 8601 string, e.g. "2026-10-14T10:00:00.000Z"
+  createdAt: string;
   timeAgoText?: string;
   isRead: boolean;
   targetUrl: string;
