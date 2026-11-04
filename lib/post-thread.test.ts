@@ -42,16 +42,26 @@ describe('post-thread domain logic', () => {
   it('toggles reactions on the main post, top-level comments, and nested replies', () => {
     const { thread } = getMockPostThread('music', 'post-1', refNow);
     const updatedPost = togglePostReaction(thread, '😣');
-    assert.equal(updatedPost.reactions.find((r) => r.emoji === '😣')?.count, 9);
+    const postReaction = updatedPost.reactions.find((r) => r.emoji === '😣');
+    assert.equal(postReaction?.count, 9);
+    assert.equal(postReaction?.reactedByMe, true);
+
+    const revertedPost = togglePostReaction(updatedPost, '😣');
+    const revertedPostReaction = revertedPost.reactions.find((r) => r.emoji === '😣');
+    assert.equal(revertedPostReaction?.count, 8);
+    assert.equal(revertedPostReaction?.reactedByMe, false);
 
     const updatedTop = toggleCommentReaction(thread.comments, 'comment-1', '😢');
-    assert.equal(updatedTop[0].reactions.find((r) => r.emoji === '😢')?.count, 6);
+    const topReaction = updatedTop[0].reactions.find((r) => r.emoji === '😢');
+    assert.equal(topReaction?.count, 6);
+    assert.equal(topReaction?.reactedByMe, true);
 
     const updatedNested = toggleCommentReaction(thread.comments, 'reply-1', '😂');
-    assert.equal(
-      updatedNested[0].replies[0].reactions.find((r) => r.emoji === '😂')?.count,
-      5
+    const nestedReaction = updatedNested[0].replies[0].reactions.find(
+      (r) => r.emoji === '😂'
     );
+    assert.equal(nestedReaction?.count, 5);
+    assert.equal(nestedReaction?.reactedByMe, true);
   });
 
   it('adds top-level comments and ignores whitespace-only input', () => {

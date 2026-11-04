@@ -65,7 +65,16 @@ export function ReactionBar({
           type="button"
           onClick={() => onToggleReaction(item.emoji)}
           aria-pressed={item.reactedByMe}
-          className={`inline-flex items-center justify-center rounded-full border border-[#e4e4e7] bg-white text-[#18181b] hover:bg-zinc-100 font-medium transition-colors cursor-pointer select-none ${pillClasses}`}
+          title={
+            item.reactedByMe
+              ? 'คุณกดรีแอคชันนี้แล้ว (คลิกเพื่อยกเลิก)'
+              : 'คลิกเพื่อกดรีแอคชัน'
+          }
+          className={`inline-flex items-center justify-center rounded-full border transition-colors cursor-pointer select-none ${pillClasses} ${
+            item.reactedByMe
+              ? 'border-[#18181b] bg-zinc-100 text-[#18181b] font-semibold shadow-[inset_0_0_0_0.5px_#18181b] hover:bg-zinc-200/80'
+              : 'border-[#e4e4e7] bg-white text-[#71717a] hover:border-zinc-300 hover:bg-zinc-100 hover:text-[#18181b] font-medium'
+          }`}
         >
           <span>{item.emoji}</span>
           <span className="opacity-70">·</span>
@@ -123,13 +132,16 @@ export function ReactionBar({
                 <button
                   key={emoji}
                   type="button"
-                  role="menuitem"
+                  role="menuitemcheckbox"
+                  aria-checked={isSelected}
                   onClick={() => {
                     onToggleReaction(emoji);
                     setIsPickerOpen(false);
                   }}
                   className={`w-7 h-7 flex items-center justify-center rounded-full text-base transition-transform hover:scale-110 cursor-pointer ${
-                    isSelected ? 'bg-zinc-200' : 'hover:bg-zinc-100'
+                    isSelected
+                      ? 'bg-zinc-200 ring-1 ring-[#18181b]'
+                      : 'hover:bg-zinc-100'
                   }`}
                 >
                   {emoji}
@@ -142,4 +154,3 @@ export function ReactionBar({
     </div>
   );
 }
-

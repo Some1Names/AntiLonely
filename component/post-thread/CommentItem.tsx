@@ -202,11 +202,10 @@ export function CommentItem({
         <button
           type="submit"
           disabled={editDraft.trim().length === 0}
-          className={`h-8 px-3 rounded-lg text-xs font-medium transition-colors select-none ${
-            editDraft.trim().length > 0
-              ? 'bg-[#18181b] text-white hover:bg-zinc-800 cursor-pointer'
-              : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
-          }`}
+          className={`h-8 px-3 rounded-lg text-xs font-medium transition-colors select-none ${editDraft.trim().length > 0
+            ? 'bg-[#18181b] text-white hover:bg-zinc-800 cursor-pointer'
+            : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
+            }`}
         >
           บันทึก
         </button>
@@ -290,7 +289,7 @@ export function CommentItem({
                       {reply.author.name}
                     </span>
                     {reply.replyTo && (
-                      <span className="inline-flex items-center gap-1 text-xs text-[#71717a]">
+                      <span className="inline-flex items-center gap-1 text-sm text-[#71717a]">
                         <span>ตอบกลับ</span>
                         <span className="font-medium text-[#18181b]">
                           @{reply.replyTo.name}
@@ -335,7 +334,7 @@ export function CommentItem({
                         name: reply.author.name,
                       })
                     }
-                    className="text-xs font-medium text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer select-none px-1"
+                    className="text-sm font-medium text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer select-none px-1"
                   >
                     ตอบกลับ
                   </button>
