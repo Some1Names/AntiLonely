@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { PostThread } from '@/types/post-thread';
 import { formatRelativeTimeThai } from '@/lib/post-thread';
-import { ReactionBar } from '@/components/post-thread/ReactionBar';
+import { ReactionBar } from './ReactionBar';
 
 interface PostCardProps {
   thread: PostThread;

@@ -1,13 +1,19 @@
 import type { PostThreadFeedResponse } from '@/types/post-thread';
 
 const BOARD_NAMES: Record<string, string> = {
+  songs: 'ห้องบริจาคเพลง',
+  chat: 'ห้องคุยเล่น',
+  books: 'ห้องอ่านหนังสือ',
+  'acs-leak': 'ห้อง ACS Leak',
+  games: 'ห้องเล่นเกมส์กัก',
+  teachers: 'ห้องเม้าท์อาจารย์',
   music: 'ห้องบริจาคเพลง',
   talk: 'ห้องคุยเล่น',
   study: 'ห้องติวหนังสือด้วยกัน',
 };
 
 export function getMockPostThread(
-  boardSlug: string = 'music',
+  boardSlug: string = 'songs',
   postId: string = 'post-1',
   referenceTime: number = Date.now()
 ): PostThreadFeedResponse {
@@ -69,8 +75,12 @@ export function getMockPostThread(
             {
               id: 'reply-3',
               author: {
-                id: 'anon-619',
-                name: 'หมูกรอบ',
+                id: 'user-platoo',
+                name: 'ปลาทู',
+              },
+              replyTo: {
+                id: 'anon-512',
+                name: 'สายฝน',
               },
               isPostAuthor: false,
               content: 'แนะนำเพลง สายตาหลอกกันไม่ได้ อีกเพลงครับ',

@@ -1,24 +1,22 @@
-import Link from 'next/link';
+import Header from "@/component/Header";
+import HomeMain from "@/component/HomeMain";
+import PostBox from "@/component/PostBox";
+import Sidebar from "@/component/Sidebar";
+import { currentUser, myRooms, rooms } from "@/lib/mock";
 
-export default function HomePage() {
+export default function Home() {
   return (
-    <main className="min-h-screen bg-[#fafafa] flex items-center justify-center p-6 text-[#18181b]">
-      <div className="text-center space-y-4">
-        <div>
-          <h1 className="text-2xl font-semibold">AntiLonely</h1>
-          <p className="text-[#71717a] mt-1">Home page</p>
-        </div>
-
-        <div>
-          <Link
-            href="/boards/music/posts/post-1"
-            className="inline-flex items-center gap-2 rounded-lg bg-[#18181b] px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 transition-colors"
-          >
-            <span>ดูตัวอย่างหน้า 03 Post Thread</span>
-            <span aria-hidden="true">→</span>
-          </Link>
-        </div>
+    <div className="flex flex-1 flex-col">
+      <Header notifications={currentUser.notifications} />
+      <div className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-6 md:grid-cols-[200px_1fr] lg:grid-cols-[1fr_3fr]">
+        <Sidebar rooms={myRooms} />
+        <HomeMain
+          rooms={rooms}
+          memberRoomIds={myRooms.map((room) => room.id)}
+        >
+          <PostBox username={currentUser.name} rooms={myRooms} />
+        </HomeMain>
       </div>
-    </main>
+    </div>
   );
 }

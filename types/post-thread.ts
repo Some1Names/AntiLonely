@@ -1,5 +1,7 @@
 export type CommentSortOrder = 'oldest' | 'newest';
 
+export type ReportTargetType = 'post' | 'comment';
+
 export type ReportReason =
   | 'inappropriate'
   | 'spam'
@@ -21,7 +23,12 @@ export interface ThreadAuthor {
 export interface ThreadReply {
   id: string;
   author: ThreadAuthor;
+  replyTo?: {
+    id?: string;
+    name: string;
+  };
   isPostAuthor?: boolean;
+  isEdited?: boolean;
   content: string;
   createdAt: string;
   reactions: ReactionItem[];
@@ -31,6 +38,7 @@ export interface ThreadComment {
   id: string;
   author: ThreadAuthor;
   isPostAuthor?: boolean;
+  isEdited?: boolean;
   content: string;
   createdAt: string;
   reactions: ReactionItem[];
@@ -54,4 +62,3 @@ export interface PostThreadFeedResponse {
   currentUser: ThreadAuthor;
   serverTime: string;
 }
-

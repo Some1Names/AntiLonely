@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import type { ReportReason } from '@/types/post-thread';
+import React, { useState, useEffect, useCallback } from 'react';
+import type { ReportReason, ReportTargetType } from '@/types/post-thread';
 
 interface ReportModalProps {
   isOpen: boolean;
+  targetType?: ReportTargetType;
   onClose: () => void;
   onSubmit: (reason: ReportReason, details: string) => void;
 }
@@ -28,17 +29,28 @@ const REPORT_REASON_OPTIONS: { value: ReportReason; label: string }[] = [
   },
 ];
 
-export function ReportModal({ isOpen, onClose, onSubmit }: ReportModalProps) {
+export function ReportModal({
+  isOpen,
+  targetType = 'post',
+  onClose,
+  onSubmit,
+}: ReportModalProps) {
   const [selectedReason, setSelectedReason] =
     useState<ReportReason>('inappropriate');
   const [details, setDetails] = useState('');
+
+  const handleClose = useCallback(() => {
+    setSelectedReason('inappropriate');
+    setDetails('');
+    onClose();
+  }, [onClose]);
 
   useEffect(() => {
     if (!isOpen) return;
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
-        onClose();
+        handleClose();
       }
     }
 
@@ -46,7 +58,7 @@ export function ReportModal({ isOpen, onClose, onSubmit }: ReportModalProps) {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, handleClose]);
 
   if (!isOpen) {
     return null;
@@ -59,10 +71,17 @@ export function ReportModal({ isOpen, onClose, onSubmit }: ReportModalProps) {
     setSelectedReason('inappropriate');
   };
 
+  const modalTitle =
+    targetType === 'comment' ? 'รายงานความคิดเห็น' : 'รายงานกระทู้';
+  const modalDescription =
+    targetType === 'comment'
+      ? 'ระบุเหตุผลที่ต้องการรายงานความคิดเห็นนี้ให้ทีมงานตรวจสอบ'
+      : 'ระบุเหตุผลที่ต้องการรายงานกระทู้นี้ให้ทีมงานตรวจสอบ';
+
   return (
     <div
       className="fixed inset-0 z-50 bg-zinc-900/45 flex items-center justify-center p-4"
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div
         role="dialog"
@@ -76,11 +95,11 @@ export function ReportModal({ isOpen, onClose, onSubmit }: ReportModalProps) {
             id="report-modal-title"
             className="text-base sm:text-[17px] font-semibold text-[#18181b]"
           >
-            รายงานกระทู้
+            {modalTitle}
           </h2>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             aria-label="ปิดหน้าต่างรายงาน"
             className="w-7 h-7 rounded-md flex items-center justify-center text-[#71717a] hover:text-[#18181b] hover:bg-zinc-100 transition-colors cursor-pointer"
           >
@@ -89,7 +108,7 @@ export function ReportModal({ isOpen, onClose, onSubmit }: ReportModalProps) {
         </div>
 
         <p className="text-[13px] text-[#71717a] mt-1.5 mb-3.5">
-          ระบุเหตุผลที่ต้องการรายงานกระทู้นี้ให้ทีมงานตรวจสอบ
+          {modalDescription}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-3.5">
@@ -129,8 +148,8 @@ export function ReportModal({ isOpen, onClose, onSubmit }: ReportModalProps) {
           <div className="flex items-center justify-end gap-2 pt-1">
             <button
               type="button"
-              onClick={onClose}
-              className="h-9 px-4 rounded-full border border-[#e4e4e7] bg-white text-sm text-[#18181b] hover:bg-zinc-100 transition-colors cursor-pointer"
+              onClick={handleClose}
+              className="h-9 px-4 rounded-lg border border-[#e4e4e7] bg-white text-sm text-[#18181b] hover:bg-zinc-100 transition-colors cursor-pointer"
             >
               ยกเลิก
             </button>
@@ -146,4 +165,3 @@ export function ReportModal({ isOpen, onClose, onSubmit }: ReportModalProps) {
     </div>
   );
 }
-

@@ -1,26 +1,202 @@
 @import "tailwindcss";
 
+/* KMUTT web colors (kmutt.ac.th corporate identity): yellow #FFC72C,
+   orange #FA4616, blue grey #7B8189. The pastels are tints of those.
+   kmutt-orange fails contrast behind small white text, so badges and
+   orange text use kmutt-orange-dark instead. */
+@theme {
+  --color-kmutt-yellow: #ffc72c;
+  --color-kmutt-yellow-dark: #e8a200;
+  --color-kmutt-orange: #fa4616;
+  --color-kmutt-orange-dark: #b3340e;
+  --color-kmutt-grey: #7b8189;
+
+  --color-cream: #fff8ee;
+  --color-butter: #fff1c9;
+  --color-butter-edge: #f2d78a;
+  --color-peach: #ffe4d9;
+  --color-peach-edge: #ffb89e;
+  --color-mist: #eef0f2;
+  --color-mist-ink: #4f555c;
+  --color-highlight: #ffe07a;
+
+  --color-ink: #3b2a20;
+  --color-ink-soft: #6e625a;
+  --color-edge: #f0dcc8;
+  --color-edge-strong: #dcc2aa;
+
+  --shadow-press: 0 2px 0 var(--color-kmutt-yellow-dark);
+  --shadow-paper: 2px 3px 0 rgb(59 42 32 / 0.07);
+
+  /* The highlighter swipe draws itself in, left to right, once on arrival.
+     --animate-highlight-draw is in the inline block below. */
+  @keyframes highlight-draw {
+    from {
+      background-size: 0% 100%;
+    }
+    to {
+      background-size: 100% 100%;
+    }
+  }
+
+  /* Login/signup modal: the sheet drops in from a little above, slightly
+     tilted, and lifts out a bit faster on close. The backdrop fades with it. */
+  --animate-sheet-drop: sheet-drop 260ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  --animate-sheet-lift: sheet-lift 160ms ease-in both;
+  --animate-backdrop-in: backdrop-in 200ms ease-out both;
+  --animate-backdrop-out: backdrop-out 160ms ease-in both;
+
+  @keyframes sheet-drop {
+    from {
+      opacity: 0;
+      translate: 0 -16px;
+      rotate: -2deg;
+    }
+  }
+
+  @keyframes sheet-lift {
+    to {
+      opacity: 0;
+      translate: 0 8px;
+    }
+  }
+
+  @keyframes backdrop-in {
+    from {
+      background-color: transparent;
+      backdrop-filter: none;
+    }
+  }
+
+  @keyframes backdrop-out {
+    to {
+      background-color: transparent;
+      backdrop-filter: none;
+    }
+  }
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: var(--color-cream);
+  --foreground: var(--color-ink);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-plex-looped);
+  --font-display: var(--font-mali);
+
+  /* Inline so --mark-delay is read on the highlighted element itself, which
+     lets an element stagger its swipe. */
+  --animate-highlight-draw: highlight-draw 500ms ease-out
+    var(--mark-delay, 150ms) both;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Always keep room for the scrollbar, so the page doesn't shift sideways
+   when it gets short enough to lose it (filtering rooms, opening a modal). */
+html {
+  scrollbar-gutter: stable;
+}
+
+/* While a modal is shown the page can't scroll, so the scrollbar goes but
+   its gutter stays, outside the backdrop's reach. Tint it like the backdrop
+   so it isn't a light strip down the right edge. */
+html:has([data-modal="open"], [data-modal="switch"]) {
+  background-color: color-mix(in srgb, var(--color-cream), var(--color-ink) 40%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    transition: background-color 200ms ease-out;
   }
 }
 
+/* Notebook paper: ruled lines everywhere. The margin line and punch holes
+   only appear once there is a gutter left of the max-w-7xl content, so
+   they never run through the sidebar. */
 body {
-  background: var(--background);
+  background-color: var(--background);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 31px,
+    rgb(123 129 137 / 0.15) 31px 32px
+  );
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), sans-serif;
+}
+
+@media (min-width: 1400px) {
+  body {
+    background-image:
+      radial-gradient(
+        circle at 18px 120px,
+        #fff 0 6px,
+        var(--color-edge-strong) 6px 7.5px,
+        transparent 8px
+      ),
+      linear-gradient(
+        to right,
+        transparent 39px,
+        rgb(250 70 22 / 0.35) 39px 41px,
+        transparent 41px 44px,
+        rgb(250 70 22 / 0.2) 44px 45px,
+        transparent 45px
+      ),
+      repeating-linear-gradient(
+        to bottom,
+        transparent 0 31px,
+        rgb(123 129 137 / 0.15) 31px 32px
+      );
+    background-size: 36px 240px, auto, auto;
+    background-repeat: repeat-y, no-repeat, repeat;
+  }
+}
+
+/* View transitions: room cards on a filter change (RoomList) and the
+   login/signup morph (Modal, browser defaults). The classes come from
+   <ViewTransition> props. */
+
+/* Let clicks reach the live page while an animation is still running. */
+::view-transition {
+  pointer-events: none;
+}
+
+/* Room cards on a filter change: the ones that stay slide to their new
+   spot, leaving ones shrink away, new ones settle in. */
+::view-transition-group(.room-move) {
+  animation-duration: 250ms;
+  animation-timing-function: ease-out;
+}
+::view-transition-new(.room-in) {
+  animation: card-in 220ms ease-out both;
+}
+::view-transition-old(.room-out) {
+  animation: card-out 150ms ease-in both;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    scale: 0.96;
+    translate: 0 6px;
+  }
+}
+
+@keyframes card-out {
+  to {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+
+/* With reduced motion everything just swaps, as it would without view
+   transitions. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
 }

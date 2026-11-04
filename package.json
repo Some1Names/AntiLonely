@@ -1,5 +1,5 @@
 {
-  "name": "antiloenly",
+  "name": "antilonely",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test lib/post-thread.test.ts"
+    "test": "node --test --disable-warning=MODULE_TYPELESS_PACKAGE_JSON \"lib/**/*.test.ts\""
   },
   "dependencies": {
     "next": "16.4.3",

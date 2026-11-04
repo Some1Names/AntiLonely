@@ -1,7 +1,8 @@
 import { Suspense } from 'react';
 import { connection } from 'next/server';
+import Header from '@/component/Header';
 import { getMockPostThread } from '@/lib/mock/post-thread';
-import { PostThreadClient } from '@/components/post-thread/PostThreadClient';
+import { PostThreadClient } from '@/component/post-thread/PostThreadClient';
 
 export const metadata = {
   title: 'กระทู้สนทนา | AntiLonely',
@@ -10,15 +11,15 @@ export const metadata = {
 
 interface PostThreadPageProps {
   params: Promise<{
-    boardSlug: string;
+    roomId: string;
     postId: string;
   }>;
 }
 
 async function PostThreadContent({ params }: PostThreadPageProps) {
   await connection();
-  const { boardSlug, postId } = await params;
-  const feed = getMockPostThread(boardSlug, postId);
+  const { roomId, postId } = await params;
+  const feed = getMockPostThread(roomId, postId);
 
   return (
     <PostThreadClient
@@ -31,7 +32,13 @@ async function PostThreadContent({ params }: PostThreadPageProps) {
 
 export default function PostThreadPage(props: PostThreadPageProps) {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#fafafa]" />}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex flex-col bg-[#fafafa]">
+          <Header notifications={0} />
+        </div>
+      }
+    >
       <PostThreadContent params={props.params} />
     </Suspense>
   );

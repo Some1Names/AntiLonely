@@ -133,7 +133,8 @@ export function addNestedReply(
   content: string,
   author: ThreadAuthor,
   nowIso: string = new Date().toISOString(),
-  postAuthorId?: string
+  postAuthorId?: string,
+  replyTo?: { id?: string; name: string }
 ): ThreadComment[] {
   const trimmed = content.trim();
   if (!trimmed) {
@@ -153,6 +154,7 @@ export function addNestedReply(
     const newReply: ThreadReply = {
       id: `reply-${Date.now()}-${comment.replies.length + 1}`,
       author,
+      ...(replyTo ? { replyTo } : {}),
       isPostAuthor: Boolean(postAuthorId && author.id === postAuthorId),
       content: trimmed,
       createdAt: nowIso,
@@ -162,6 +164,91 @@ export function addNestedReply(
     return {
       ...comment,
       replies: [...comment.replies, newReply],
+    };
+  });
+}
+
+export function editCommentOrReply(
+  comments: ThreadComment[],
+  targetId: string,
+  newContent: string,
+  currentUserId: string
+): ThreadComment[] {
+  const trimmed = newContent.trim();
+  const normalizedUserId = currentUserId.trim();
+  if (!trimmed || !normalizedUserId) {
+    return comments;
+  }
+
+  return comments.map((comment) => {
+    if (comment.id === targetId) {
+      if (
+        comment.author.id !== normalizedUserId ||
+        comment.content === trimmed
+      ) {
+        return comment;
+      }
+      return {
+        ...comment,
+        content: trimmed,
+        isEdited: true,
+      };
+    }
+
+    const hasMatchingReply = comment.replies.some((r) => r.id === targetId);
+    if (!hasMatchingReply) {
+      return comment;
+    }
+
+    return {
+      ...comment,
+      replies: comment.replies.map((reply) => {
+        if (reply.id !== targetId) {
+          return reply;
+        }
+        if (
+          reply.author.id !== normalizedUserId ||
+          reply.content === trimmed
+        ) {
+          return reply;
+        }
+        return {
+          ...reply,
+          content: trimmed,
+          isEdited: true,
+        };
+      }),
+    };
+  });
+}
+
+export function deleteCommentOrReply(
+  comments: ThreadComment[],
+  targetId: string,
+  currentUserId: string
+): ThreadComment[] {
+  const normalizedUserId = currentUserId.trim();
+  if (!normalizedUserId) {
+    return comments;
+  }
+
+  const topLevelTarget = comments.find((c) => c.id === targetId);
+  if (topLevelTarget) {
+    if (topLevelTarget.author.id !== normalizedUserId) {
+      return comments;
+    }
+    return comments.filter((c) => c.id !== targetId);
+  }
+
+  return comments.map((comment) => {
+    const replyTarget = comment.replies.find((r) => r.id === targetId);
+    if (!replyTarget || replyTarget.author.id !== normalizedUserId) {
+      return comment;
+    }
+
+    return {
+      ...comment,
+      replies: comment.replies.filter((r) => r.id !== targetId),
     };
   });
 }

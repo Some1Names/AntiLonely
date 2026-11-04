@@ -6,6 +6,8 @@ import {
   toggleCommentReaction,
   addTopLevelComment,
   addNestedReply,
+  editCommentOrReply,
+  deleteCommentOrReply,
   sortComments,
   countTotalComments,
   formatRelativeTimeThai,
@@ -86,6 +88,21 @@ describe('post-thread domain logic', () => {
     assert.equal(updated[0].replies.at(-1)?.isPostAuthor, true);
   });
 
+  it('records replyTo on nested replies when replying to a specific author', () => {
+    const { thread, currentUser } = getMockPostThread('music', 'post-1', refNow);
+    const updated = addNestedReply(
+      thread.comments,
+      'comment-1',
+      'จริงด้วยครับ',
+      currentUser,
+      '2026-10-24T12:03:00.000Z',
+      thread.author.id,
+      { id: 'anon-512', name: 'สายฝน' }
+    );
+    const lastReply = updated[0].replies.at(-1);
+    assert.deepEqual(lastReply?.replyTo, { id: 'anon-512', name: 'สายฝน' });
+  });
+
   it('sorts top-level comments by oldest and newest while keeping nested replies chronological', () => {
     const { thread } = getMockPostThread('music', 'post-1', refNow);
     const newestFirst = sortComments(thread.comments, 'newest');
@@ -105,5 +122,120 @@ describe('post-thread domain logic', () => {
     assert.equal(formatRelativeTimeThai('2026-10-24T12:05:00.000Z', refNow), 'เมื่อสักครู่');
     assert.equal(formatRelativeTimeThai('2026-10-24T11:20:00.000Z', refNow), '40 นาที ที่แล้ว');
     assert.equal(formatRelativeTimeThai('2026-10-24T10:00:00.000Z', refNow), '2 ชม. ที่แล้ว');
+  });
+
+  it('edits own top-level comment or nested reply and marks isEdited, ignoring unauthorized or blank edits', () => {
+    const { thread, currentUser } = getMockPostThread('songs', 'post-1', refNow);
+    const withMyComment = addTopLevelComment(
+      thread.comments,
+      'ข้อความเดิม',
+      currentUser,
+      '2026-10-24T12:01:00.000Z'
+    );
+    const myCommentId = withMyComment.at(-1)!.id;
+
+    // Unauthorized edit on comment-1 (owned by anon-203) is ignored
+    const unauthorized = editCommentOrReply(
+      withMyComment,
+      'comment-1',
+      'แอบแก้ของคนอื่น',
+      currentUser.id
+    );
+    assert.equal(unauthorized[0].content, 'เพลงพี่อิงค์เศร้าทุกเพลงจิง');
+    assert.equal(unauthorized[0].isEdited, undefined);
+
+    // Unauthorized edit on nested reply-1 (owned by user-op) is ignored
+    const unauthorizedReply = editCommentOrReply(
+      withMyComment,
+      'reply-1',
+      'แอบแก้คอมเมนต์ย่อยคนอื่น',
+      currentUser.id
+    );
+    assert.equal(unauthorizedReply[0].replies[0].content, '56565658845156');
+    assert.equal(unauthorizedReply[0].replies[0].isEdited, undefined);
+
+    // Blank user ID is rejected even if author.id is also blank
+    const anonComments = addTopLevelComment(
+      withMyComment,
+      'นิรนาม',
+      { id: '   ', name: 'นิรนาม' },
+      '2026-10-24T12:02:00.000Z'
+    );
+    const anonId = anonComments.at(-1)!.id;
+    const blankUserEdit = editCommentOrReply(anonComments, anonId, 'แก้โดยไม่มี user id', '   ');
+    assert.equal(blankUserEdit.at(-1)?.content, 'นิรนาม');
+
+    // Blank edit is ignored
+    const blankEdit = editCommentOrReply(withMyComment, myCommentId, '   ', currentUser.id);
+    assert.equal(blankEdit.at(-1)?.content, 'ข้อความเดิม');
+    assert.equal(blankEdit.at(-1)?.isEdited, undefined);
+
+    // Same-content edit does not set isEdited
+    const sameEdit = editCommentOrReply(withMyComment, myCommentId, '  ข้อความเดิม  ', currentUser.id);
+    assert.equal(sameEdit.at(-1)?.isEdited, undefined);
+
+    // Valid edit on own top-level comment
+    const editedTop = editCommentOrReply(
+      withMyComment,
+      myCommentId,
+      '  ข้อความที่แก้ไขแล้ว  ',
+      currentUser.id
+    );
+    assert.equal(editedTop.at(-1)?.content, 'ข้อความที่แก้ไขแล้ว');
+    assert.equal(editedTop.at(-1)?.isEdited, true);
+
+    // Valid edit on own nested reply (reply-3 owned by user-platoo)
+    const editedNested = editCommentOrReply(
+      editedTop,
+      'reply-3',
+      'แก้ไขคอมเมนต์ย่อย',
+      currentUser.id
+    );
+    assert.equal(editedNested[0].replies[2].content, 'แก้ไขคอมเมนต์ย่อย');
+    assert.equal(editedNested[0].replies[2].isEdited, true);
+  });
+
+  it('deletes own top-level comment or nested reply and blocks deleting others comments', () => {
+    const { thread, currentUser } = getMockPostThread('songs', 'post-1', refNow);
+
+    // Cannot delete comment-1 (owned by anon-203)
+    const blocked = deleteCommentOrReply(thread.comments, 'comment-1', currentUser.id);
+    assert.equal(blocked.length, 2);
+
+    // Cannot delete nested reply-1 (owned by user-op)
+    const blockedReply = deleteCommentOrReply(thread.comments, 'reply-1', currentUser.id);
+    assert.equal(blockedReply[0].replies.length, 3);
+
+    // Blank user ID cannot delete even if author.id is blank
+    const anonComments = addTopLevelComment(
+      thread.comments,
+      'นิรนาม',
+      { id: '   ', name: 'นิรนาม' },
+      '2026-10-24T12:02:00.000Z'
+    );
+    const anonId = anonComments.at(-1)!.id;
+    const blockedBlankUser = deleteCommentOrReply(anonComments, anonId, '   ');
+    assert.equal(blockedBlankUser.length, anonComments.length);
+
+    // Can delete own nested reply (reply-3 owned by user-platoo)
+    const afterNestedDelete = deleteCommentOrReply(
+      thread.comments,
+      'reply-3',
+      currentUser.id
+    );
+    assert.equal(afterNestedDelete[0].replies.length, 2);
+    assert.equal(
+      afterNestedDelete[0].replies.some((r) => r.id === 'reply-3'),
+      false
+    );
+
+    // Can delete own top-level comment
+    const afterTopDelete = deleteCommentOrReply(
+      afterNestedDelete,
+      'comment-1',
+      'anon-203'
+    );
+    assert.equal(afterTopDelete.length, 1);
+    assert.equal(afterTopDelete[0].id, 'comment-2');
   });
 });
