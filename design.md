@@ -44,6 +44,11 @@ use `kmutt-orange-dark`.
   shadow that sinks when pressed.
 - **Inputs** (`inputClass`): white, `edge-strong` border, orange border and
   soft yellow ring on focus.
+- **Modal sheets** (`Sheet` inside `Modal`): a taped white sheet with a Mali
+  title. Choices are bordered rows (`choiceClass`) that turn butter with a
+  darker border when picked. Footer: quiet "ยกเลิก" (`secondaryButtonClass`)
+  beside the yellow sticker, which greys out (`disabledButtonClass`) until the
+  form is ready.
 - **Highlighter** (`highlightClass`): yellow swipe across the lower 45% of a
   heading, drawn in left to right. `--mark` overrides the color and
   `--mark-delay` staggers it.
@@ -68,6 +73,9 @@ or the final state).
   new cards settle in (220ms), leaving cards shrink away (150ms).
 - Login/signup modal: the sheet drops in tilted (260ms), lifts out faster
   (160ms); the backdrop fades with it and the page behind tints to match.
+- Create and report modals use the same drop-in and lift-out. The wide sheet
+  sits 6vh from the top instead of centered, so switching tabs doesn't move
+  them under the pointer.
 - `scrollbar-gutter: stable` keeps the page from shifting sideways when the
   scrollbar appears or goes.
 
@@ -76,6 +84,10 @@ or the final state).
 - `/` home. `/login` and `/signup` render as a modal over home through the
   `@auth` parallel route with intercepting routes. Opening them directly shows
   the full page.
+- "+ สร้าง" in the header opens `CreateModal` (กระทู้ / ห้อง tabs) from page
+  state, not a route. "+ สร้างห้องใหม่" in the sidebar opens it on ห้อง.
+- `ReportModal` reports a comment on the board feed. It is built but not
+  wired in yet: the board feed has to open it from a comment's menu.
 - `/rooms/[id]` is the room page and its board feed. It is owned by a teammate,
   so keep its design changes in sync with them.
 

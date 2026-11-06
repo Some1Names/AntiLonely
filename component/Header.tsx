@@ -1,7 +1,17 @@
 import Link from "next/link";
+import CreateButton from "@/component/CreateButton";
+import type { MyRoom } from "@/lib/mock";
 import { primaryButtonClass } from "@/lib/styles";
 
-export default function Header({ notifications }: { notifications: number }) {
+export default function Header({
+  notifications,
+  rooms,
+  alias,
+}: {
+  notifications: number;
+  rooms: MyRoom[];
+  alias: string;
+}) {
   return (
     <header className="border-b-[1.5px] border-edge bg-white">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
@@ -9,9 +19,13 @@ export default function Header({ notifications }: { notifications: number }) {
           Anti<span className="text-kmutt-orange">Lonely</span>
         </Link>
         <div className="flex items-center gap-4">
-          <button type="button" className={`px-3 py-2 ${primaryButtonClass}`}>
+          <CreateButton
+            rooms={rooms}
+            alias={alias}
+            className={`px-3 py-2 ${primaryButtonClass}`}
+          >
             + สร้าง
-          </button>
+          </CreateButton>
           <button
             type="button"
             className="flex h-9 items-center gap-2 rounded-md bg-butter px-3 text-sm hover:bg-highlight"

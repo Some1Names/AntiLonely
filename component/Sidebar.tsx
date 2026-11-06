@@ -1,11 +1,18 @@
 import Link from "next/link";
+import CreateButton from "@/component/CreateButton";
 import type { MyRoom } from "@/lib/mock";
 
 // Room icons are pastel paper squares. Private rooms are always blue grey to
 // match their tag; the rest alternate.
 const tileColors = ["bg-butter", "bg-peach"];
 
-export default function Sidebar({ rooms }: { rooms: MyRoom[] }) {
+export default function Sidebar({
+  rooms,
+  alias,
+}: {
+  rooms: MyRoom[];
+  alias: string;
+}) {
   return (
     <nav aria-labelledby="my-rooms-label" className="flex flex-col gap-1">
       <p
@@ -40,12 +47,14 @@ export default function Sidebar({ rooms }: { rooms: MyRoom[] }) {
           </li>
         ))}
       </ul>
-      <button
-        type="button"
+      <CreateButton
+        rooms={rooms}
+        alias={alias}
+        tab="room"
         className="rounded-md px-2 py-2 text-left text-sm text-ink-soft hover:bg-butter/70"
       >
         + สร้างห้องใหม่
-      </button>
+      </CreateButton>
       <button
         type="button"
         className="rounded-md border-[1.5px] border-edge-strong bg-white px-2 py-2 text-sm font-semibold hover:bg-butter"

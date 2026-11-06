@@ -21,16 +21,31 @@ function closeWithLift(backdrop: HTMLElement | null, back: () => void) {
   Promise.allSettled(lift).then(() => back());
 }
 
-// Shown by the intercepted routes in app/@auth. Closing goes back in history,
-// which drops the modal and returns to the page underneath.
+// The wide sheet has tabs that change its height, so it sits a fixed
+// distance from the top instead of re-centering under the pointer.
+const widths = { sm: "max-w-sm my-auto", md: "max-w-xl mt-[6vh] mb-auto" };
+
+// Shown by the intercepted routes in app/@auth, where closing goes back in
+// history, which drops the modal and returns to the page underneath. Modals
+// opened from page state (create, report) pass onClose instead.
 export default function Modal({
   labelledBy,
+  onClose,
+  size = "sm",
+  sheetName = "auth-sheet",
   children,
 }: {
   labelledBy: string;
+  onClose?: () => void;
+  size?: keyof typeof widths;
+  sheetName?: string;
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const onCloseRef = useRef(onClose);
+  useLayoutEffect(() => {
+    onCloseRef.current = onClose;
+  });
   const backdropRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
 
@@ -64,7 +79,9 @@ export default function Modal({
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        closeWithLift(backdropRef.current, () => router.back());
+        closeWithLift(backdropRef.current, () =>
+          onCloseRef.current ? onCloseRef.current() : router.back(),
+        );
         return;
       }
       if (event.key !== "Tab" || !dialog) return;
@@ -90,26 +107,32 @@ export default function Modal({
     };
   }, [router]);
 
-  const close = () => closeWithLift(backdropRef.current, () => router.back());
+  const close = () =>
+    closeWithLift(backdropRef.current, () =>
+      onClose ? onClose() : router.back(),
+    );
 
   return (
     <div
       ref={backdropRef}
-      className="group/modal fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4 backdrop-blur-sm motion-safe:data-[modal=open]:animate-backdrop-in motion-safe:data-[modal=leave]:animate-backdrop-out"
+      // A sheet taller than the window scrolls inside the backdrop. Auto
+      // margins on the sheet place it without clipping its top the way
+      // items-center would.
+      className="group/modal fixed inset-0 z-50 flex justify-center overflow-y-auto bg-ink/40 p-4 backdrop-blur-sm motion-safe:data-[modal=open]:animate-backdrop-in motion-safe:data-[modal=leave]:animate-backdrop-out"
       onClick={(event) => {
         if (event.target === event.currentTarget) close();
       }}
     >
       {/* Login and signup share this name, so switching between them morphs
           one sheet into the other. */}
-      <ViewTransition name="auth-sheet" share="auto" default="none">
+      <ViewTransition name={sheetName} share="auto" default="none">
         <div
           ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby={labelledBy}
           tabIndex={-1}
-          className="relative w-full max-w-sm outline-none motion-safe:group-data-[modal=open]/modal:animate-sheet-drop motion-safe:group-data-[modal=leave]/modal:animate-sheet-lift"
+          className={`relative w-full ${widths[size]} outline-none motion-safe:group-data-[modal=open]/modal:animate-sheet-drop motion-safe:group-data-[modal=leave]/modal:animate-sheet-lift`}
         >
           <button
             type="button"

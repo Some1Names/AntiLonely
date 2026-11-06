@@ -19,6 +19,8 @@ export type MyRoom = {
 
 export const currentUser = {
   name: "test_1234",
+  // The anonymous name shown on posts instead of the username.
+  alias: "ปลาทู",
   notifications: 3,
 };
 
