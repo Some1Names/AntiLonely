@@ -22,13 +22,13 @@ export function NotificationItem({
     actionText,
     contentPreview,
     createdAt,
-    timeAgoText,
     isRead,
     isImportant,
     systemIcon,
   } = notification;
 
-  const displayedTime = timeAgoText ?? formatTimeAgo(createdAt, referenceTime);
+  const displayedTime = formatTimeAgo(createdAt, referenceTime);
+  const isValidDate = !Number.isNaN(Date.parse(createdAt));
   const isImportantUnread = Boolean(isImportant && !isRead);
 
   return (
@@ -124,7 +124,9 @@ export function NotificationItem({
 
       {/* Time & Badge */}
       <div className="flex-shrink-0 flex flex-col items-end gap-2 pt-0.5 text-xs text-zinc-400 whitespace-nowrap">
-        <span>{displayedTime}</span>
+        <time dateTime={isValidDate ? createdAt : undefined}>
+          {displayedTime}
+        </time>
         {badge && (
           <span
             className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold select-none ${

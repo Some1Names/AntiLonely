@@ -21,17 +21,34 @@ export function groupNotifications(
   now: number | Date = Date.now()
 ): GroupedNotifications {
   const nowMs = typeof now === 'number' ? now : now.getTime();
+  if (Number.isNaN(nowMs)) {
+    return { recent: [], earlier: [...notifications] };
+  }
+
+  // Sort descending by createdAt (newest first, NaN timestamps placed at the end)
+  const sorted = [...notifications].sort((a, b) => {
+    const timeA = Date.parse(a.createdAt);
+    const timeB = Date.parse(b.createdAt);
+    const validA = !Number.isNaN(timeA);
+    const validB = !Number.isNaN(timeB);
+
+    if (!validA && !validB) return 0;
+    if (!validA) return 1;
+    if (!validB) return -1;
+    return timeB - timeA;
+  });
+
   const pinned: NotificationItem[] = [];
   const recent: NotificationItem[] = [];
   const earlier: NotificationItem[] = [];
 
-  for (const item of notifications) {
+  for (const item of sorted) {
     if (item.isImportant && !item.isRead) {
       pinned.push(item);
       continue;
     }
 
-    const itemTime = new Date(item.createdAt).getTime();
+    const itemTime = Date.parse(item.createdAt);
     if (!Number.isNaN(itemTime) && nowMs - itemTime < TWENTY_FOUR_HOURS_MS) {
       recent.push(item);
     } else {
@@ -47,9 +64,9 @@ export function formatTimeAgo(
   now: number | Date = Date.now()
 ): string {
   const nowMs = typeof now === 'number' ? now : now.getTime();
-  const itemTime = new Date(dateString).getTime();
+  const itemTime = Date.parse(dateString);
 
-  if (Number.isNaN(itemTime)) {
+  if (Number.isNaN(itemTime) || Number.isNaN(nowMs)) {
     return 'ไม่ระบุเวลา';
   }
 
@@ -70,7 +87,9 @@ export function formatTimeAgo(
   if (diffDays < 7) {
     return `${diffDays} วัน`;
   }
-  return new Date(itemTime).toLocaleDateString('th-TH');
+  return new Date(itemTime).toLocaleDateString('th-TH', {
+    timeZone: 'Asia/Bangkok',
+  });
 }
 
 export function markNotificationAsRead(

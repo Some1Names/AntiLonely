@@ -41,10 +41,18 @@ export function NotificationsClient({
     };
   }, []);
 
-  const referenceTime = useMemo(
-    () => new Date(serverTime).getTime(),
-    [serverTime]
-  );
+  const [referenceTime, setReferenceTime] = useState<number>(() => {
+    const parsed = Date.parse(serverTime);
+    return Number.isNaN(parsed) ? Date.now() : parsed;
+  });
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setReferenceTime(Date.now());
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const unreadCountsByCategory = useMemo(() => {
     const categories: NotificationCategory[] = [

@@ -20,7 +20,6 @@ export interface NotificationItem {
   actionText: string;
   contentPreview?: string;
   createdAt: string;
-  timeAgoText?: string;
   isRead: boolean;
   targetUrl: string;
   isImportant?: boolean;

@@ -21,7 +21,6 @@ const sampleNotifications: NotificationItem[] = [
     actionText: 'ตอบกระทู้ของคุณในห้องคุยเล่น',
     contentPreview: '“ปวดหลังเหมือนกันเลยพี่”',
     createdAt: '2026-10-13T09:10:00.000Z', // 50 mins ago (< 24h)
-    timeAgoText: '50 นาที',
     isRead: false,
     targetUrl: '/boards/talk/posts/p1',
   },
@@ -32,7 +31,6 @@ const sampleNotifications: NotificationItem[] = [
     actionText: 'กล่าวถึงคุณใน “Study Group”',
     contentPreview: '“@anon_884 can you share your notes?”',
     createdAt: '2026-10-13T08:50:00.000Z', // 70 mins ago (< 24h)
-    timeAgoText: '1 ชั่วโมงที่แล้ว',
     isRead: false,
     targetUrl: '/boards/study/posts/p2',
   },
@@ -42,7 +40,6 @@ const sampleNotifications: NotificationItem[] = [
     actor: { name: 'anon_999' },
     actionText: 'ถูกใจโพสต์ของคุณในห้องอ่านหนังสือ',
     createdAt: '2026-10-11T12:00:00.000Z', // ~46 hours ago (>= 24h)
-    timeAgoText: '2 วันที่แล้ว',
     isRead: true,
     targetUrl: '/boards/study/posts/p3',
   },
@@ -52,7 +49,6 @@ const sampleNotifications: NotificationItem[] = [
     actor: { name: 'ฝ่ายดูแลระบบ' },
     actionText: 'รายงานของคุณได้รับการตรวจสอบแล้ว',
     createdAt: 'invalid-date-string',
-    timeAgoText: 'ไม่ระบุเวลา',
     isRead: true,
     targetUrl: '/reports/r1',
   },
@@ -181,8 +177,51 @@ test('formatTimeAgo formats relative time accurately across intervals', () => {
   const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString();
   assert.equal(formatTimeAgo(threeDaysAgo, now), '3 วัน');
 
-  // Invalid date
+  // >= 7 days (formatted date with Asia/Bangkok timezone)
+  const eightDaysAgo = new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000).toISOString();
+  assert.equal(
+    formatTimeAgo(eightDaysAgo, now),
+    new Date(eightDaysAgo).toLocaleDateString('th-TH', { timeZone: 'Asia/Bangkok' })
+  );
+
+  // Invalid date or invalid nowMs
   assert.equal(formatTimeAgo('invalid-date', now), 'ไม่ระบุเวลา');
+  assert.equal(formatTimeAgo(justNow, NaN), 'ไม่ระบุเวลา');
+});
+
+test('groupNotifications sorts unordered items newest first within recent and earlier groups', () => {
+  const unordered: NotificationItem[] = [
+    {
+      ...sampleNotifications[0],
+      id: 'older-recent',
+      createdAt: '2026-10-13T07:00:00.000Z', // 3h ago
+    },
+    {
+      ...sampleNotifications[0],
+      id: 'newer-recent',
+      createdAt: '2026-10-13T09:30:00.000Z', // 30m ago
+    },
+    {
+      ...sampleNotifications[0],
+      id: 'older-earlier',
+      createdAt: '2026-10-10T10:00:00.000Z', // 3 days ago
+    },
+    {
+      ...sampleNotifications[0],
+      id: 'newer-earlier',
+      createdAt: '2026-10-11T10:00:00.000Z', // 2 days ago
+    },
+  ];
+
+  const grouped = groupNotifications(unordered, baseTime);
+  assert.deepEqual(
+    grouped.recent.map((i) => i.id),
+    ['newer-recent', 'older-recent']
+  );
+  assert.deepEqual(
+    grouped.earlier.map((i) => i.id),
+    ['newer-earlier', 'older-earlier']
+  );
 });
 
 test('getMockNotificationsFeed produces deterministic feed matching mockup layout', () => {
