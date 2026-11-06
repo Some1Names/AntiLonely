@@ -239,10 +239,13 @@ export function CommentItem({
                   เจ้าของกระทู้
                 </span>
               )}
-              <span className="text-xs text-[#71717a]">
+              <time
+                dateTime={comment.createdAt}
+                className="text-xs text-[#71717a]"
+              >
                 {formatRelativeTimeThai(comment.createdAt, referenceTime)}
                 {comment.isEdited ? ' (แก้ไขแล้ว)' : ''}
-              </span>
+              </time>
             </div>
 
             {renderActionMenu(comment.id, comment.author.id, comment.content)}
@@ -301,10 +304,13 @@ export function CommentItem({
                         เจ้าของกระทู้
                       </span>
                     )}
-                    <span className="text-xs text-[#71717a]">
+                    <time
+                      dateTime={reply.createdAt}
+                      className="text-xs text-[#71717a]"
+                    >
                       {formatRelativeTimeThai(reply.createdAt, referenceTime)}
                       {reply.isEdited ? ' (แก้ไขแล้ว)' : ''}
-                    </span>
+                    </time>
                   </div>
 
                   {renderActionMenu(reply.id, reply.author.id, reply.content)}

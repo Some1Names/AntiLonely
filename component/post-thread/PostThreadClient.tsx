@@ -95,10 +95,18 @@ export function PostThreadClient({
     };
   }, [isSortMenuOpen]);
 
-  const referenceTime = useMemo(
-    () => new Date(serverTime).getTime(),
-    [serverTime]
-  );
+  const [referenceTime, setReferenceTime] = useState<number>(() => {
+    const parsed = Date.parse(serverTime);
+    return Number.isNaN(parsed) ? Date.now() : parsed;
+  });
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setReferenceTime(Date.now());
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const sortedComments = useMemo(
     () => sortComments(thread.comments, sortOrder),
@@ -133,7 +141,9 @@ export function PostThreadClient({
   };
 
   const handleAddTopLevelComment = (content: string) => {
-    const nowIso = new Date().toISOString();
+    const nowMs = Date.now();
+    const nowIso = new Date(nowMs).toISOString();
+    setReferenceTime(nowMs);
     setThread((prev) => ({
       ...prev,
       comments: addTopLevelComment(
@@ -147,7 +157,9 @@ export function PostThreadClient({
   };
 
   const handleAddNestedReply = (commentId: string, content: string) => {
-    const nowIso = new Date().toISOString();
+    const nowMs = Date.now();
+    const nowIso = new Date(nowMs).toISOString();
+    setReferenceTime(nowMs);
     const replyTo =
       replyingTo?.commentId === commentId ? replyingTo.replyTo : undefined;
     setThread((prev) => ({

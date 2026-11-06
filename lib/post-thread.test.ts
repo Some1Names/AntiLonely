@@ -129,9 +129,17 @@ describe('post-thread domain logic', () => {
     assert.equal(countTotalComments(thread.comments), 5);
 
     assert.equal(formatRelativeTimeThai('invalid-date', refNow), 'ไม่ระบุเวลา');
+    assert.equal(formatRelativeTimeThai('2026-10-24T12:00:00.000Z', NaN), 'ไม่ระบุเวลา');
     assert.equal(formatRelativeTimeThai('2026-10-24T12:05:00.000Z', refNow), 'เมื่อสักครู่');
     assert.equal(formatRelativeTimeThai('2026-10-24T11:20:00.000Z', refNow), '40 นาที ที่แล้ว');
     assert.equal(formatRelativeTimeThai('2026-10-24T10:00:00.000Z', refNow), '2 ชม. ที่แล้ว');
+    assert.equal(formatRelativeTimeThai('2026-10-20T10:00:00.000Z', refNow), '4 วัน ที่แล้ว');
+    assert.equal(
+      formatRelativeTimeThai('2026-10-10T12:00:00.000Z', refNow),
+      new Date('2026-10-10T12:00:00.000Z').toLocaleDateString('th-TH', {
+        timeZone: 'Asia/Bangkok',
+      })
+    );
   });
 
   it('edits own top-level comment or nested reply and marks isEdited, ignoring unauthorized or blank edits', () => {

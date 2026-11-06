@@ -114,8 +114,9 @@ export function addTopLevelComment(
     return comments;
   }
 
+  const timeSeed = Date.parse(nowIso) || Date.now();
   const newComment: ThreadComment = {
-    id: `comment-${Date.now()}-${comments.length + 1}`,
+    id: `comment-${timeSeed}-${comments.length + 1}`,
     author,
     isPostAuthor: Boolean(postAuthorId && author.id === postAuthorId),
     content: trimmed,
@@ -151,8 +152,9 @@ export function addNestedReply(
       return comment;
     }
 
+    const timeSeed = Date.parse(nowIso) || Date.now();
     const newReply: ThreadReply = {
-      id: `reply-${Date.now()}-${comment.replies.length + 1}`,
+      id: `reply-${timeSeed}-${comment.replies.length + 1}`,
       author,
       ...(replyTo ? { replyTo } : {}),
       isPostAuthor: Boolean(postAuthorId && author.id === postAuthorId),
@@ -258,8 +260,10 @@ export function sortComments(
   order: CommentSortOrder
 ): ThreadComment[] {
   return [...comments].sort((a, b) => {
-    const timeA = new Date(a.createdAt).getTime();
-    const timeB = new Date(b.createdAt).getTime();
+    const parsedA = Date.parse(a.createdAt);
+    const parsedB = Date.parse(b.createdAt);
+    const timeA = Number.isNaN(parsedA) ? 0 : parsedA;
+    const timeB = Number.isNaN(parsedB) ? 0 : parsedB;
     if (order === 'newest') {
       return timeB - timeA;
     }
@@ -279,9 +283,9 @@ export function formatRelativeTimeThai(
   now: number | Date = Date.now()
 ): string {
   const nowMs = typeof now === 'number' ? now : now.getTime();
-  const itemTime = new Date(dateString).getTime();
+  const itemTime = Date.parse(dateString);
 
-  if (Number.isNaN(itemTime)) {
+  if (Number.isNaN(itemTime) || Number.isNaN(nowMs)) {
     return 'ไม่ระบุเวลา';
   }
 
@@ -302,5 +306,7 @@ export function formatRelativeTimeThai(
   if (diffDays < 7) {
     return `${diffDays} วัน ที่แล้ว`;
   }
-  return new Date(itemTime).toLocaleDateString('th-TH');
+  return new Date(itemTime).toLocaleDateString('th-TH', {
+    timeZone: 'Asia/Bangkok',
+  });
 }
