@@ -11,6 +11,7 @@ import {
   markNotificationAsRead,
   markAllNotificationsAsRead,
   countUnreadNotifications,
+  TIME_REFRESH_INTERVAL_MS,
 } from '@/lib/notifications';
 import Header from '@/component/Header';
 import { NotificationTabs } from './NotificationTabs';
@@ -49,7 +50,7 @@ export function NotificationsClient({
   useEffect(() => {
     const interval = setInterval(() => {
       setReferenceTime(Date.now());
-    }, 60000);
+    }, TIME_REFRESH_INTERVAL_MS);
 
     return () => clearInterval(interval);
   }, []);

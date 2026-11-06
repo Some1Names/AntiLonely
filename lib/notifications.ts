@@ -4,6 +4,14 @@ import type {
   NotificationItem,
 } from '@/types/notification';
 
+export const SECOND_MS = 1000;
+export const MINUTE_MS = 60 * SECOND_MS;
+export const HOUR_MS = 60 * MINUTE_MS;
+export const DAY_MS = 24 * HOUR_MS;
+export const MAX_RELATIVE_DAYS = 7;
+export const RECENT_NOTIFICATION_WINDOW_MS = DAY_MS;
+export const TIME_REFRESH_INTERVAL_MS = MINUTE_MS;
+
 export function filterNotifications(
   notifications: NotificationItem[],
   category: NotificationCategory
@@ -14,8 +22,6 @@ export function filterNotifications(
   return notifications.filter((item) => item.type === category);
 }
 
-const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
-
 export function groupNotifications(
   notifications: NotificationItem[],
   now: number | Date = Date.now()
@@ -25,7 +31,7 @@ export function groupNotifications(
     return { recent: [], earlier: [...notifications] };
   }
 
-  // Sort descending by createdAt (newest first, NaN timestamps placed at the end)
+  
   const sorted = [...notifications].sort((a, b) => {
     const timeA = Date.parse(a.createdAt);
     const timeB = Date.parse(b.createdAt);
@@ -49,7 +55,7 @@ export function groupNotifications(
     }
 
     const itemTime = Date.parse(item.createdAt);
-    if (!Number.isNaN(itemTime) && nowMs - itemTime < TWENTY_FOUR_HOURS_MS) {
+    if (!Number.isNaN(itemTime) && nowMs - itemTime < RECENT_NOTIFICATION_WINDOW_MS) {
       recent.push(item);
     } else {
       earlier.push(item);
@@ -71,9 +77,9 @@ export function formatTimeAgo(
   }
 
   const diffMs = Math.max(0, nowMs - itemTime);
-  const diffMinutes = Math.floor(diffMs / (60 * 1000));
-  const diffHours = Math.floor(diffMs / (60 * 60 * 1000));
-  const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+  const diffMinutes = Math.floor(diffMs / MINUTE_MS);
+  const diffHours = Math.floor(diffMs / HOUR_MS);
+  const diffDays = Math.floor(diffMs / DAY_MS);
 
   if (diffMinutes < 1) {
     return 'เมื่อสักครู่';
@@ -84,7 +90,7 @@ export function formatTimeAgo(
   if (diffHours < 24) {
     return `${diffHours} ชั่วโมง`;
   }
-  if (diffDays < 7) {
+  if (diffDays < MAX_RELATIVE_DAYS) {
     return `${diffDays} วัน`;
   }
   return new Date(itemTime).toLocaleDateString('th-TH', {

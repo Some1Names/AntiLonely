@@ -7,6 +7,12 @@ import {
   markAllNotificationsAsRead,
   countUnreadNotifications,
   formatTimeAgo,
+  SECOND_MS,
+  MINUTE_MS,
+  HOUR_MS,
+  DAY_MS,
+  RECENT_NOTIFICATION_WINDOW_MS,
+  MAX_RELATIVE_DAYS,
 } from './notifications.ts';
 import { getMockNotificationsFeed } from './mock/notifications.ts';
 import type { NotificationItem } from '../types/notification.ts';
@@ -119,8 +125,8 @@ test('groupNotifications pins unread important items to the top of recent group'
 });
 
 test('groupNotifications handles 24-hour boundary correctly', () => {
-  const exact24hAgo = new Date(baseTime.getTime() - 24 * 60 * 60 * 1000).toISOString();
-  const justUnder24hAgo = new Date(baseTime.getTime() - (24 * 60 * 60 * 1000 - 1000)).toISOString();
+  const exact24hAgo = new Date(baseTime.getTime() - RECENT_NOTIFICATION_WINDOW_MS).toISOString();
+  const justUnder24hAgo = new Date(baseTime.getTime() - (RECENT_NOTIFICATION_WINDOW_MS - SECOND_MS)).toISOString();
 
   const boundaryItems: NotificationItem[] = [
     {
@@ -162,23 +168,23 @@ test('formatTimeAgo formats relative time accurately across intervals', () => {
   const now = new Date('2026-10-14T12:00:00.000Z');
 
   // < 1 min
-  const justNow = new Date(now.getTime() - 30 * 1000).toISOString();
+  const justNow = new Date(now.getTime() - 30 * SECOND_MS).toISOString();
   assert.equal(formatTimeAgo(justNow, now), 'เมื่อสักครู่');
 
   // Minutes
-  const fiveMinsAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString();
+  const fiveMinsAgo = new Date(now.getTime() - 5 * MINUTE_MS).toISOString();
   assert.equal(formatTimeAgo(fiveMinsAgo, now), '5 นาที');
 
   // Hours
-  const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString();
+  const twoHoursAgo = new Date(now.getTime() - 2 * HOUR_MS).toISOString();
   assert.equal(formatTimeAgo(twoHoursAgo, now), '2 ชั่วโมง');
 
   // Days
-  const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString();
+  const threeDaysAgo = new Date(now.getTime() - 3 * DAY_MS).toISOString();
   assert.equal(formatTimeAgo(threeDaysAgo, now), '3 วัน');
 
   // >= 7 days (formatted date with Asia/Bangkok timezone)
-  const eightDaysAgo = new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000).toISOString();
+  const eightDaysAgo = new Date(now.getTime() - (MAX_RELATIVE_DAYS + 1) * DAY_MS).toISOString();
   assert.equal(
     formatTimeAgo(eightDaysAgo, now),
     new Date(eightDaysAgo).toLocaleDateString('th-TH', { timeZone: 'Asia/Bangkok' })
