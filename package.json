@@ -17,6 +17,7 @@
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
     "better-auth": "^1.7.18",
+    "emoji-picker-react": "^5.1.4",
     "next": "16.4.3",
     "pg": "^8.23.1",
     "react": "19.3.0",
