@@ -25,6 +25,9 @@ export default function Header({
             className={`px-3 py-2 ${primaryButtonClass}`}
           >
             + สร้าง
+          </button>
+          <Link
+            href="/notifications"
           </CreateButton>
           <button
             type="button"
@@ -34,7 +37,7 @@ export default function Header({
             <span className="rounded bg-kmutt-orange-dark px-1.5 text-xs font-semibold text-white">
               {notifications}
             </span>
-          </button>
+          </Link>
           {/* No logged-out state in the wireframes yet, so the avatar opens log in. */}
           <Link
             href="/login"

@@ -45,7 +45,6 @@
   --animate-sheet-lift: sheet-lift 160ms ease-in both;
   --animate-backdrop-in: backdrop-in 200ms ease-out both;
   --animate-backdrop-out: backdrop-out 160ms ease-in both;
-
   @keyframes sheet-drop {
     from {
       opacity: 0;
@@ -91,6 +90,14 @@
      lets an element stagger its swipe. */
   --animate-highlight-draw: highlight-draw 500ms ease-out
     var(--mark-delay, 150ms) both;
+}
+
+@utility no-scrollbar {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Always keep room for the scrollbar, so the page doesn't shift sideways
