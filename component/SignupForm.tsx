@@ -7,7 +7,12 @@ import GoogleButton from "@/component/GoogleButton";
 import PasswordInput from "@/component/PasswordInput";
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-errors";
-import { disabledButtonClass, inputClass, primaryButtonClass } from "@/lib/styles";
+import {
+  alertClass,
+  disabledButtonClass,
+  inputClass,
+  primaryButtonClass,
+} from "@/lib/styles";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -132,7 +137,7 @@ export default function SignupForm({ inModal = false }: { inModal?: boolean }) {
           </span>
         </label>
         {error && (
-          <p role="alert" className="text-sm text-red-600">
+          <p role="alert" className={alertClass}>
             {error}
           </p>
         )}

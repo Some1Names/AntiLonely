@@ -12,6 +12,7 @@
   --color-kmutt-grey: #7b8189;
 
   --color-cream: #fff8ee;
+  --color-paper: #fffdf8;
   --color-butter: #fff1c9;
   --color-butter-edge: #f2d78a;
   --color-peach: #ffe4d9;
@@ -25,7 +26,11 @@
   --color-edge: #f0dcc8;
   --color-edge-strong: #dcc2aa;
 
-  --shadow-press: 0 2px 0 var(--color-kmutt-yellow-dark);
+  /* Stickers (buttons, chips, the welcome note) have an ink outline and a
+     hard ink shadow that they sink into when pressed. Room cards and the
+     sidebar use a colored shadow instead. */
+  --shadow-sticker: 2px 2px 0 var(--color-ink);
+  --shadow-sticker-lg: 4px 4px 0 var(--color-ink);
   --shadow-paper: 2px 3px 0 rgb(59 42 32 / 0.07);
 
   /* The highlighter swipe draws itself in, left to right, once on arrival.
@@ -98,6 +103,42 @@
   }
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Washi tape (component/Tape): faint diagonal stripes over its color and
+   torn, zigzag ends. */
+@utility washi {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 5px,
+    rgb(255 255 255 / 0.35) 5px 10px
+  );
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    96% 25%,
+    100% 50%,
+    96% 75%,
+    100% 100%,
+    0 100%,
+    4% 75%,
+    0 50%,
+    4% 25%
+  );
+}
+
+@layer base {
+  ::selection {
+    background-color: var(--color-highlight);
+    color: var(--color-ink);
+  }
+
+  /* One focus ring for links and buttons that don't draw their own. It sits
+     in the base layer so a component's own focus utilities still win. */
+  :where(a, button, summary):focus-visible {
+    outline: 2px solid var(--color-kmutt-orange-dark);
+    outline-offset: 2px;
+  }
 }
 
 /* Always keep room for the scrollbar, so the page doesn't shift sideways

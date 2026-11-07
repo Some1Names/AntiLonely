@@ -10,7 +10,7 @@ export default function PasswordInput({
 
   return (
     <div
-      className={`flex items-center rounded-md border bg-white focus-within:ring-3 focus-within:ring-kmutt-yellow/40 ${
+      className={`flex items-center rounded-lg border-[1.5px] bg-white focus-within:ring-3 focus-within:ring-kmutt-yellow/40 ${
         invalid
           ? "border-red-500"
           : "border-edge-strong focus-within:border-kmutt-orange"
@@ -20,13 +20,13 @@ export default function PasswordInput({
         {...props}
         type={visible ? "text" : "password"}
         aria-invalid={invalid}
-        className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm outline-none"
+        className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm outline-none placeholder:text-ink-soft/70"
       />
       <button
         type="button"
         aria-pressed={visible}
         onClick={() => setVisible(!visible)}
-        className="self-stretch px-3 text-sm text-ink-soft hover:text-kmutt-orange-dark"
+        className="self-stretch rounded-r-lg px-3 text-sm font-medium text-ink-soft hover:text-kmutt-orange-dark"
       >
         {visible ? "ซ่อน" : "แสดง"}
       </button>
