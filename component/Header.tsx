@@ -1,4 +1,5 @@
 import Link from "next/link";
+import AccountMenu from "@/component/AccountMenu";
 import CreateButton from "@/component/CreateButton";
 import type { MyRoom } from "@/lib/mock";
 import { primaryButtonClass } from "@/lib/styles";
@@ -35,12 +36,7 @@ export default function Header({
               {notifications}
             </span>
           </Link>
-          {/* No logged-out state in the wireframes yet, so the avatar opens log in. */}
-          <Link
-            href="/login"
-            aria-label="เข้าสู่ระบบ"
-            className="size-9 rounded-full border-2 border-kmutt-yellow bg-peach"
-          />
+          <AccountMenu />
         </div>
       </div>
     </header>

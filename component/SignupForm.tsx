@@ -1,17 +1,23 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import AuthCard, { AuthLink } from "@/component/AuthCard";
 import GoogleButton from "@/component/GoogleButton";
 import PasswordInput from "@/component/PasswordInput";
-import { inputClass, primaryButtonClass } from "@/lib/styles";
+import { authClient } from "@/lib/auth-client";
+import { authErrorMessage } from "@/lib/auth-errors";
+import { disabledButtonClass, inputClass, primaryButtonClass } from "@/lib/styles";
 
 const MIN_PASSWORD_LENGTH = 8;
 
 export default function SignupForm({ inModal = false }: { inModal?: boolean }) {
+  const router = useRouter();
   const [password, setPassword] = useState("");
   const [leftPassword, setLeftPassword] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   // Don't scold while someone is still typing: show the length as a hint
   // first, and only turn it into an error after they leave the field or
   // submit. From then on it clears as soon as the password is long enough.
@@ -25,12 +31,39 @@ export default function SignupForm({ inModal = false }: { inModal?: boolean }) {
       title="ยินดีที่ได้รู้จักนะ 👋"
       subtitle="ตั้งชื่อเล่นที่อยากให้คนอื่นเห็น อีเมลของคุณจะไม่มีใครเห็นแน่นอน"
     >
-      {/* No backend yet, so submitting only checks the password length. */}
       <form
         className="flex flex-col gap-4"
-        onSubmit={(event) => {
+        onSubmit={async (event) => {
           event.preventDefault();
           setSubmitted(true);
+          if (password.length < MIN_PASSWORD_LENGTH) return;
+          const formElement = event.currentTarget;
+          const form = new FormData(formElement);
+          setPending(true);
+          setError(null);
+          const { error } = await authClient.signUp.email({
+            // The nickname is the name others see; the username is generated
+            // on the server (see lib/auth.ts).
+            name: String(form.get("nickname")).trim(),
+            email: String(form.get("email")).trim(),
+            password,
+          });
+          if (error) {
+            setError(authErrorMessage(error));
+            setPending(false);
+            return;
+          }
+          // Next keeps this page alive (hidden) after leaving it, so clear the
+          // form and the pending state before going.
+          formElement.reset();
+          setPassword("");
+          setSubmitted(false);
+          setLeftPassword(false);
+          setPending(false);
+          // Signed up and logged in. Going to / closes the modal; refresh lets
+          // server components see the new session.
+          router.push("/");
+          router.refresh();
         }}
       >
         <div className="flex flex-col gap-1">
@@ -98,11 +131,17 @@ export default function SignupForm({ inModal = false }: { inModal?: boolean }) {
             ฉันอ่านและยอมรับ <span className="underline decoration-kmutt-orange decoration-2 underline-offset-2">กติกาของชุมชน</span> แล้ว
           </span>
         </label>
+        {error && (
+          <p role="alert" className="text-sm text-red-600">
+            {error}
+          </p>
+        )}
         <button
           type="submit"
-          className={`py-2.5 ${primaryButtonClass}`}
+          disabled={pending}
+          className={`py-2.5 ${primaryButtonClass} ${disabledButtonClass}`}
         >
-          สมัครเลยยย
+          {pending ? "กำลังสมัคร…" : "สมัครเลยยย"}
         </button>
       </form>
       <GoogleButton label="สมัครด้วย Google" />
