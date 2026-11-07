@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import AuthCard, { AuthLink } from "@/component/AuthCard";
+import GoogleButton from "@/component/GoogleButton";
 import PasswordInput from "@/component/PasswordInput";
 import { inputClass, primaryButtonClass } from "@/lib/styles";
 
@@ -104,6 +105,7 @@ export default function SignupForm({ inModal = false }: { inModal?: boolean }) {
           สมัครเลยยย
         </button>
       </form>
+      <GoogleButton label="สมัครด้วย Google" />
       <p className="mt-4 text-center text-sm text-ink-soft">
         มีบัญชีอยู่แล้ว?{" "}
         <AuthLink href="/login" inModal={inModal}>

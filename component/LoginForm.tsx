@@ -1,6 +1,7 @@
 "use client";
 
 import AuthCard, { AuthLink } from "@/component/AuthCard";
+import GoogleButton from "@/component/GoogleButton";
 import PasswordInput from "@/component/PasswordInput";
 import { inputClass, primaryButtonClass } from "@/lib/styles";
 
@@ -56,6 +57,7 @@ export default function LoginForm({ inModal = false }: { inModal?: boolean }) {
           เข้าสู่ระบบ
         </button>
       </form>
+      <GoogleButton label="เข้าสู่ระบบด้วย Google" />
       <p className="mt-4 text-center text-sm text-ink-soft">
         ยังไม่มีบัญชีเหรอ?{" "}
         <AuthLink href="/signup" inModal={inModal}>
