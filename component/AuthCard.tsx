@@ -1,7 +1,10 @@
 import Link from "next/link";
-import Tape from "@/component/Tape";
+import Icon from "@/component/Icon";
+import Paper from "@/component/Paper";
+import { highlightClass } from "@/lib/styles";
 
-// A sheet of paper taped onto the notebook background.
+// A little stack of paper taped onto the notebook background, with the
+// title highlighted.
 export default function AuthCard({
   titleId,
   title,
@@ -14,17 +17,20 @@ export default function AuthCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative w-full max-w-sm rounded-xs border border-edge bg-white p-6 shadow-paper">
-      <Tape />
-      <p className="font-display text-lg font-semibold">
+    <Paper className="w-full max-w-sm">
+      <p className="flex items-center font-display text-lg font-semibold">
         Anti<span className="text-kmutt-orange">Lonely</span>
+        <Icon
+          name="heart"
+          className="ml-0.5 size-3.5 -translate-y-1.5 rotate-12 fill-current text-kmutt-orange"
+        />
       </p>
-      <h1 id={titleId} className="mt-4 font-display text-2xl font-semibold">
-        {title}
+      <h1 id={titleId} className="mt-4 font-display text-[1.75rem] leading-tight font-semibold">
+        <span className={highlightClass}>{title}</span>
       </h1>
-      <p className="mt-1 text-sm text-ink-soft">{subtitle}</p>
+      <p className="mt-2 text-sm text-ink-soft">{subtitle}</p>
       <div className="mt-6">{children}</div>
-    </div>
+    </Paper>
   );
 }
 

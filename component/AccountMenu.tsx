@@ -3,10 +3,16 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import Icon from "@/component/Icon";
 import { authClient } from "@/lib/auth-client";
+import { outlineButtonClass } from "@/lib/styles";
 
+// A round peach sticker with the person's initial.
 const avatarClass =
-  "flex size-9 items-center justify-center rounded-full border-2 border-kmutt-yellow bg-peach font-semibold text-ink";
+  "flex size-9 shrink-0 items-center justify-center rounded-full border-[1.5px] border-ink bg-peach font-display font-semibold text-ink shadow-sticker";
+
+const menuItemClass =
+  "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-butter disabled:opacity-60";
 
 // The avatar at the right of the header. Logged out, it's a log-in link;
 // logged in, it opens a small menu with the person's name and log out.
@@ -40,7 +46,7 @@ export default function AccountMenu() {
     return (
       <Link
         href="/login"
-        className="flex h-9 items-center rounded-md border border-edge-strong bg-white px-3 text-sm font-semibold hover:bg-cream"
+        className={`flex h-9 items-center whitespace-nowrap px-3 ${outlineButtonClass}`}
       >
         เข้าสู่ระบบ
       </Link>
@@ -66,23 +72,24 @@ export default function AccountMenu() {
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className={avatarClass}
+        className={`${avatarClass} active:translate-0.5 active:shadow-none`}
       >
         {name.charAt(0).toUpperCase()}
       </button>
       {open && (
         <div
           role="menu"
-          className="absolute right-0 z-20 mt-2 w-48 rounded-md border border-edge bg-white py-1 text-sm shadow-paper"
+          className="absolute right-0 z-20 mt-3 w-52 rounded-xl border-[1.5px] border-ink bg-white p-1.5 text-sm shadow-sticker-lg"
         >
-          <p className="truncate px-3 py-2 font-semibold">{name}</p>
-          <div className="my-1 h-px bg-edge" />
+          <p className="truncate px-3 py-2 font-display font-semibold">{name}</p>
+          <div className="mx-2 mb-1 border-t-[1.5px] border-dashed border-edge" />
           <Link
             href="/profile"
             role="menuitem"
             onClick={() => setOpen(false)}
-            className="block px-3 py-2 hover:bg-butter"
+            className={menuItemClass}
           >
+            <Icon name="user" className="size-4 text-ink-soft" />
             โปรไฟล์
           </Link>
           <button
@@ -90,8 +97,9 @@ export default function AccountMenu() {
             role="menuitem"
             onClick={signOut}
             disabled={signingOut}
-            className="block w-full px-3 py-2 text-left hover:bg-butter disabled:opacity-60"
+            className={menuItemClass}
           >
+            <Icon name="logout" className="size-4 text-ink-soft" />
             {signingOut ? "กำลังออก…" : "ออกจากระบบ"}
           </button>
         </div>

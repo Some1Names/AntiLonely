@@ -12,15 +12,16 @@ tokens, never raw hex.
 
 | Token | Value | Use |
 | --- | --- | --- |
-| `kmutt-yellow` / `-dark` | `#ffc72c` / `#e8a200` | Primary actions, focus ring, card stripe |
-| `kmutt-orange` / `-dark` | `#fa4616` / `#b3340e` | Accent, logo, input focus border |
-| `kmutt-grey` | `#7b8189` | Private-room stripe, ruled lines |
+| `kmutt-yellow` / `-dark` | `#ffc72c` / `#e8a200` | Primary stickers, default room cards, input focus ring |
+| `kmutt-orange` / `-dark` | `#fa4616` / `#b3340e` | Accent, logo, doodles, input focus border, focus outline |
+| `kmutt-grey` | `#7b8189` | Private-room cards, ruled lines |
 | `cream` | `#fff8ee` | Page background |
-| `butter`, `highlight` | `#fff1c9`, `#ffe07a` | Soft fills, highlighter swipe |
-| `peach`, `peach-edge` | `#ffe4d9`, `#ffb89e` | New-room stripe, tape, avatar |
+| `paper` | `#fffdf8` | Header |
+| `butter`, `highlight` | `#fff1c9`, `#ffe07a` | Soft fills, welcome note, highlighter swipe |
+| `peach`, `peach-edge` | `#ffe4d9`, `#ffb89e` | New-room cards, tape, avatar, "ใหม่" tag |
 | `mist`, `mist-ink` | `#eef0f2`, `#4f555c` | "Private" tag |
-| `ink`, `ink-soft` | `#3b2a20`, `#6e625a` | Text (warm brown, not black) |
-| `edge`, `edge-strong` | `#f0dcc8`, `#dcc2aa` | Borders |
+| `ink`, `ink-soft` | `#3b2a20`, `#6e625a` | Text (warm brown, not black), sticker outlines and shadows |
+| `edge`, `edge-strong` | `#f0dcc8`, `#dcc2aa` | Borders, dashed dividers |
 
 `kmutt-orange` fails contrast behind small white text. Badges and orange text
 use `kmutt-orange-dark`.
@@ -35,20 +36,39 @@ use `kmutt-orange-dark`.
 
 - **Page**: cream with 32px ruled lines. At 1400px and wider a red margin line
   and punch holes appear in the gutter beside the `max-w-7xl` content.
-- **Cards** (`RoomCard`): white index card, `rounded-xs`, 1px `edge` border, a
-  6px colored top stripe (grey = private, peach = new, yellow = default),
-  dashed divider above the footer. Hover tilts about -0.6° with `shadow-paper`.
+- **Ink outline**: the scrapbook look comes from a 1.5px `ink` outline on
+  anything that should feel like a sticker or a card stuck onto the page.
+  Inputs keep a softer `edge-strong` border.
+- **Stickers**: buttons and chips with the ink outline and a hard 2px ink
+  shadow (`shadow-sticker`) that they sink into when pressed (move 2px, lose
+  the shadow). `primaryButtonClass` is yellow, `outlineButtonClass` white
+  (Google sign-in, "สุ่มห้องเลย", log in). Toggles such as the room filters
+  stay pressed in while on.
+- **Cards** (`RoomCard`): white index card, `rounded-xl`, ink outline and a hard
+  4px shadow in the room's color (grey = private, peach = new, yellow =
+  default), taped on in that color. An emoji on a pastel tile, "ใหม่" and
+  "ส่วนตัว" tags, stats with icons, dashed divider above the footer. Hover
+  lifts it, tilts it about -0.6° and grows the shadow.
+- **Sidebar**: an index card (ink outline, `edge-strong` shadow) with emoji
+  tiles for the rooms.
+- **Welcome note** (`PostBox`): butter sticky note, ink outline, 4px ink shadow
+  (`shadow-sticker-lg`), tilted -0.4°, taped, with a sparkle doodle.
 - **Tape** ([component/Tape.tsx](component/Tape.tsx)): washi strip over a card's
-  top edge.
-- **Primary button** (`primaryButtonClass`): yellow sticker with a hard bottom
-  shadow that sinks when pressed.
-- **Inputs** (`inputClass`): white, `edge-strong` border, orange border and
-  soft yellow ring on focus.
-- **Modal sheets** (`Sheet` inside `Modal`): a taped white sheet with a Mali
-  title. Choices are bordered rows (`choiceClass`) that turn butter with a
-  darker border when picked. Footer: quiet "ยกเลิก" (`secondaryButtonClass`)
-  beside the yellow sticker, which greys out (`disabledButtonClass`) until the
+  top edge, with faint stripes and torn ends (`washi` utility).
+- **Paper** ([component/Paper.tsx](component/Paper.tsx)): a white sheet with an
+  ink outline on a tilted butter sheet, taped. The login and signup cards and
+  the modal sheets use it.
+- **Inputs** (`inputClass`): white, 1.5px `edge-strong` border, `rounded-lg`,
+  orange border and soft yellow ring on focus. Search and the post box put an
+  icon inside (`fieldFrameClass` plus their own padding).
+- **Modal sheets** (`Sheet` inside `Modal`): `Paper` with a Mali title.
+  Choices are bordered rows (`choiceClass`) that turn into a butter sticker
+  when picked. Footer: quiet "ยกเลิก" (`secondaryButtonClass`) beside the
+  yellow sticker, which goes flat and grey (`disabledButtonClass`) until the
   form is ready.
+- **Icons** ([component/Icon.tsx](component/Icon.tsx)): a small set of inline
+  line icons in the text color, no icon library. Add `fill-current` for the
+  filled doodles (heart, sparkle).
 - **Highlighter** (`highlightClass`): yellow swipe across the lower 45% of a
   heading, drawn in left to right. `--mark` overrides the color and
   `--mark-delay` staggers it.
@@ -60,8 +80,10 @@ Shared class strings live in [lib/styles.ts](lib/styles.ts).
 - Content is `max-w-7xl`, centered, `px-4`.
 - Home is a two-column grid: sidebar (200px) and main from `md`, `1fr / 3fr`
   from `lg`; single column below `md`.
-- Header is 64px, white, with a 1.5px bottom border: logo, "+ สร้าง" button,
-  notifications chip, avatar linking to login.
+- Header is 64px, `paper`, with a 2px dashed bottom edge: logo (highlighted
+  "Lonely" and a heart doodle), "+ สร้าง" sticker, notifications chip (bell and
+  count, hidden at 0), then the avatar or a log-in sticker. Below `sm`,
+  "สร้าง" and "โนติ" collapse to their icons so the header stays on one line.
 
 ## Motion
 
@@ -93,7 +115,11 @@ or the final state).
 
 ## Accessibility
 
-- Icon-only controls carry an `aria-label` (for example the avatar login link).
+- Icon-only controls carry an `aria-label` (for example the avatar login link)
+  or keep their text as `sr-only` (the header's "สร้าง" and "โนติ" on phones).
 - Cards are clickable through a stretched link; the join button sits above it
-  (`z-10`) so it stays a separate target.
-- Decorative elements (tape) are `aria-hidden`.
+  (`z-10`) so it stays a separate target. The card draws the focus outline for
+  the link (`has-[a:focus-visible]`).
+- Links and buttons without their own focus style get a 2px
+  `kmutt-orange-dark` outline (base layer in globals.css).
+- Decorative elements (tape, icons, emoji tiles, doodles) are `aria-hidden`.

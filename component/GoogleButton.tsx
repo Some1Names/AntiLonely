@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
+import { outlineButtonClass } from "@/lib/styles";
 
 // "Sign in with Google" button plus the "หรือ" divider above it. Sends the
 // person to Google and back to the home page. The same button works for login
@@ -25,17 +26,17 @@ export default function GoogleButton({ label }: { label: string }) {
   }
 
   return (
-    <div className="mt-4 flex flex-col gap-4">
+    <div className="mt-5 flex flex-col gap-4">
       <div className="flex items-center gap-3 text-xs text-ink-soft">
-        <span className="h-px flex-1 bg-edge" />
+        <span className="flex-1 border-t-[1.5px] border-dashed border-edge-strong" />
         หรือ
-        <span className="h-px flex-1 bg-edge" />
+        <span className="flex-1 border-t-[1.5px] border-dashed border-edge-strong" />
       </div>
       <button
         type="button"
         onClick={signIn}
         disabled={pending}
-        className="flex items-center justify-center gap-2 rounded-md border border-edge-strong bg-white py-2.5 text-sm font-semibold text-ink hover:bg-cream focus-visible:ring-3 focus-visible:ring-kmutt-yellow/40 disabled:cursor-wait disabled:opacity-60"
+        className={`flex items-center justify-center gap-2 py-2.5 ${outlineButtonClass} disabled:cursor-wait disabled:opacity-60 disabled:shadow-none disabled:active:translate-0`}
       >
         <GoogleLogo />
         {pending ? "กำลังไปที่ Google…" : label}

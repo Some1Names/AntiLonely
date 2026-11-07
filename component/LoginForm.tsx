@@ -7,7 +7,12 @@ import GoogleButton from "@/component/GoogleButton";
 import PasswordInput from "@/component/PasswordInput";
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-errors";
-import { disabledButtonClass, inputClass, primaryButtonClass } from "@/lib/styles";
+import {
+  alertClass,
+  disabledButtonClass,
+  inputClass,
+  primaryButtonClass,
+} from "@/lib/styles";
 
 export default function LoginForm({ inModal = false }: { inModal?: boolean }) {
   const router = useRouter();
@@ -80,7 +85,7 @@ export default function LoginForm({ inModal = false }: { inModal?: boolean }) {
           />
         </div>
         {error && (
-          <p role="alert" className="text-sm text-red-600">
+          <p role="alert" className={alertClass}>
             {error}
           </p>
         )}

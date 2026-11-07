@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Icon from "@/component/Icon";
 import Modal from "@/component/Modal";
 import Sheet from "@/component/Sheet";
 import {
@@ -57,7 +58,7 @@ export default function ReportModal({
             onClose();
           }}
         >
-          <figure className="rounded-md border border-dashed border-edge-strong bg-cream px-4 py-3">
+          <figure className="rounded-lg border-[1.5px] border-dashed border-edge-strong bg-cream px-4 py-3">
             <figcaption className="text-xs text-ink-soft">
               {comment.author} · ใน{comment.roomName}
             </figcaption>
@@ -100,7 +101,7 @@ export default function ReportModal({
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="flex items-center gap-1.5 text-xs text-ink-soft">
-              <LockIcon />
+              <Icon name="lock" className="size-3.5" />
               ไม่มีใครรู้ว่าคุณเป็นคนรายงาน
             </p>
             <div className="ml-auto flex gap-2">
@@ -123,22 +124,5 @@ export default function ReportModal({
         </form>
       </Sheet>
     </Modal>
-  );
-}
-
-function LockIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 16 16"
-      className="size-3.5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-    >
-      <rect x="3" y="7" width="10" height="7" rx="1.5" />
-      <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" />
-    </svg>
   );
 }
