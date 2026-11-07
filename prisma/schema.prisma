@@ -1,4 +1,5 @@
-// AntiLonely database schema — mirrors the team's ER diagram.
+// AntiLonely database schema — mirrors the team's ER diagram, plus the
+// account/verification tables Better Auth needs.
 // Model/field names are camelCase for TypeScript; tables and columns are
 // snake_case in Postgres via @@map / @map.
 //
@@ -89,17 +90,30 @@ enum ReportStatus {
 // Models
 // ---------------------------------------------------------------------------
 
+// --- Auth tables (Better Auth) ---------------------------------------------
+// User, Session, Account and Verification are managed by Better Auth
+// (lib/auth.ts). Keep the model and field names as they are: the Better Auth
+// Prisma adapter uses them. Re-check with `npx @better-auth/cli generate`
+// after upgrading Better Auth or adding a plugin.
+
 // "user" is a reserved word in Postgres, so the table is "users".
 model User {
-  id           String   @id @default(uuid()) @db.Uuid
-  username     String   @unique
-  email        String   @unique
-  // Store a bcrypt/argon2 hash here — never the plaintext password.
-  passwordHash String   @map("password_hash")
-  role         UserRole @default(user)
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id              String   @id @default(uuid()) @db.Uuid
+  // Login name (username plugin stores it lowercased; displayUsername keeps the original casing).
+  username        String   @unique
+  displayUsername String?  @map("display_username")
+  // Required by Better Auth; set it at signup (e.g. to the username).
+  name            String
+  email           String   @unique
+  emailVerified   Boolean  @default(false) @map("email_verified")
+  image           String?
+  role            UserRole @default(user)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
+  // No password here: Better Auth stores the hash in accounts.password.
   sessions          Session[]
+  accounts          Account[]
   notifications     Notification[]
   sanctionsReceived Sanction[]     @relation("SanctionsReceived")
   sanctionsIssued   Sanction[]     @relation("SanctionsIssued")
@@ -117,6 +131,10 @@ model Session {
   id        String   @id @default(uuid()) @db.Uuid
   token     String   @unique
   expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   userId    String   @map("user_id") @db.Uuid
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -124,6 +142,44 @@ model Session {
   @@index([userId])
   @@map("sessions")
 }
+
+// Login methods per user. For email/username + password, providerId is
+// "credential" and `password` holds the hash (Better Auth hashes it).
+model Account {
+  id                    String    @id @default(uuid()) @db.Uuid
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  password              String?
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at") @db.Timestamptz(6)
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at") @db.Timestamptz(6)
+  scope                 String?
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  userId                String    @map("user_id") @db.Uuid
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("accounts")
+}
+
+// Short-lived tokens (email verification, password reset).
+model Verification {
+  id         String   @id @default(uuid()) @db.Uuid
+  identifier String
+  value      String
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([identifier])
+  @@map("verifications")
+}
+
+// --- App tables (ER diagram) -------------------------------------------------
 
 // user 1 —receives— N notifications
 model Notification {
