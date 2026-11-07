@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { APIError } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { username } from "better-auth/plugins";
 import { randomBytes } from "node:crypto";
@@ -58,6 +59,38 @@ export const auth = betterAuth({
           if (typeof user.username === "string" && user.username) return;
           const username = await generateUsername();
           return { data: { ...user, username, displayUsername: username } };
+        },
+      },
+    },
+    session: {
+      create: {
+        // Suspended or banned users can't log in (a new session is refused).
+        // Their existing sessions are deleted when the sanction is issued.
+        before: async (session) => {
+          const now = new Date();
+          const sanction = await prisma.sanction.findFirst({
+            where: {
+              userId: session.userId,
+              type: { in: ["suspension", "ban"] },
+              liftedAt: null,
+              // No startAt check: sanctions start when issued, and the DB clock
+              // can be slightly ahead of the app server's.
+              OR: [{ endAt: null }, { endAt: { gt: now } }],
+            },
+            // Ban (last in the enum) wins over suspension; then the latest end.
+            orderBy: [{ type: "desc" }, { endAt: { sort: "desc", nulls: "first" } }],
+            select: { type: true, endAt: true },
+          });
+          if (!sanction) return;
+          throw new APIError("FORBIDDEN", {
+            code: sanction.type === "ban" ? "ACCOUNT_BANNED" : "ACCOUNT_SUSPENDED",
+            message:
+              sanction.type === "ban"
+                ? "This account has been banned."
+                : `This account is suspended until ${sanction.endAt?.toISOString()}.`,
+            // Shown on the login form as "ถึงวันที่ …".
+            suspendedUntil: sanction.endAt?.toISOString() ?? null,
+          });
         },
       },
     },
