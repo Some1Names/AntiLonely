@@ -1,0 +1,263 @@
+// AntiLonely database schema — mirrors the team's ER diagram.
+// Model/field names are camelCase for TypeScript; tables and columns are
+// snake_case in Postgres via @@map / @map.
+//
+// The connection URL is not set here (Prisma 7): the CLI reads it from
+// prisma.config.ts and the app passes it to the pg driver adapter in lib/prisma.ts.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums (values are lowercase to match the strings used in the mock data)
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  user
+  moderator
+  admin
+
+  @@map("user_role")
+}
+
+enum NotificationType {
+  reply
+  mention
+  reaction
+  report
+
+  @@map("notification_type")
+}
+
+enum SanctionType {
+  warning
+  mute
+  suspension
+  ban
+
+  @@map("sanction_type")
+}
+
+enum RoomStatus {
+  active
+  suspended
+  archived
+
+  @@map("room_status")
+}
+
+enum RoomMemberRole {
+  owner
+  moderator
+  member
+
+  @@map("room_member_role")
+}
+
+enum RoomMemberStatus {
+  active
+  muted
+  banned
+  left
+
+  @@map("room_member_status")
+}
+
+enum MessageStatus {
+  visible
+  hidden
+  deleted
+
+  @@map("message_status")
+}
+
+enum ReportStatus {
+  pending
+  resolved
+  dismissed
+
+  @@map("report_status")
+}
+
+// ---------------------------------------------------------------------------
+// Models
+// ---------------------------------------------------------------------------
+
+// "user" is a reserved word in Postgres, so the table is "users".
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  username     String   @unique
+  email        String   @unique
+  // Store a bcrypt/argon2 hash here — never the plaintext password.
+  passwordHash String   @map("password_hash")
+  role         UserRole @default(user)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  sessions          Session[]
+  notifications     Notification[]
+  sanctionsReceived Sanction[]     @relation("SanctionsReceived")
+  sanctionsIssued   Sanction[]     @relation("SanctionsIssued")
+  roomsCreated      Room[]
+  memberships       RoomMember[]
+  messages          Message[]
+  reactions         Reaction[]
+  reports           Report[]
+
+  @@map("users")
+}
+
+// user 1 —login— N sessions
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  token     String   @unique
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  userId    String   @map("user_id") @db.Uuid
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+// user 1 —receives— N notifications
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  type      NotificationType
+  isRead    Boolean          @default(false) @map("is_read")
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  userId    String           @map("user_id") @db.Uuid
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+// user 1 —receives— N sanctions (the sanctioned user)
+// user 1 —issues—   N sanctions (the moderator/admin who issued it)
+model Sanction {
+  id         String       @id @default(uuid()) @db.Uuid
+  type       SanctionType
+  reason     String
+  startAt    DateTime     @default(now()) @map("start_at") @db.Timestamptz(6)
+  // null = permanent / until lifted
+  endAt      DateTime?    @map("end_at") @db.Timestamptz(6)
+  liftedAt   DateTime?    @map("lifted_at") @db.Timestamptz(6)
+  createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  userId     String       @map("user_id") @db.Uuid
+  // Nullable so a sanction's history survives if the issuing account is deleted.
+  issuedById String?      @map("issued_by_id") @db.Uuid
+
+  user     User  @relation("SanctionsReceived", fields: [userId], references: [id], onDelete: Cascade)
+  issuedBy User? @relation("SanctionsIssued", fields: [issuedById], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([issuedById])
+  @@map("sanctions")
+}
+
+// user 1 —creates— N rooms
+model Room {
+  id           String     @id @default(uuid()) @db.Uuid
+  name         String
+  // Hash only (bcrypt/argon2); null = no password.
+  passwordHash String?    @map("password_hash")
+  description  String     @default("")
+  rules        String?
+  status       RoomStatus @default(active)
+  isLocked     Boolean    @default(false) @map("is_locked")
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  // Nullable so a room outlives its creator's account.
+  creatorId    String?    @map("creator_id") @db.Uuid
+
+  creator  User?        @relation(fields: [creatorId], references: [id], onDelete: SetNull)
+  members  RoomMember[]
+  messages Message[]
+
+  @@index([creatorId])
+  @@map("rooms")
+}
+
+// user 1 —joins— N room_members; rooms 1 —belongs_to— N room_members
+model RoomMember {
+  userId   String           @map("user_id") @db.Uuid
+  roomId   String           @map("room_id") @db.Uuid
+  joinedAt DateTime         @default(now()) @map("joined_at") @db.Timestamptz(6)
+  role     RoomMemberRole   @default(member)
+  status   RoomMemberStatus @default(active)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roomId])
+  @@index([roomId])
+  @@map("room_members")
+}
+
+// user 1 —posts— N messages; rooms 1 —contains— N messages;
+// messages 1 —replies to— N messages (parentId null = top-level post)
+model Message {
+  id        String        @id @default(uuid()) @db.Uuid
+  content   String
+  status    MessageStatus @default(visible)
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  // Nullable so threads survive if the author's account is deleted.
+  authorId  String?       @map("author_id") @db.Uuid
+  roomId    String        @map("room_id") @db.Uuid
+  parentId  String?       @map("parent_id") @db.Uuid
+
+  author    User?      @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  room      Room       @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  parent    Message?   @relation("Replies", fields: [parentId], references: [id], onDelete: SetNull)
+  replies   Message[]  @relation("Replies")
+  reactions Reaction[]
+  reports   Report[]
+
+  @@index([roomId, createdAt(sort: Desc)])
+  @@index([authorId])
+  @@index([parentId])
+  @@map("messages")
+}
+
+// user 1 —reacts— N reactions; messages 1 —receives— N reactions
+model Reaction {
+  id        String   @id @default(uuid()) @db.Uuid
+  emojiType String   @map("emoji_type") @db.VarChar(32)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  userId    String   @map("user_id") @db.Uuid
+  messageId String   @map("message_id") @db.Uuid
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  // One reaction of each emoji per user per message.
+  @@unique([messageId, userId, emojiType])
+  @@index([userId])
+  @@map("reactions")
+}
+
+// user 1 —reports— N reports; messages 1 —flagged_by— N reports
+model Report {
+  id         String       @id @default(uuid()) @db.Uuid
+  reason     String
+  status     ReportStatus @default(pending)
+  createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  // Nullable so the report survives if the reporter's account is deleted.
+  reporterId String?      @map("reporter_id") @db.Uuid
+  messageId  String       @map("message_id") @db.Uuid
+
+  reporter User?   @relation(fields: [reporterId], references: [id], onDelete: SetNull)
+  message  Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  // A user can report the same message only once.
+  @@unique([reporterId, messageId])
+  @@index([messageId])
+  @@index([status, createdAt])
+  @@map("reports")
+}
