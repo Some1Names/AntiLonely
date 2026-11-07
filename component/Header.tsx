@@ -25,12 +25,9 @@ export default function Header({
             className={`px-3 py-2 ${primaryButtonClass}`}
           >
             + สร้าง
-          </button>
+          </CreateButton>
           <Link
             href="/notifications"
-          </CreateButton>
-          <button
-            type="button"
             className="flex h-9 items-center gap-2 rounded-md bg-butter px-3 text-sm hover:bg-highlight"
           >
             โนติ
