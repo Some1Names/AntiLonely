@@ -19,7 +19,7 @@ import {
   togglePostReaction,
 } from '@/lib/post-thread';
 import Header from '@/component/Header';
-import { currentUser as mockCurrentUser } from '@/lib/mock';
+import { currentUser as mockCurrentUser, myRooms } from '@/lib/mock';
 import { PostCard } from './PostCard';
 import { ReplyComposer } from './ReplyComposer';
 import { CommentItem } from './CommentItem';
@@ -249,7 +249,11 @@ export function PostThreadClient({
 
   return (
     <div className="min-h-screen flex flex-col bg-[#fafafa] text-[#18181b] font-sans">
-      <Header notifications={mockCurrentUser.notifications} />
+      <Header
+        notifications={mockCurrentUser.notifications}
+        rooms={myRooms}
+        alias={mockCurrentUser.alias}
+      />
       <main className="w-full max-w-[760px] mx-auto px-4 sm:px-6 pt-6 pb-16 space-y-4 flex-1">
         {/* Back link */}
         <div>

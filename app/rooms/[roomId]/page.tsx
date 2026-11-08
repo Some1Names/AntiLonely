@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
+import Header from "@/component/Header";
 import RoomBoardFeed from "@/component/RoomBoardFeed";
 import { rooms } from "@/lib/mock";
 
@@ -25,7 +26,13 @@ async function RoomBoardFeedContent({ params }: Props) {
 
 export default function RoomBoardFeedPage(props: Props) {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-50" />}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex flex-col bg-[#fafafa]">
+          <Header notifications={0} />
+        </div>
+      }
+    >
       <RoomBoardFeedContent params={props.params} />
     </Suspense>
   );

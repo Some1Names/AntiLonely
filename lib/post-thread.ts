@@ -6,17 +6,25 @@ import type {
   ThreadComment,
   ThreadReply,
 } from '@/types/post-thread';
+import type { BoardPostSummary } from './mock/post-thread.ts';
 
 export const PRESET_REACTION_EMOJIS: readonly string[] = [
-  '😣',
-  '😭',
-  '😢',
-  '😂',
-  '🤩',
   '❤️',
   '👍',
+  '😂',
+  '🤩',
   '🔥',
+  '😮',
+  '😢',
+  '😭',
+  '😣',
 ];
+
+export const INITIAL_PICKER_EMOJIS: readonly string[] =
+  PRESET_REACTION_EMOJIS.slice(0, 4);
+
+export const REMAINING_PICKER_EMOJIS: readonly string[] =
+  PRESET_REACTION_EMOJIS.slice(4);
 
 export function toggleReaction(
   reactions: ReactionItem[],
@@ -253,6 +261,51 @@ export function deleteCommentOrReply(
       replies: comment.replies.filter((r) => r.id !== targetId),
     };
   });
+}
+
+export function editBoardPost(
+  posts: BoardPostSummary[],
+  targetId: string,
+  newContent: string,
+  currentUserId: string
+): BoardPostSummary[] {
+  const trimmed = newContent.trim();
+  const normalizedUserId = currentUserId.trim();
+  if (!trimmed || !normalizedUserId) {
+    return posts;
+  }
+
+  return posts.map((post) => {
+    if (post.id !== targetId) {
+      return post;
+    }
+    if (post.authorId !== normalizedUserId || post.content === trimmed) {
+      return post;
+    }
+    return {
+      ...post,
+      content: trimmed,
+      isEdited: true,
+    };
+  });
+}
+
+export function deleteBoardPost(
+  posts: BoardPostSummary[],
+  targetId: string,
+  currentUserId: string
+): BoardPostSummary[] {
+  const normalizedUserId = currentUserId.trim();
+  if (!normalizedUserId) {
+    return posts;
+  }
+
+  const target = posts.find((p) => p.id === targetId);
+  if (!target || target.authorId !== normalizedUserId) {
+    return posts;
+  }
+
+  return posts.filter((p) => p.id !== targetId);
 }
 
 export function sortComments(

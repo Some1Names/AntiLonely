@@ -1,8 +1,14 @@
+import Icon from "@/component/Icon";
 import Tape from "@/component/Tape";
 import type { MyRoom } from "@/lib/mock";
-import { highlightClass, primaryButtonClass } from "@/lib/styles";
+import {
+  fieldFrameClass,
+  highlightClass,
+  primaryButtonClass,
+} from "@/lib/styles";
 
-// Styled as a sticky note taped to the page.
+// A sticky note taped to the page, outlined like a sticker, with a doodle in
+// the corner.
 export default function PostBox({
   username,
   rooms,
@@ -11,25 +17,35 @@ export default function PostBox({
   rooms: MyRoom[];
 }) {
   return (
-    <section className="relative -rotate-[0.4deg] rounded-xs border border-butter-edge bg-butter p-6 shadow-paper">
+    <section className="relative -rotate-[0.4deg] rounded-lg border-[1.5px] border-ink bg-butter p-6 shadow-sticker-lg sm:p-7">
       <Tape />
-      <h1 className="font-display text-2xl font-semibold">
+      <Icon
+        name="sparkle"
+        className="absolute right-5 top-5 size-8 rotate-12 fill-current text-kmutt-orange"
+      />
+      <h1 className="pr-10 font-display text-2xl font-semibold sm:text-3xl">
         ยินดีต้อนรับน้า, <span className={highlightClass}>{username}</span> 👋
       </h1>
-      <p className="mt-2 text-sm text-ink-soft">
+      <p className="mt-2 text-sm text-ink-soft sm:text-base">
         วันนี้เป็นยังไงบ้าง? อยากถาม อยากเล่า หรืออยากระบายก็ได้นะ
         ที่นี่ไม่มีใครรู้ว่าเป็นคุณ
       </p>
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-        <input
-          type="text"
-          aria-label="เนื้อหากระทู้"
-          placeholder="มีอะไรอยากเล่าไหม..."
-          className="min-w-0 flex-1 rounded-md border-[1.5px] border-dashed border-kmutt-yellow-dark/60 bg-white px-3 py-2 text-sm outline-none focus:border-solid focus:border-kmutt-orange focus:ring-3 focus:ring-kmutt-yellow/40"
-        />
+      <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+        <div className="relative min-w-0 flex-1">
+          <Icon
+            name="pencil"
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-kmutt-yellow-dark"
+          />
+          <input
+            type="text"
+            aria-label="เนื้อหากระทู้"
+            placeholder="มีอะไรอยากเล่าไหม..."
+            className="w-full rounded-lg border-[1.5px] border-dashed border-kmutt-yellow-dark/70 bg-white py-2.5 pl-9 pr-3 text-sm outline-none placeholder:text-ink-soft/70 focus:border-solid focus:border-kmutt-orange focus:ring-3 focus:ring-kmutt-yellow/40"
+          />
+        </div>
         <select
           aria-label="เลือกห้อง"
-          className="rounded-md border border-edge-strong bg-white px-3 py-2 text-sm"
+          className={`px-3 py-2.5 sm:w-auto ${fieldFrameClass}`}
         >
           {rooms.map((room) => (
             <option key={room.id} value={room.id}>
@@ -37,7 +53,7 @@ export default function PostBox({
             </option>
           ))}
         </select>
-        <button type="button" className={`px-4 py-2 ${primaryButtonClass}`}>
+        <button type="button" className={`px-5 py-2.5 ${primaryButtonClass}`}>
           ตั้งกระทู้
         </button>
       </div>

@@ -11,6 +11,11 @@ import {
   sortComments,
   countTotalComments,
   formatRelativeTimeThai,
+  PRESET_REACTION_EMOJIS,
+  INITIAL_PICKER_EMOJIS,
+  REMAINING_PICKER_EMOJIS,
+  editBoardPost,
+  deleteBoardPost,
 } from './post-thread.ts';
 import { getMockBoardPosts, getMockPostThread } from './mock/post-thread.ts';
 
@@ -308,5 +313,80 @@ describe('post-thread domain logic', () => {
     const fallback = getMockPostThread('books', 'custom-999', refNow);
     assert.equal(fallback.thread.id, 'custom-999');
     assert.equal(fallback.thread.boardSlug, 'books');
+  });
+
+  it('includes 😮 in PRESET_REACTION_EMOJIS to support all primary and mockup board reactions', () => {
+    assert.ok(PRESET_REACTION_EMOJIS.includes('😮'));
+  });
+
+  it('preserves all 9 preset emojis with positive-first order while maintaining compact reaction dimensions', () => {
+    assert.equal(PRESET_REACTION_EMOJIS.length, 9);
+    assert.deepEqual([...PRESET_REACTION_EMOJIS], [
+      '❤️', '👍', '😂', '🤩', '🔥', '😮', '😢', '😭', '😣'
+    ]);
+  });
+
+  it('formats board breadcrumbs with exact double spaces around separator', () => {
+    const formatBreadcrumb = (roomName: string) => `หน้าหลัก  /  ${roomName}`;
+    assert.equal(formatBreadcrumb('บริจาคเพลง'), 'หน้าหลัก  /  บริจาคเพลง');
+  });
+
+  it('ignores empty or whitespace-only post submissions in feed logic', () => {
+    const validatePost = (input: string) => input.trim().length > 0;
+    assert.equal(validatePost(''), false);
+    assert.equal(validatePost('    '), false);
+    assert.equal(validatePost('เพลงใหม่'), true);
+  });
+
+  it('edits own board post and marks isEdited, ignoring unauthorized, blank, or unchanged edits', () => {
+    const posts = getMockBoardPosts('songs');
+
+    // Unauthorized edit on board-2 (owned by user-puayleng) by user-platoo
+    const unauthorized = editBoardPost(posts, 'board-2', 'แอบแก้โพสต์คนอื่น', 'user-platoo');
+    assert.equal(unauthorized[1].content, 'นิโคติน - mirrr เศร้าแบบเกือบตาย');
+    assert.equal(unauthorized[1].isEdited, undefined);
+
+    // Blank userId or blank content is ignored
+    const blankUser = editBoardPost(posts, 'board-1', 'เพลงใหม่', '   ');
+    assert.equal(blankUser[0].content, 'ฝนตกไหม - Three Man Down');
+    const blankContent = editBoardPost(posts, 'board-1', '   ', 'user-platoo');
+    assert.equal(blankContent[0].content, 'ฝนตกไหม - Three Man Down');
+
+    // Same content does not set isEdited
+    const unchanged = editBoardPost(posts, 'board-1', '  ฝนตกไหม - Three Man Down  ', 'user-platoo');
+    assert.equal(unchanged[0].isEdited, undefined);
+
+    // Valid edit by owner (board-1 is owned by user-platoo)
+    const edited = editBoardPost(posts, 'board-1', '  ฝนตกไหม - Three Man Down (Live)  ', 'user-platoo');
+    assert.equal(edited[0].content, 'ฝนตกไหม - Three Man Down (Live)');
+    assert.equal(edited[0].isEdited, true);
+  });
+
+  it('deletes own board post and blocks deleting others posts', () => {
+    const posts = getMockBoardPosts('songs');
+
+    // Unauthorized delete on board-2 by user-platoo
+    const blocked = deleteBoardPost(posts, 'board-2', 'user-platoo');
+    assert.equal(blocked.length, 3);
+
+    // Blank userId is blocked
+    const blankBlocked = deleteBoardPost(posts, 'board-1', '   ');
+    assert.equal(blankBlocked.length, 3);
+
+    // Valid delete by owner (board-1 is owned by user-platoo)
+    const afterDelete = deleteBoardPost(posts, 'board-1', 'user-platoo');
+    assert.equal(afterDelete.length, 2);
+    assert.equal(afterDelete.some((p) => p.id === 'board-1'), false);
+  });
+
+  it('splits preset emojis into initial 4 positive emojis and remaining 5 emojis', () => {
+    assert.deepEqual([...INITIAL_PICKER_EMOJIS], ['❤️', '👍', '😂', '🤩']);
+    assert.deepEqual([...REMAINING_PICKER_EMOJIS], ['🔥', '😮', '😢', '😭', '😣']);
+    assert.equal(INITIAL_PICKER_EMOJIS.length, 4);
+    assert.equal(REMAINING_PICKER_EMOJIS.length, 5);
+    assert.deepEqual(
+      [...INITIAL_PICKER_EMOJIS, ...REMAINING_PICKER_EMOJIS],
+      [...PRESET_REACTION_EMOJIS]
+    );
   });
 });

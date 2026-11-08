@@ -278,7 +278,7 @@ export function CommentItem({
 
       {/* Nested replies or inline reply composer */}
       {(comment.replies.length > 0 || isReplying) && (
-        <div className="ml-4 mt-2 pl-5 border-l-2 border-[#e4e4e7] space-y-1">
+        <div className="ml-2 sm:ml-4 mt-2 pl-3 sm:pl-5 border-l-2 border-[#e4e4e7] space-y-1">
           {visibleReplies.map((reply) => (
             <div key={reply.id} className="flex items-start gap-3 py-2.5">
               <div
@@ -362,7 +362,7 @@ export function CommentItem({
           )}
 
           {isReplying && (
-            <div className="pl-2 pt-1 pb-2">
+            <div className="pl-0 sm:pl-2 pt-1 pb-2">
               <ReplyComposer
                 currentUserName={currentUserName}
                 placeholder={`ตอบกลับ ${activeReplyTargetName ?? comment.author.name} ในชื่อ ${currentUserName}...`}

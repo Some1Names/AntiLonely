@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Icon, { type IconName } from "@/component/Icon";
 import Modal from "@/component/Modal";
 import Sheet from "@/component/Sheet";
 import type { MyRoom } from "@/lib/mock";
@@ -10,6 +11,7 @@ import {
   hintClass,
   inputClass,
   labelClass,
+  outlineButtonClass,
   primaryButtonClass,
   radioClass,
   secondaryButtonClass,
@@ -47,7 +49,7 @@ export default function CreateModal({
         <div
           role="tablist"
           aria-label="สร้างอะไร"
-          className="inline-flex gap-1 rounded-md bg-cream p-1 ring-1 ring-edge"
+          className="inline-flex gap-1 rounded-full border-[1.5px] border-ink bg-cream p-1"
         >
           {tabs.map((item) => (
             <button
@@ -58,7 +60,7 @@ export default function CreateModal({
               aria-selected={tab === item.id}
               aria-controls={`create-panel-${item.id}`}
               onClick={() => setTab(item.id)}
-              className="rounded-sm px-4 py-1.5 text-sm text-ink-soft hover:text-ink aria-selected:bg-white aria-selected:font-semibold aria-selected:text-ink aria-selected:shadow-paper"
+              className="rounded-full px-4 py-1.5 text-sm font-semibold text-ink-soft hover:text-ink aria-selected:bg-kmutt-yellow aria-selected:text-ink aria-selected:ring-[1.5px] aria-selected:ring-ink"
             >
               {item.label}
             </button>
@@ -138,8 +140,11 @@ function PostForm({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <label className="cursor-pointer rounded-md border border-edge-strong bg-white px-4 py-2 text-sm font-semibold hover:bg-butter has-focus-visible:ring-3 has-focus-visible:ring-kmutt-yellow/40">
-          {image ? `📎 ${image}` : "+ แนบรูป"}
+        <label
+          className={`flex min-w-0 cursor-pointer items-center gap-2 px-4 py-2 ${outlineButtonClass} has-focus-visible:ring-3 has-focus-visible:ring-kmutt-yellow/40`}
+        >
+          <Icon name="image" className="size-4" />
+          <span className="max-w-48 truncate">{image ?? "แนบรูป"}</span>
           <input
             type="file"
             name="image"
@@ -148,7 +153,7 @@ function PostForm({
             onChange={(event) => setImage(event.target.files?.[0]?.name ?? null)}
           />
         </label>
-        <span className="flex items-center gap-2 rounded-full bg-butter px-3 py-1 text-sm">
+        <span className="flex items-center gap-2 rounded-full border-[1.5px] border-butter-edge bg-butter px-3 py-1 text-sm">
           <span aria-hidden="true" className="size-2 rounded-full bg-green-600" />
           โพสต์ในชื่อ <span className="font-semibold">{alias}</span>
         </span>
@@ -238,12 +243,14 @@ function RoomForm({ onClose }: { onClose: () => void }) {
             value="public"
             title="สาธารณะ"
             detail="ใครก็หาเจอและเข้าร่วมได้"
+            icon="users"
             defaultChecked
           />
           <VisibilityChoice
             value="private"
             title="ส่วนตัว"
             detail="ต้องขอเข้าร่วมหรือได้รับเชิญ"
+            icon="lock"
           />
         </div>
       </fieldset>
@@ -268,11 +275,13 @@ function VisibilityChoice({
   value,
   title,
   detail,
+  icon,
   defaultChecked,
 }: {
   value: string;
   title: string;
   detail: string;
+  icon: IconName;
   defaultChecked?: boolean;
 }) {
   return (
@@ -286,6 +295,7 @@ function VisibilityChoice({
           className={radioClass}
         />
         {title}
+        <Icon name={icon} className="ml-auto size-4 text-ink-soft" />
       </span>
       <span className="pl-6 text-xs font-normal text-ink-soft">{detail}</span>
     </label>

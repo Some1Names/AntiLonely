@@ -8,6 +8,7 @@ export interface BoardPostSummary {
   createdAtOffsetMs: number;
   timeLabel: string;
   content: string;
+  isEdited?: boolean;
   reactions: { emoji: string; count: number }[];
   replyCount: number;
 }
@@ -33,7 +34,7 @@ const FIGMA_BOARD_POSTS: Omit<BoardPostSummary, 'roomId'>[] = [
     timeLabel: '2 ชม. ที่แล้ว',
     content: 'ฝนตกไหม - Three Man Down',
     reactions: [
-      { emoji: '😢', count: 6 },
+      { emoji: '🥹', count: 6 },
       { emoji: '😭', count: 12 },
     ],
     replyCount: 4,
@@ -47,7 +48,7 @@ const FIGMA_BOARD_POSTS: Omit<BoardPostSummary, 'roomId'>[] = [
     content: 'นิโคติน - mirrr เศร้าแบบเกือบตาย',
     reactions: [
       { emoji: '😂', count: 5 },
-      { emoji: '😭', count: 17 },
+      { emoji: '🥹', count: 17 },
       { emoji: '😮', count: 6 },
     ],
     replyCount: 18,
@@ -60,7 +61,7 @@ const FIGMA_BOARD_POSTS: Omit<BoardPostSummary, 'roomId'>[] = [
     timeLabel: '6 ชม. ที่แล้ว',
     content: 'รักไม่ได้ - Groove Riders',
     reactions: [
-      { emoji: '😢', count: 13 },
+      { emoji: '🥹', count: 13 },
       { emoji: '😮', count: 4 },
     ],
     replyCount: 0,

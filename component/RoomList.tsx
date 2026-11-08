@@ -8,15 +8,16 @@ import {
   useState,
 } from "react";
 import EmptyRooms from "@/component/EmptyRooms";
+import Icon from "@/component/Icon";
 import RoomCard from "@/component/RoomCard";
 import type { Room } from "@/lib/mock";
 import { roomMatchesQuery } from "@/lib/search";
 import { highlightClass } from "@/lib/styles";
 
 const filters = [
-  { id: "all", label: "ทั้งหมด" },
-  { id: "new", label: "มาใหม่" },
-  { id: "private", label: "ส่วนตัว" },
+  { id: "all", label: "ทั้งหมด", icon: null },
+  { id: "new", label: "มาใหม่", icon: "sparkle" },
+  { id: "private", label: "ส่วนตัว", icon: "lock" },
 ] as const;
 
 type FilterId = (typeof filters)[number]["id"];
@@ -73,7 +74,7 @@ export default function RoomList({
     <section className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="font-display text-xl font-semibold">
+          <h2 className="font-display text-2xl font-semibold">
             <span
               className={`${highlightClass} [--mark:var(--color-peach-edge)] [--mark-delay:450ms]`}
             >
@@ -93,20 +94,18 @@ export default function RoomList({
                 : `ไม่เจอห้องที่ตรงกับ “${search}”`)}
           </p>
         </div>
+        {/* Sticker toggles: the chosen one is pressed in, yellow and flat. */}
         <div className="flex gap-2">
-          {filters.map(({ id, label }) => (
+          {filters.map(({ id, label, icon }) => (
             <button
               key={id}
               ref={id === "all" ? allFilterRef : undefined}
               type="button"
               aria-pressed={filter === id}
               onClick={() => changeFilter(() => setFilter(id))}
-              className={`rounded-md border-[1.5px] px-3 py-1 text-sm ${
-                filter === id
-                  ? "border-kmutt-orange-dark bg-kmutt-orange-dark font-semibold text-white"
-                  : "border-edge-strong bg-white hover:bg-butter"
-              }`}
+              className="flex items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-white px-3.5 py-1 text-sm font-medium shadow-sticker hover:bg-butter aria-pressed:translate-0.5 aria-pressed:bg-kmutt-yellow aria-pressed:shadow-none motion-safe:transition-[translate,box-shadow,background-color] motion-safe:duration-100"
             >
+              {icon && <Icon name={icon} className="size-3.5" />}
               {label}
             </button>
           ))}
@@ -114,7 +113,7 @@ export default function RoomList({
       </div>
       {shown.length > 0 ? (
         <>
-          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             {shown.map((room) => (
               <ViewTransition
                 key={room.id}
@@ -133,9 +132,13 @@ export default function RoomList({
           </ul>
           <button
             type="button"
-            className="self-center py-2 text-sm font-semibold text-kmutt-orange-dark underline-offset-4 hover:underline"
+            className="group flex items-center gap-1.5 self-center rounded-full px-4 py-2 text-sm font-semibold text-kmutt-orange-dark hover:bg-peach/70"
           >
             ดูห้องเพิ่ม
+            <Icon
+              name="chevron-down"
+              className="size-4 group-hover:translate-y-0.5 motion-safe:transition-transform"
+            />
           </button>
         </>
       ) : (

@@ -58,13 +58,13 @@ export function PostCard({
   }, [isMenuOpen]);
 
   return (
-    <article className="relative bg-white border border-[#e4e4e7] rounded-xl p-6">
+    <article className="relative bg-white border border-[#e4e4e7] rounded-xl p-5 sm:p-6">
       {/* Author Header & Overflow Menu */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
           <div
             aria-hidden="true"
-            className="w-11 h-11 rounded-full bg-[#d4d4d8] shrink-0"
+            className="w-10 h-10 rounded-full bg-[#d4d4d8] shrink-0"
           />
           <div className="min-w-0">
             <div className="text-[15px] font-semibold text-[#18181b] truncate">
@@ -147,7 +147,7 @@ export function PostCard({
           size="md"
         />
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 ml-auto shrink-0">
           <button
             type="button"
             onClick={onReplyClick}

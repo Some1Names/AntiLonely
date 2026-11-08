@@ -8,6 +8,8 @@ export type Room = {
   postsToday: number;
   isPrivate: boolean;
   isNew: boolean;
+  // Shown on the room's icon tile. Optional: rooms without one get 💬.
+  emoji?: string;
 };
 
 export type MyRoom = {
@@ -15,7 +17,10 @@ export type MyRoom = {
   name: string;
   unread: number;
   isPrivate: boolean;
+  emoji?: string;
 };
+
+export const defaultRoomEmoji = "💬";
 
 export const currentUser = {
   name: "test_1234",
@@ -25,10 +30,10 @@ export const currentUser = {
 };
 
 export const myRooms: MyRoom[] = [
-  { id: "chat", name: "คุยเล่น", unread: 3, isPrivate: false },
-  { id: "books", name: "อ่านหนังสือ", unread: 12, isPrivate: false },
-  { id: "teachers", name: "เม้าท์อาจารย์", unread: 0, isPrivate: true },
-  { id: "games", name: "เล่นเกมส์กัก", unread: 0, isPrivate: false },
+  { id: "chat", name: "คุยเล่น", unread: 3, isPrivate: false, emoji: "💬" },
+  { id: "books", name: "อ่านหนังสือ", unread: 12, isPrivate: false, emoji: "📚" },
+  { id: "teachers", name: "เม้าท์อาจารย์", unread: 0, isPrivate: true, emoji: "🤫" },
+  { id: "games", name: "เล่นเกมส์กัก", unread: 0, isPrivate: false, emoji: "🎮" },
 ];
 
 export const rooms: Room[] = [
@@ -40,6 +45,7 @@ export const rooms: Room[] = [
     postsToday: 48,
     isPrivate: false,
     isNew: false,
+    emoji: "💬",
   },
   {
     id: "books",
@@ -49,6 +55,7 @@ export const rooms: Room[] = [
     postsToday: 12,
     isPrivate: false,
     isNew: false,
+    emoji: "📚",
   },
   {
     id: "acs-leak",
@@ -58,6 +65,7 @@ export const rooms: Room[] = [
     postsToday: 3,
     isPrivate: true,
     isNew: true,
+    emoji: "🕵️",
   },
   {
     id: "songs",
@@ -68,6 +76,7 @@ export const rooms: Room[] = [
     postsToday: 31,
     isPrivate: false,
     isNew: true,
+    emoji: "🎧",
   },
   {
     id: "games",
@@ -77,6 +86,7 @@ export const rooms: Room[] = [
     postsToday: 9,
     isPrivate: false,
     isNew: false,
+    emoji: "🎮",
   },
   {
     id: "teachers",
@@ -86,5 +96,6 @@ export const rooms: Room[] = [
     postsToday: 5,
     isPrivate: true,
     isNew: false,
+    emoji: "🤫",
   },
 ];

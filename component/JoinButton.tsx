@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import Icon from "@/component/Icon";
 import { primaryButtonClass } from "@/lib/styles";
 
 type Status = "joined" | "requested" | "none";
 
-// Private rooms need a request instead of joining straight away.
+// Private rooms need a request instead of joining straight away. Once
+// pressed, the sticker stays pressed in and turns peach, with a check
+// (joined) or a clock (waiting for the request).
 export default function JoinButton({
   isPrivate,
   isMember,
@@ -30,12 +33,14 @@ export default function JoinButton({
           status !== "none" ? "none" : isPrivate ? "requested" : "joined",
         )
       }
-      className={`px-4 py-2 ${
+      className={`flex items-center gap-1.5 whitespace-nowrap px-3.5 py-1.5 ${
         status === "none"
           ? primaryButtonClass
-          : "rounded-md border-[1.5px] border-peach-edge bg-peach text-sm font-semibold text-kmutt-orange-dark"
+          : "translate-0.5 rounded-lg border-[1.5px] border-peach-edge bg-peach text-sm font-semibold text-kmutt-orange-dark hover:bg-peach-edge/50"
       }`}
     >
+      {status === "joined" && <Icon name="check" className="size-4" />}
+      {status === "requested" && <Icon name="clock" className="size-4" />}
       {label}
     </button>
   );
