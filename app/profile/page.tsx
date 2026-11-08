@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Header from "@/component/BoardHeader";
+import Header from "@/component/Header";
 import PostCard from "@/component/PostCard";
+import { currentUser, myRooms } from "@/lib/mock";
 
 type MyPost = {
   id: number;
@@ -29,7 +30,11 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <Header
+        notifications={currentUser.notifications}
+        rooms={myRooms}
+        alias={currentUser.alias}
+      />
 
       <main className="mx-auto max-w-4xl px-6 py-8">
         <div className="mb-6 rounded-lg bg-gray-100 px-4 py-3 text-sm">

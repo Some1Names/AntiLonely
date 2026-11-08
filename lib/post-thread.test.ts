@@ -12,7 +12,7 @@ import {
   countTotalComments,
   formatRelativeTimeThai,
 } from './post-thread.ts';
-import { getMockPostThread } from './mock/post-thread.ts';
+import { getMockBoardPosts, getMockPostThread } from './mock/post-thread.ts';
 
 describe('post-thread domain logic', () => {
   const refNow = Date.parse('2026-10-24T12:00:00.000Z');
@@ -255,5 +255,58 @@ describe('post-thread domain logic', () => {
     );
     assert.equal(afterTopDelete.length, 1);
     assert.equal(afterTopDelete[0].id, 'comment-2');
+  });
+
+  it('returns the 3 Figma mock posts for a room with matching authors, content, reactions, and reply counts', () => {
+    const posts = getMockBoardPosts('songs');
+    assert.equal(posts.length, 3);
+    assert.deepEqual(
+      posts.map((p) => ({
+        id: p.id,
+        author: p.author,
+        content: p.content,
+        replyCount: p.replyCount,
+      })),
+      [
+        {
+          id: 'board-1',
+          author: 'ปลาทู',
+          content: 'ฝนตกไหม - Three Man Down',
+          replyCount: 4,
+        },
+        {
+          id: 'board-2',
+          author: 'ปวยเล้ง',
+          content: 'นิโคติน - mirrr เศร้าแบบเกือบตาย',
+          replyCount: 18,
+        },
+        {
+          id: 'board-3',
+          author: 'ผักกาด',
+          content: 'รักไม่ได้ - Groove Riders',
+          replyCount: 0,
+        },
+      ]
+    );
+  });
+
+  it('getMockPostThread returns thread data matching board-1, board-2, board-3 and falls back safely for unknown postId', () => {
+    const t1 = getMockPostThread('songs', 'board-1', refNow);
+    assert.equal(t1.thread.author.name, 'ปลาทู');
+    assert.equal(t1.thread.content, 'ฝนตกไหม - Three Man Down');
+    assert.equal(countTotalComments(t1.thread.comments), 4);
+
+    const t2 = getMockPostThread('songs', 'board-2', refNow);
+    assert.equal(t2.thread.author.name, 'ปวยเล้ง');
+    assert.equal(t2.thread.content, 'นิโคติน - mirrr เศร้าแบบเกือบตาย');
+
+    const t3 = getMockPostThread('songs', 'board-3', refNow);
+    assert.equal(t3.thread.author.name, 'ผักกาด');
+    assert.equal(t3.thread.content, 'รักไม่ได้ - Groove Riders');
+    assert.equal(countTotalComments(t3.thread.comments), 0);
+
+    const fallback = getMockPostThread('books', 'custom-999', refNow);
+    assert.equal(fallback.thread.id, 'custom-999');
+    assert.equal(fallback.thread.boardSlug, 'books');
   });
 });
