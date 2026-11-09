@@ -15,6 +15,8 @@ import {
   primaryButtonClass,
   radioClass,
   secondaryButtonClass,
+  tabClass,
+  tabListClass,
 } from "@/lib/styles";
 
 export type CreateTab = "post" | "room";
@@ -49,7 +51,7 @@ export default function CreateModal({
         <div
           role="tablist"
           aria-label="สร้างอะไร"
-          className="inline-flex gap-1 rounded-full border-[1.5px] border-ink bg-cream p-1"
+          className={tabListClass}
         >
           {tabs.map((item) => (
             <button
@@ -60,7 +62,7 @@ export default function CreateModal({
               aria-selected={tab === item.id}
               aria-controls={`create-panel-${item.id}`}
               onClick={() => setTab(item.id)}
-              className="rounded-full px-4 py-1.5 text-sm font-semibold text-ink-soft hover:text-ink aria-selected:bg-kmutt-yellow aria-selected:text-ink aria-selected:ring-[1.5px] aria-selected:ring-ink"
+              className={tabClass}
             >
               {item.label}
             </button>

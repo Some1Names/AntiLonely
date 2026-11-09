@@ -2,20 +2,24 @@
 
 import { useState } from "react";
 import Modal from "@/component/Modal";
+import Paper from "@/component/Paper";
 import {
-  cancelButtonClass,
   checkboxClass,
-  confirmButtonClass,
-  fieldClass,
   FormError,
-  SanctionCard,
   SanctionHeader,
   SanctionUserCard,
-  sectionLabelClass,
   type SanctionTarget,
 } from "@/component/admin/SanctionParts";
 import { banUser, type SanctionResult } from "@/lib/sanction-actions";
 import { BAN_CONFIRM_WORD, isBanConfirmed } from "@/lib/sanctions";
+import {
+  dangerButtonClass,
+  disabledButtonClass,
+  hintClass,
+  inputClass,
+  labelClass,
+  secondaryButtonClass,
+} from "@/lib/styles";
 
 // "แบนผู้ใช้ถาวร" dialog for the admin panel. Needs a reason and the word BAN
 // typed out before the red button unlocks.
@@ -61,7 +65,7 @@ export default function BanUserModal({
 
   return (
     <Modal labelledBy="ban-title" onClose={onClose} size="md" sheetName="admin-sheet">
-      <SanctionCard>
+      <Paper>
         <SanctionHeader
           titleId="ban-title"
           title="แบนผู้ใช้ถาวร"
@@ -79,10 +83,10 @@ export default function BanUserModal({
         >
           <div className="flex flex-col gap-2">
             <div>
-              <label htmlFor="ban-reason" className={sectionLabelClass}>
-                เหตุผลในการแบน <span className="text-red-600">*</span>
+              <label htmlFor="ban-reason" className={labelClass}>
+                เหตุผลในการแบน <span className="text-red-700">*</span>
               </label>
-              <p id="ban-reason-hint" className="text-xs text-neutral-500">
+              <p id="ban-reason-hint" className={hintClass}>
                 จำเป็นต้องระบุ — จะถูกบันทึกใน Audit log
               </p>
             </div>
@@ -95,12 +99,12 @@ export default function BanUserModal({
               value={reason}
               onChange={(event) => setReason(event.target.value)}
               placeholder="เช่น คุกคามผู้ใช้อื่นซ้ำหลายครั้งหลังถูกระงับแล้ว"
-              className={`${fieldClass} resize-none`}
+              className={`${inputClass} resize-none`}
             />
           </div>
 
           <div className="flex flex-col gap-3">
-            <label className="flex cursor-pointer items-center gap-3 text-sm text-neutral-900">
+            <label className="flex cursor-pointer items-center gap-3 text-sm">
               <input
                 type="checkbox"
                 checked={deletePosts}
@@ -109,7 +113,7 @@ export default function BanUserModal({
               />
               ลบโพสต์ทั้งหมดของผู้ใช้นี้ด้วย
             </label>
-            <label className="flex cursor-pointer items-center gap-3 text-sm text-neutral-900">
+            <label className="flex cursor-pointer items-center gap-3 text-sm">
               <input
                 type="checkbox"
                 checked={notify}
@@ -128,25 +132,30 @@ export default function BanUserModal({
             value={confirmText}
             onChange={(event) => setConfirmText(event.target.value)}
             placeholder={`พิมพ์ "${BAN_CONFIRM_WORD}" เพื่อยืนยัน`}
-            className="w-full rounded-lg border border-neutral-300 bg-neutral-100 px-3 py-3 text-sm text-neutral-900 outline-none placeholder:text-neutral-400 focus:border-neutral-900 focus:bg-white focus:ring-2 focus:ring-neutral-900/10"
+            className={inputClass}
           />
 
           <FormError message={error} />
 
           <div className="grid grid-cols-2 gap-3">
-            <button type="button" onClick={onClose} disabled={pending} className={cancelButtonClass}>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={pending}
+              className={`py-3 ${secondaryButtonClass} disabled:opacity-50`}
+            >
               ยกเลิก
             </button>
             <button
               type="submit"
               disabled={pending || !ready}
-              className={`${confirmButtonClass} bg-red-700 hover:bg-red-800`}
+              className={`py-3 ${dangerButtonClass} ${disabledButtonClass}`}
             >
               {pending ? "กำลังแบน…" : "ยืนยันการแบน"}
             </button>
           </div>
         </form>
-      </SanctionCard>
+      </Paper>
     </Modal>
   );
 }

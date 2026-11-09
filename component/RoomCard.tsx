@@ -4,32 +4,10 @@ import JoinButton from "@/component/JoinButton";
 import Tape from "@/component/Tape";
 import { formatCount } from "@/lib/format";
 import { defaultRoomEmoji, type Room } from "@/lib/mock";
+import { roomLook } from "@/lib/styles";
 
-// Each kind of room has a color for the card's shadow, its tape and its icon
-// tile: blue grey for private rooms (matching their tag), peach for new ones,
-// yellow for the rest. The tape sits in a different spot for each kind too.
-function look(room: Room) {
-  if (room.isPrivate)
-    return {
-      card: "[--tone:var(--color-kmutt-grey)]",
-      tile: "border-edge-strong bg-mist",
-      tape: "left-1/2 -translate-x-1/2 rotate-2 bg-kmutt-grey/45",
-    };
-  if (room.isNew)
-    return {
-      card: "[--tone:var(--color-peach-edge)]",
-      tile: "border-peach-edge bg-peach",
-      tape: "right-6 rotate-6 bg-peach-edge/80",
-    };
-  return {
-    card: "[--tone:var(--color-kmutt-yellow)]",
-    tile: "border-butter-edge bg-butter",
-    tape: "left-6 -rotate-6 bg-kmutt-yellow/70",
-  };
-}
-
-// An index card taped into the notebook, with an ink outline and a colored
-// shadow. It lifts and tilts a little on hover.
+// An index card taped into the notebook, with an ink outline and a shadow in
+// the room's color (roomLook). It lifts and tilts a little on hover.
 export default function RoomCard({
   room,
   isMember,
@@ -37,7 +15,7 @@ export default function RoomCard({
   room: Room;
   isMember: boolean;
 }) {
-  const { card, tile, tape } = look(room);
+  const { card, tile, tape } = roomLook(room);
 
   return (
     <article

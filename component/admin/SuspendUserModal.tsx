@@ -2,19 +2,25 @@
 
 import { useState } from "react";
 import Modal from "@/component/Modal";
+import Paper from "@/component/Paper";
 import {
-  cancelButtonClass,
   checkboxClass,
-  confirmButtonClass,
-  fieldClass,
   FormError,
-  SanctionCard,
+  presetClass,
   SanctionHeader,
   SanctionUserCard,
-  sectionLabelClass,
   type SanctionTarget,
 } from "@/component/admin/SanctionParts";
 import { suspendUser, type SanctionResult } from "@/lib/sanction-actions";
+import {
+  disabledButtonClass,
+  fieldFrameClass,
+  inputClass,
+  labelClass,
+  primaryButtonClass,
+  radioClass,
+  secondaryButtonClass,
+} from "@/lib/styles";
 import {
   addDuration,
   dateInputToEnd,
@@ -109,7 +115,7 @@ export default function SuspendUserModal({
 
   return (
     <Modal labelledBy="suspend-title" onClose={onClose} size="md" sheetName="admin-sheet">
-      <SanctionCard>
+      <Paper>
         <SanctionHeader
           titleId="suspend-title"
           title="ระงับผู้ใช้ชั่วคราว"
@@ -126,13 +132,10 @@ export default function SuspendUserModal({
           }}
         >
           <fieldset>
-            <legend className={sectionLabelClass}>ระยะเวลาการระงับ</legend>
+            <legend className={labelClass}>ระยะเวลาการระงับ</legend>
             <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
               {[...SUSPENSION_PRESET_DAYS, "custom" as const].map((value) => (
-                <label
-                  key={value}
-                  className="flex cursor-pointer items-center justify-center rounded-lg border border-neutral-300 bg-white py-2.5 text-sm text-neutral-900 hover:bg-neutral-50 has-checked:border-neutral-900 has-checked:bg-neutral-900 has-checked:font-semibold has-checked:text-white has-focus-visible:ring-2 has-focus-visible:ring-neutral-900/30"
-                >
+                <label key={value} className={presetClass}>
                   <input
                     type="radio"
                     name="suspend-preset"
@@ -147,14 +150,14 @@ export default function SuspendUserModal({
           </fieldset>
 
           {preset === "custom" && (
-            <fieldset className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+            <fieldset className="rounded-lg border-[1.5px] border-dashed border-edge-strong bg-cream p-4">
               <legend className="sr-only">ระยะเวลาที่กำหนดเอง</legend>
 
-              <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-neutral-900">
+              <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
                 <input
                   type="radio"
                   name="suspend-custom-mode"
-                  className="size-4 accent-neutral-900"
+                  className={radioClass}
                   checked={mode === "amount"}
                   onChange={() => setMode("amount")}
                 />
@@ -163,7 +166,10 @@ export default function SuspendUserModal({
               <div
                 className={`mt-3 flex flex-wrap items-center gap-3 pl-6 ${mode === "amount" ? "" : "pointer-events-none opacity-40"}`}
               >
-                <div className="flex h-12 overflow-hidden rounded-lg border border-neutral-900 bg-white">
+                {/* The frame lights up like any field while the number is
+                    being typed. The steppers draw their focus outline inside,
+                    since the frame clips anything outside it. */}
+                <div className="flex h-12 overflow-hidden rounded-lg border-[1.5px] border-edge-strong bg-white has-[input:focus]:border-kmutt-orange has-[input:focus]:ring-3 has-[input:focus]:ring-kmutt-yellow/40">
                   <input
                     type="number"
                     aria-label="จำนวน"
@@ -176,14 +182,14 @@ export default function SuspendUserModal({
                       const value = Math.floor(Number(event.target.value));
                       setAmount(Number.isFinite(value) ? Math.min(Math.max(value, 0), MAX_AMOUNT[unit]) : 0);
                     }}
-                    className="w-20 text-center text-lg font-bold text-neutral-900 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-20 bg-transparent text-center text-lg font-semibold outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <button
                     type="button"
                     aria-label="ลดจำนวน"
                     disabled={mode !== "amount" || amount <= 1}
                     onClick={() => setAmount((value) => Math.max(1, value - 1))}
-                    className="w-10 border-l border-neutral-300 text-lg hover:bg-neutral-100 disabled:text-neutral-300"
+                    className="w-10 border-l-[1.5px] border-edge-strong text-lg hover:bg-butter focus-visible:-outline-offset-4 disabled:text-edge-strong disabled:hover:bg-transparent"
                   >
                     −
                   </button>
@@ -192,7 +198,7 @@ export default function SuspendUserModal({
                     aria-label="เพิ่มจำนวน"
                     disabled={mode !== "amount" || amount >= MAX_AMOUNT[unit]}
                     onClick={() => setAmount((value) => Math.min(MAX_AMOUNT[unit], value + 1))}
-                    className="w-10 border-l border-neutral-300 text-lg hover:bg-neutral-100 disabled:text-neutral-300"
+                    className="w-10 border-l-[1.5px] border-edge-strong text-lg hover:bg-butter focus-visible:-outline-offset-4 disabled:text-edge-strong disabled:hover:bg-transparent"
                   >
                     +
                   </button>
@@ -202,7 +208,7 @@ export default function SuspendUserModal({
                   value={unit}
                   disabled={mode !== "amount"}
                   onChange={(event) => changeUnit(event.target.value as DurationUnit)}
-                  className="h-12 w-28 rounded-lg border border-neutral-900 bg-white px-3 text-center text-sm text-neutral-900 outline-none"
+                  className={`h-12 max-w-28 px-3 text-center ${fieldFrameClass}`}
                 >
                   {(Object.keys(DURATION_UNIT_LABELS) as DurationUnit[]).map((key) => (
                     <option key={key} value={key}>
@@ -211,21 +217,21 @@ export default function SuspendUserModal({
                   ))}
                 </select>
                 {mode === "amount" && end && (
-                  <span className="text-sm text-neutral-500">สิ้นสุด {formatThaiDate(end)}</span>
+                  <span className="text-sm text-ink-soft">สิ้นสุด {formatThaiDate(end)}</span>
                 )}
               </div>
 
-              <div className="my-4 flex items-center gap-3 text-xs text-neutral-400">
-                <span className="h-px flex-1 bg-neutral-200" />
+              <div className="my-4 flex items-center gap-3 text-xs text-ink-soft">
+                <span className="flex-1 border-t-[1.5px] border-dashed border-edge-strong" />
                 หรือ
-                <span className="h-px flex-1 bg-neutral-200" />
+                <span className="flex-1 border-t-[1.5px] border-dashed border-edge-strong" />
               </div>
 
-              <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-neutral-900">
+              <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
                 <input
                   type="radio"
                   name="suspend-custom-mode"
-                  className="size-4 accent-neutral-900"
+                  className={radioClass}
                   checked={mode === "date"}
                   onChange={() => setMode("date")}
                 />
@@ -240,14 +246,14 @@ export default function SuspendUserModal({
                   min={toDateInputValue(new Date(openedAt.getTime() + DAY_MS))}
                   max={toDateInputValue(new Date(openedAt.getTime() + MAX_SUSPENSION_DAYS * DAY_MS))}
                   onChange={(event) => setDateValue(event.target.value)}
-                  className={`${fieldClass} max-w-56`}
+                  className={`${inputClass} max-w-56`}
                 />
               </div>
             </fieldset>
           )}
 
           <div className="flex flex-col gap-2">
-            <label htmlFor="suspend-reason" className={sectionLabelClass}>
+            <label htmlFor="suspend-reason" className={labelClass}>
               เหตุผลในการระงับ
             </label>
             <textarea
@@ -257,11 +263,11 @@ export default function SuspendUserModal({
               value={reason}
               onChange={(event) => setReason(event.target.value)}
               placeholder="เช่น สแปมซ้ำหลายครั้งในห้อง General Chat"
-              className={`${fieldClass} resize-none`}
+              className={`${inputClass} resize-none`}
             />
           </div>
 
-          <label className="flex cursor-pointer items-center gap-3 text-sm text-neutral-900">
+          <label className="flex cursor-pointer items-center gap-3 text-sm">
             <input
               type="checkbox"
               checked={notify}
@@ -274,19 +280,24 @@ export default function SuspendUserModal({
           <FormError message={error} />
 
           <div className="grid grid-cols-2 gap-3">
-            <button type="button" onClick={onClose} disabled={pending} className={cancelButtonClass}>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={pending}
+              className={`py-3 ${secondaryButtonClass} disabled:opacity-50`}
+            >
               ยกเลิก
             </button>
             <button
               type="submit"
               disabled={pending || !endValid}
-              className={`${confirmButtonClass} bg-neutral-900 hover:bg-neutral-800`}
+              className={`py-3 ${primaryButtonClass} ${disabledButtonClass}`}
             >
               {pending ? "กำลังระงับ…" : confirmLabel}
             </button>
           </div>
         </form>
-      </SanctionCard>
+      </Paper>
     </Modal>
   );
 }

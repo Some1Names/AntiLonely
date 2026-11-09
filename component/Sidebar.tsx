@@ -2,7 +2,7 @@ import Link from "next/link";
 import CreateButton from "@/component/CreateButton";
 import Icon from "@/component/Icon";
 import { defaultRoomEmoji, type MyRoom } from "@/lib/mock";
-import { outlineButtonClass } from "@/lib/styles";
+import { indexCardClass, outlineButtonClass } from "@/lib/styles";
 
 // Room icons sit on pastel paper squares. Private rooms are always blue grey
 // to match their tag; the rest alternate.
@@ -19,7 +19,7 @@ export default function Sidebar({
   return (
     <nav
       aria-labelledby="my-rooms-label"
-      className="flex flex-col gap-1 self-start rounded-xl border-[1.5px] border-ink bg-white p-3 shadow-[4px_4px_0_var(--color-edge-strong)]"
+      className={`flex flex-col gap-1 self-start p-3 ${indexCardClass}`}
     >
       <p
         id="my-rooms-label"
