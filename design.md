@@ -88,6 +88,10 @@ use `kmutt-orange-dark`.
 - **Highlighter** (`highlightClass`): yellow swipe across the lower 45% of a
   heading, drawn in left to right. `--mark` overrides the color and
   `--mark-delay` staggers it.
+- **Scrollbars** (globals.css): a strip of yellow washi tape with faint
+  stripes and an ink outline, brighter on hover and orange while dragged, on
+  a see-through track with a dashed edge. Firefox can only show a plain
+  yellow thumb.
 
 Shared class strings live in [lib/styles.ts](lib/styles.ts).
 
