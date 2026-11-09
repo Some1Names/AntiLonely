@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { authClient } from "@/lib/auth-client";
+import EditProfileButton from "@/component/EditProfileButton";
 import EmptyNote from "@/component/EmptyNote";
 import Header from "@/component/Header";
 import Icon from "@/component/Icon";
@@ -10,7 +12,6 @@ import { currentUser, myRooms } from "@/lib/mock";
 import {
   highlightClass,
   indexCardClass,
-  outlineButtonClass,
   tabClass,
   tabListClass,
 } from "@/lib/styles";
@@ -37,6 +38,10 @@ const myPosts: MyPost[] = [];
 export default function ProfilePage() {
   // จำว่ากำลังเลือกแท็บไหนอยู่
   const [activeTab, setActiveTab] = useState<Tab>("posts");
+  
+  const { data: session, isPending, refetch } = authClient.useSession();
+
+  const user = session?.user;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -62,15 +67,22 @@ export default function ProfilePage() {
         >
           <Tape />
           <div className="flex items-center gap-5">
-            <span
-              aria-hidden="true"
-              className="flex size-20 shrink-0 -rotate-3 items-center justify-center rounded-full border-[1.5px] border-ink bg-peach shadow-sticker-lg sm:size-24"
-            >
-              <Icon name="user" className="size-10 sm:size-12" />
+            <span className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-full border-[1.5px] border-ink bg-peach shadow-sticker-lg sm:size-24">
+              {user?.image ? (
+                <img
+                  src={user.image}
+                  alt="รูปโปรไฟล์"
+                  className="size-full object-cover"
+                />
+              ) : (
+                <Icon name="user" className="size-10 sm:size-12" />
+              )}
             </span>
             <div className="space-y-1">
               <h1 className="font-display text-2xl font-semibold">
-                <span className={highlightClass}>user1</span>
+                <span className={highlightClass}>
+                  {user?.name ?? "ผู้ใช้งาน"}
+                </span>
               </h1>
               <p className="text-sm text-ink-soft">เพิ่งมาอยู่กับเรา</p>
               <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
@@ -89,13 +101,11 @@ export default function ProfilePage() {
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            className={`flex shrink-0 items-center justify-center gap-1.5 self-start px-4 py-2 ${outlineButtonClass}`}
-          >
-            <Icon name="pencil" className="size-4" />
-            แก้ไขโปรไฟล์
-          </button>
+          <EditProfileButton
+            initialName={user?.name ?? ""}
+            initialImage={user?.image ?? null}
+            onSaved={refetch}
+          />
         </section>
 
         {/* แท็บ */}
