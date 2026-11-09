@@ -117,6 +117,26 @@ Shared class strings live in [lib/styles.ts](lib/styles.ts).
 - 404 ([app/not-found.tsx](app/not-found.tsx)): a `Paper` sheet with a big
   "404" and a yellow sticker back home, under the normal header.
 
+## Joining rooms
+
+- Home keeps one shared record of the rooms you've joined or asked to join
+  ([component/RoomMembership.tsx](component/RoomMembership.tsx), rules in
+  [lib/membership.ts](lib/membership.ts)). The room cards, the sidebar's
+  "ห้องของฉัน" and both sheets below read it, so they always agree. It starts
+  from the mock rooms and isn't saved yet: a reload starts over. The create
+  modal's room list is still the mock one.
+- Joining a public room is instant. A private one sends a request
+  ("ส่งคำขอแล้ว"), and one more click takes the request back.
+- **Leaving** asks first: "เข้าร่วมแล้ว" opens a small sheet with the room's
+  tile and name, a quiet "อยู่ต่อ" and a white "ออกจากห้อง" sticker (red stays
+  for bans, since leaving is easy to undo). A private room adds a lock line:
+  coming back takes a new request.
+- **สุ่มห้องเลย** opens a sheet with a random room you haven't joined or asked
+  to join, as a little card in the room's color. "สุ่มใหม่" draws again, never
+  the same room twice in a row, and goes flat when only one room is left;
+  "เข้าร่วม" (or "ขอเข้าร่วม") joins and closes the sheet. With nothing left to
+  draw, the sheet says so.
+
 ## Motion
 
 All motion respects `prefers-reduced-motion` (it falls back to an instant swap
@@ -131,6 +151,8 @@ or the final state).
   sits 6vh from the top instead of centered, so switching tabs doesn't move
   them under the pointer.
 - The notifications toast is a small butter note that drops in the same way.
+- In the random-room sheet, each draw drops a fresh card in and turns the
+  dice on "สุ่มใหม่" a quarter turn.
 - `scrollbar-gutter: stable` keeps the page from shifting sideways when the
   scrollbar appears or goes.
 

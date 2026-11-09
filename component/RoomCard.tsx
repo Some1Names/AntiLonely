@@ -8,13 +8,7 @@ import { roomLook } from "@/lib/styles";
 
 // An index card taped into the notebook, with an ink outline and a shadow in
 // the room's color (roomLook). It lifts and tilts a little on hover.
-export default function RoomCard({
-  room,
-  isMember,
-}: {
-  room: Room;
-  isMember: boolean;
-}) {
+export default function RoomCard({ room }: { room: Room }) {
   const { card, tile, tape } = roomLook(room);
 
   return (
@@ -42,19 +36,7 @@ export default function RoomCard({
                 {room.name}
               </Link>
             </h3>
-            <div className="flex shrink-0 gap-1">
-              {room.isNew && (
-                <span className="rounded-full bg-peach px-2 text-xs font-semibold leading-5 text-kmutt-orange-dark">
-                  ใหม่
-                </span>
-              )}
-              {room.isPrivate && (
-                <span className="flex items-center gap-1 rounded-full bg-mist px-2 text-xs leading-5 text-mist-ink">
-                  <Icon name="lock" className="size-3" />
-                  ส่วนตัว
-                </span>
-              )}
-            </div>
+            <RoomTags room={room} />
           </div>
           <p className="mt-0.5 line-clamp-2 text-sm text-ink-soft">
             {room.description}
@@ -62,20 +44,46 @@ export default function RoomCard({
         </div>
       </div>
       <div className="mt-auto flex items-center justify-between gap-2 border-t-[1.5px] border-dashed border-edge pt-3">
-        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-soft">
-          <span className="flex items-center gap-1">
-            <Icon name="users" className="size-3.5" />
-            สมาชิก {formatCount(room.members)}
-          </span>
-          <span className="flex items-center gap-1">
-            <Icon name="message" className="size-3.5" />
-            วันนี้ {room.postsToday} กระทู้
-          </span>
-        </p>
+        <RoomStats room={room} />
         <div className="relative z-10 shrink-0">
-          <JoinButton isPrivate={room.isPrivate} isMember={isMember} />
+          <JoinButton room={room} />
         </div>
       </div>
     </article>
+  );
+}
+
+// The "ใหม่" and "ส่วนตัว" tags. The random-room sheet shows them too.
+export function RoomTags({ room }: { room: Room }) {
+  return (
+    <div className="flex shrink-0 gap-1">
+      {room.isNew && (
+        <span className="rounded-full bg-peach px-2 text-xs font-semibold leading-5 text-kmutt-orange-dark">
+          ใหม่
+        </span>
+      )}
+      {room.isPrivate && (
+        <span className="flex items-center gap-1 rounded-full bg-mist px-2 text-xs leading-5 text-mist-ink">
+          <Icon name="lock" className="size-3" />
+          ส่วนตัว
+        </span>
+      )}
+    </div>
+  );
+}
+
+// Members and today's posts, with icons.
+export function RoomStats({ room }: { room: Room }) {
+  return (
+    <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-soft">
+      <span className="flex items-center gap-1">
+        <Icon name="users" className="size-3.5" />
+        สมาชิก {formatCount(room.members)}
+      </span>
+      <span className="flex items-center gap-1">
+        <Icon name="message" className="size-3.5" />
+        วันนี้ {room.postsToday} กระทู้
+      </span>
+    </p>
   );
 }
