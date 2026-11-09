@@ -12,7 +12,7 @@ import Icon from "@/component/Icon";
 import RoomCard from "@/component/RoomCard";
 import type { Room } from "@/lib/mock";
 import { roomMatchesQuery } from "@/lib/search";
-import { highlightClass } from "@/lib/styles";
+import { highlightClass, stickerToggleClass } from "@/lib/styles";
 
 const filters = [
   { id: "all", label: "ทั้งหมด", icon: null },
@@ -103,7 +103,7 @@ export default function RoomList({
               type="button"
               aria-pressed={filter === id}
               onClick={() => changeFilter(() => setFilter(id))}
-              className="flex items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-white px-3.5 py-1 text-sm font-medium shadow-sticker hover:bg-butter aria-pressed:translate-0.5 aria-pressed:bg-kmutt-yellow aria-pressed:shadow-none motion-safe:transition-[translate,box-shadow,background-color] motion-safe:duration-100"
+              className={`flex items-center gap-1.5 px-3.5 py-1 ${stickerToggleClass}`}
             >
               {icon && <Icon name={icon} className="size-3.5" />}
               {label}

@@ -2,12 +2,20 @@
 // decorative: the control around an icon carries the accessible name.
 // Add `fill-current` to fill the shape as well (the hearts and sparkles).
 const icons = {
+  alert: (
+    <>
+      <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+      <path d="M12 9v4" />
+      <path d="M12 17h.01" />
+    </>
+  ),
   bell: (
     <>
       <path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
       <path d="M10.3 21a1.9 1.9 0 0 0 3.4 0" />
     </>
   ),
+  bookmark: <path d="M6.5 4h11v16.5l-5.5-4-5.5 4z" />,
   check: <path d="m5 12.5 4.5 4.5L19 7.5" />,
   "chevron-down": <path d="m6 9 6 6 6-6" />,
   clock: (
@@ -63,6 +71,14 @@ const icons = {
     <>
       <circle cx="11" cy="11" r="7" />
       <path d="m20 20-3.6-3.6" />
+    </>
+  ),
+  shield: <path d="M12 21.5s7.5-3.6 7.5-9.5V5.4L12 2.5 4.5 5.4V12c0 5.9 7.5 9.5 7.5 9.5z" />,
+  smile: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8.5 14.5a4.5 4.5 0 0 0 7 0" />
+      <path d="M9 9.5h.01M15 9.5h.01" />
     </>
   ),
   sparkle: (

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import type { NotificationItem as NotificationItemType } from '@/types/notification';
+import { indexCardClass } from '@/lib/styles';
 import { NotificationItem } from './NotificationItem';
 
 interface NotificationSectionProps {
@@ -23,10 +24,12 @@ export function NotificationSection({
 
   return (
     <section className="space-y-2">
-      <h2 className="text-sm font-semibold text-zinc-700 px-1">
+      <h2 className="px-1 font-display text-lg font-semibold">
         {title}
       </h2>
-      <div className="bg-white rounded-2xl border border-zinc-200 divide-y divide-zinc-200 overflow-hidden shadow-xs">
+      <div
+        className={`divide-y-[1.5px] divide-dashed divide-edge overflow-hidden ${indexCardClass}`}
+      >
         {items.map((item) => (
           <NotificationItem
             key={item.id}

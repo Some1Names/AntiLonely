@@ -42,15 +42,28 @@ use `kmutt-orange-dark`.
 - **Stickers**: buttons and chips with the ink outline and a hard 2px ink
   shadow (`shadow-sticker`) that they sink into when pressed (move 2px, lose
   the shadow). `primaryButtonClass` is yellow, `outlineButtonClass` white
-  (Google sign-in, "สุ่มห้องเลย", log in). Toggles such as the room filters
-  stay pressed in while on.
+  (Google sign-in, "สุ่มห้องเลย", log in, "อ่านแล้วทั้งหมด"),
+  `dangerButtonClass` red, only for actions that are hard to take back (ban).
+- **Sticker toggles** (`stickerToggleClass`): white chips that stay pressed
+  in, yellow and flat, while on: the room filters, the notification
+  categories and post reactions (your own reactions are the pressed ones).
+- **Pill tabs** (`tabListClass`, `tabClass`): a cream track with the chosen
+  tab as a yellow sticker. The create modal and the profile use them.
 - **Cards** (`RoomCard`): white index card, `rounded-xl`, ink outline and a hard
   4px shadow in the room's color (grey = private, peach = new, yellow =
   default), taped on in that color. An emoji on a pastel tile, "ใหม่" and
   "ส่วนตัว" tags, stats with icons, dashed divider above the footer. Hover
-  lifts it, tilts it about -0.6° and grows the shadow.
-- **Sidebar**: an index card (ink outline, `edge-strong` shadow) with emoji
-  tiles for the rooms.
+  lifts it, tilts it about -0.6° and grows the shadow. The colors come from
+  `roomLook`, which the room page's header card shares.
+- **Index cards** (`indexCardClass`): white, ink outline and a quieter 4px
+  `edge-strong` shadow, for content that isn't a room: the Home sidebar
+  (with emoji tiles for the rooms), posts, room rules, the notification list
+  and the profile card. Lists inside them use dashed `edge` dividers.
+- **Avatars** (`avatarClass`): a round peach sticker with the person's
+  initial, or the user icon where there's no real name to show.
+- **Empty states** ([component/EmptyNote.tsx](component/EmptyNote.tsx)): a
+  blank dashed page with an icon sticker and a Mali line, for any list with
+  nothing in it (rooms search, notifications, the room feed, profile tabs).
 - **Welcome note** (`PostBox`): butter sticky note, ink outline, 4px ink shadow
   (`shadow-sticker-lg`), tilted -0.4°, taped, with a sparkle doodle.
 - **Tape** ([component/Tape.tsx](component/Tape.tsx)): washi strip over a card's
@@ -60,12 +73,15 @@ use `kmutt-orange-dark`.
   the modal sheets use it.
 - **Inputs** (`inputClass`): white, 1.5px `edge-strong` border, `rounded-lg`,
   orange border and soft yellow ring on focus. Search and the post box put an
-  icon inside (`fieldFrameClass` plus their own padding).
+  icon inside (`fieldFrameClass` plus their own padding). Fields written on
+  a sticky note (Home's welcome note, the room's post box) are dashed yellow
+  until focused (`noteFieldClass`).
 - **Modal sheets** (`Sheet` inside `Modal`): `Paper` with a Mali title.
   Choices are bordered rows (`choiceClass`) that turn into a butter sticker
   when picked. Footer: quiet "ยกเลิก" (`secondaryButtonClass`) beside the
   yellow sticker, which goes flat and grey (`disabledButtonClass`) until the
-  form is ready.
+  form is ready. The admin suspend and ban dialogs are built the same way,
+  with a tilted alert sticker by the title (yellow to suspend, red to ban).
 - **Icons** ([component/Icon.tsx](component/Icon.tsx)): a small set of inline
   line icons in the text color, no icon library. Add `fill-current` for the
   filled doodles (heart, sparkle).
@@ -84,6 +100,18 @@ Shared class strings live in [lib/styles.ts](lib/styles.ts).
   "Lonely" and a heart doodle), "+ สร้าง" sticker, notifications chip (bell and
   count, hidden at 0), then the avatar or a log-in sticker. Below `sm`,
   "สร้าง" and "โนติ" collapse to their icons so the header stays on one line.
+  Every page uses this one header.
+- Room page: breadcrumb back to Home, a header card in the room's color
+  (tape, emoji tile, highlighted name), then the feed beside a 320px rules
+  card from `lg`; one column below that. The post box is a butter sticky note.
+- Profile: a `max-w-4xl` column with the "only you can see this" note in the
+  grey private colors, a taped ID card (avatar sticker, stats with icons,
+  "แก้ไขโปรไฟล์" white sticker), then pill tabs.
+- Notifications: a 720px column with a highlighted title, category chips
+  (they scroll sideways on phones) and the "ใหม่" / "ก่อนหน้านี้" lists as
+  index cards. Unread rows get an orange dot; important ones are peach.
+- 404 ([app/not-found.tsx](app/not-found.tsx)): a `Paper` sheet with a big
+  "404" and a yellow sticker back home, under the normal header.
 
 ## Motion
 
@@ -98,6 +126,7 @@ or the final state).
 - Create and report modals use the same drop-in and lift-out. The wide sheet
   sits 6vh from the top instead of centered, so switching tabs doesn't move
   them under the pointer.
+- The notifications toast is a small butter note that drops in the same way.
 - `scrollbar-gutter: stable` keeps the page from shifting sideways when the
   scrollbar appears or goes.
 
@@ -110,8 +139,13 @@ or the final state).
   state, not a route. "+ สร้างห้องใหม่" in the sidebar opens it on ห้อง.
 - `ReportModal` reports a comment on the board feed. It is built but not
   wired in yet: the board feed has to open it from a comment's menu.
-- `/rooms/[id]` is the room page and its board feed. It is owned by a teammate,
-  so keep its design changes in sync with them.
+- `/rooms/[id]` is the room page and its board feed (`/boardfeed` shows one
+  room as a demo). It and `/profile` are owned by a teammate, and
+  `/notifications` by another, so keep design changes there in sync with them.
+- `/admin/preview` tries the admin dialogs with fake users, in development
+  only.
+- Any URL the app doesn't have, and a room id that doesn't exist, shows the
+  404 page.
 
 ## Accessibility
 
@@ -121,5 +155,7 @@ or the final state).
   (`z-10`) so it stays a separate target. The card draws the focus outline for
   the link (`has-[a:focus-visible]`).
 - Links and buttons without their own focus style get a 2px
-  `kmutt-orange-dark` outline (base layer in globals.css).
+  `kmutt-orange-dark` outline (base layer in globals.css). Where a card clips
+  its contents (notification rows, the suspend dialog's number stepper), the
+  ring is drawn inside instead.
 - Decorative elements (tape, icons, emoji tiles, doodles) are `aria-hidden`.

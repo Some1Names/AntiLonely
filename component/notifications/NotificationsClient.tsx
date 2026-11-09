@@ -14,6 +14,13 @@ import {
   TIME_REFRESH_INTERVAL_MS,
 } from '@/lib/notifications';
 import Header from '@/component/Header';
+import Icon from '@/component/Icon';
+import { currentUser, myRooms } from '@/lib/mock';
+import {
+  disabledButtonClass,
+  highlightClass,
+  outlineButtonClass,
+} from '@/lib/styles';
 import { NotificationTabs } from './NotificationTabs';
 import { NotificationSection } from './NotificationSection';
 import { EmptyState } from './EmptyState';
@@ -113,27 +120,29 @@ export function NotificationsClient({
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#fafafa] text-zinc-900 font-sans">
-      <Header notifications={totalUnreadCount} />
+    <div className="flex flex-1 flex-col">
+      <Header
+        notifications={totalUnreadCount}
+        rooms={myRooms}
+        alias={currentUser.alias}
+      />
       <main className="w-full max-w-[720px] mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-6 flex-1">
         {/* Header with Title and Mark all as read button */}
         <header className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900">
-              การแจ้งเตือน
+            <h1 className="font-display text-2xl font-semibold sm:text-3xl">
+              <span className={highlightClass}>การแจ้งเตือน</span>
             </h1>
           </div>
 
+          {/* A white sticker; flat and grey once everything is read. */}
           <button
             type="button"
             onClick={handleMarkAllAsRead}
             disabled={totalUnreadCount === 0}
-            className={`px-2.5 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-colors select-none ${
-              totalUnreadCount > 0
-                ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 active:bg-zinc-200/70 cursor-pointer'
-                : 'text-zinc-300 cursor-not-allowed'
-            }`}
+            className={`flex shrink-0 items-center gap-1.5 px-3 py-1.5 ${outlineButtonClass} ${disabledButtonClass}`}
           >
+            <Icon name="check" className="size-4" />
             อ่านแล้วทั้งหมด
           </button>
         </header>
@@ -169,25 +178,15 @@ export function NotificationsClient({
         </div>
       </main>
 
-      {/* Floating feedback toast */}
+      {/* Floating feedback toast: a little note dropped onto the page, the
+          same way the modal sheets arrive. */}
       {toastMessage && (
         <div
           role="status"
           aria-live="polite"
-          className="fixed bottom-6 right-6 z-50 bg-zinc-900 text-white text-sm px-4 py-3 rounded-xl shadow-lg border border-zinc-800 flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-lg border-[1.5px] border-ink bg-butter px-4 py-3 text-sm font-medium shadow-sticker-lg motion-safe:animate-sheet-drop"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            className="w-4 h-4 text-emerald-400"
-          >
-            <path
-              fillRule="evenodd"
-              d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z"
-              clipRule="evenodd"
-            />
-          </svg>
+          <Icon name="check" className="size-4 text-green-700" />
           <span>{toastMessage}</span>
         </div>
       )}

@@ -4,6 +4,7 @@ import type { MyRoom } from "@/lib/mock";
 import {
   fieldFrameClass,
   highlightClass,
+  noteFieldClass,
   primaryButtonClass,
 } from "@/lib/styles";
 
@@ -40,7 +41,7 @@ export default function PostBox({
             type="text"
             aria-label="เนื้อหากระทู้"
             placeholder="มีอะไรอยากเล่าไหม..."
-            className="w-full rounded-lg border-[1.5px] border-dashed border-kmutt-yellow-dark/70 bg-white py-2.5 pl-9 pr-3 text-sm outline-none placeholder:text-ink-soft/70 focus:border-solid focus:border-kmutt-orange focus:ring-3 focus:ring-kmutt-yellow/40"
+            className={`py-2.5 pl-9 pr-3 ${noteFieldClass}`}
           />
         </div>
         <select
