@@ -30,6 +30,7 @@ export function PostCard({
 }: PostCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuContainerRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isMenuOpen) return;
@@ -60,7 +61,7 @@ export function PostCard({
   return (
     <article className="relative bg-white border border-[#e4e4e7] rounded-xl p-5 sm:p-6">
       {/* Author Header & Overflow Menu */}
-      <div className="flex items-start justify-between gap-4">
+      <div ref={headerRef} className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
           <div
             aria-hidden="true"
@@ -145,6 +146,8 @@ export function PostCard({
           reactions={thread.reactions}
           onToggleReaction={onToggleReaction}
           size="md"
+          avoidRef={headerRef}
+          pickerId={`thread-${thread.id}`}
         />
 
         <div className="flex items-center gap-1.5 ml-auto shrink-0">

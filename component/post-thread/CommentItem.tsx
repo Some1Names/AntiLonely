@@ -265,6 +265,7 @@ export function CommentItem({
               reactions={comment.reactions}
               onToggleReaction={(emoji) => onToggleReaction(comment.id, emoji)}
               size="sm"
+              pickerId={`comment-${comment.id}`}
             />
             <button
               type="button"
@@ -333,6 +334,7 @@ export function CommentItem({
                       onToggleReaction(reply.id, emoji)
                     }
                     size="sm"
+                    pickerId={`reply-${reply.id}`}
                   />
                   <button
                     type="button"

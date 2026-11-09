@@ -53,6 +53,7 @@ export default function PostCard({
   const [isEditing, setIsEditing] = useState(false);
   const [editDraft, setEditDraft] = useState("");
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const headerRef = useRef<HTMLDivElement | null>(null);
 
   const isLongContent =
     content.length > 280 || (content.match(/\n/g) || []).length >= 6;
@@ -137,7 +138,7 @@ export default function PostCard({
 
   return (
     <article className="w-full rounded-xl border border-[#e4e4e7] bg-white p-4 sm:p-5 flex flex-col gap-3 transition-colors duration-150 hover:border-[#d4d4d8] leading-[1.4]">
-      <div className="flex items-center justify-between gap-3">
+      <div ref={headerRef} className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
           {author && (
             <div
@@ -323,6 +324,8 @@ export default function PostCard({
           reactions={reactions}
           onToggleReaction={handleToggleReaction}
           size="md"
+          avoidRef={headerRef}
+          pickerId={id !== undefined ? `post-${id}` : undefined}
         />
 
         {threadHref ? (
