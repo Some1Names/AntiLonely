@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import Header from "@/component/Header";
 import RoomBoardFeed from "@/component/RoomBoardFeed";
 import { rooms } from "@/lib/mock";
+import { getMockBoardPosts } from "@/lib/mock/post-thread";
 
 type Props = {
   params: Promise<{
@@ -21,7 +22,16 @@ async function RoomBoardFeedContent({ params }: Props) {
     notFound();
   }
 
-  return <RoomBoardFeed room={room} />;
+  const serverTime = new Date().toISOString();
+  const initialPosts = getMockBoardPosts(room.id, Date.parse(serverTime));
+
+  return (
+    <RoomBoardFeed
+      room={room}
+      initialPosts={initialPosts}
+      serverTime={serverTime}
+    />
+  );
 }
 
 export default function RoomBoardFeedPage(props: Props) {

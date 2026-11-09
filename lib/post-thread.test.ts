@@ -11,6 +11,11 @@ import {
   sortComments,
   countTotalComments,
   formatRelativeTimeThai,
+  SECOND_MS,
+  MINUTE_MS,
+  HOUR_MS,
+  DAY_MS,
+  MAX_RELATIVE_DAYS,
   PRESET_REACTION_EMOJIS,
   INITIAL_PICKER_EMOJIS,
   REMAINING_PICKER_EMOJIS,
@@ -133,12 +138,71 @@ describe('post-thread domain logic', () => {
     const { thread } = getMockPostThread('music', 'post-1', refNow);
     assert.equal(countTotalComments(thread.comments), 5);
 
+    const nowDate = new Date(refNow);
     assert.equal(formatRelativeTimeThai('invalid-date', refNow), 'ไม่ระบุเวลา');
     assert.equal(formatRelativeTimeThai('2026-10-24T12:00:00.000Z', NaN), 'ไม่ระบุเวลา');
-    assert.equal(formatRelativeTimeThai('2026-10-24T12:05:00.000Z', refNow), 'เมื่อสักครู่');
-    assert.equal(formatRelativeTimeThai('2026-10-24T11:20:00.000Z', refNow), '40 นาที ที่แล้ว');
-    assert.equal(formatRelativeTimeThai('2026-10-24T10:00:00.000Z', refNow), '2 ชม. ที่แล้ว');
-    assert.equal(formatRelativeTimeThai('2026-10-20T10:00:00.000Z', refNow), '4 วัน ที่แล้ว');
+    assert.equal(formatRelativeTimeThai('2026-10-24T12:00:00.000Z', new Date(NaN)), 'ไม่ระบุเวลา');
+
+    // Future timestamps clamp to 0 ("เมื่อสักครู่")
+    assert.equal(
+      formatRelativeTimeThai(new Date(refNow + 5 * MINUTE_MS).toISOString(), nowDate),
+      'เมื่อสักครู่'
+    );
+
+    // Exact < 1 minute boundary (59,999ms) vs 1 minute (60,000ms)
+    assert.equal(
+      formatRelativeTimeThai(new Date(refNow - (MINUTE_MS - 1)).toISOString(), refNow),
+      'เมื่อสักครู่'
+    );
+    assert.equal(
+      formatRelativeTimeThai(new Date(refNow - MINUTE_MS).toISOString(), nowDate),
+      '1 นาที ที่แล้ว'
+    );
+    assert.equal(
+      formatRelativeTimeThai(new Date(refNow - 40 * MINUTE_MS).toISOString(), refNow),
+      '40 นาที ที่แล้ว'
+    );
+
+    // Exact < 1 hour boundary (59m59s) vs 1 hour (60m)
+    assert.equal(
+      formatRelativeTimeThai(new Date(refNow - (HOUR_MS - SECOND_MS)).toISOString(), refNow),
+      '59 นาที ที่แล้ว'
+    );
+    assert.equal(
+      formatRelativeTimeThai(new Date(refNow - HOUR_MS).toISOString(), refNow),
+      '1 ชม. ที่แล้ว'
+    );
+    assert.equal(
+      formatRelativeTimeThai(new Date(refNow - 2 * HOUR_MS).toISOString(), refNow),
+      '2 ชม. ที่แล้ว'
+    );
+
+    // Exact < 1 day boundary (23h59m) vs 1 day (24h)
+    assert.equal(
+      formatRelativeTimeThai(new Date(refNow - (DAY_MS - MINUTE_MS)).toISOString(), refNow),
+      '23 ชม. ที่แล้ว'
+    );
+    assert.equal(
+      formatRelativeTimeThai(new Date(refNow - DAY_MS).toISOString(), refNow),
+      '1 วัน ที่แล้ว'
+    );
+    assert.equal(
+      formatRelativeTimeThai(new Date(refNow - 4 * DAY_MS).toISOString(), refNow),
+      '4 วัน ที่แล้ว'
+    );
+
+    // Exact < 7 days boundary (6d23h) vs >= 7 days (MAX_RELATIVE_DAYS)
+    assert.equal(
+      formatRelativeTimeThai(new Date(refNow - (MAX_RELATIVE_DAYS * DAY_MS - HOUR_MS)).toISOString(), refNow),
+      '6 วัน ที่แล้ว'
+    );
+    const exact7DaysAgo = new Date(refNow - MAX_RELATIVE_DAYS * DAY_MS).toISOString();
+    assert.equal(
+      formatRelativeTimeThai(exact7DaysAgo, refNow),
+      new Date(exact7DaysAgo).toLocaleDateString('th-TH', {
+        timeZone: 'Asia/Bangkok',
+      })
+    );
     assert.equal(
       formatRelativeTimeThai('2026-10-10T12:00:00.000Z', refNow),
       new Date('2026-10-10T12:00:00.000Z').toLocaleDateString('th-TH', {

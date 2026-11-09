@@ -62,3 +62,17 @@ export interface PostThreadFeedResponse {
   currentUser: ThreadAuthor;
   serverTime: string;
 }
+
+export interface BoardPostSummary {
+  id: string;
+  roomId: string;
+  authorId: string;
+  author: string;
+  createdAt?: string;
+  createdAtOffsetMs: number;
+  timeLabel: string;
+  content: string;
+  isEdited?: boolean;
+  reactions: { emoji: string; count: number }[];
+  replyCount: number;
+}

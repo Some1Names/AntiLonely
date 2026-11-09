@@ -10,17 +10,35 @@ import {
   getMockBoardPosts,
   type BoardPostSummary,
 } from "@/lib/mock/post-thread";
-import { editBoardPost, deleteBoardPost } from "@/lib/post-thread";
+import {
+  editBoardPost,
+  deleteBoardPost,
+  formatRelativeTimeThai,
+  TIME_REFRESH_INTERVAL_MS,
+} from "@/lib/post-thread";
 
 type Props = {
   room: Room;
+  initialPosts?: BoardPostSummary[];
+  serverTime?: string;
 };
 
 const CURRENT_USER_ID = "user-platoo";
 
-export default function RoomBoardFeed({ room }: Props) {
+export default function RoomBoardFeed({
+  room,
+  initialPosts,
+  serverTime,
+}: Props) {
+  const [referenceTime, setReferenceTime] = useState<number>(() => {
+    if (serverTime) {
+      const parsed = Date.parse(serverTime);
+      if (!Number.isNaN(parsed)) return parsed;
+    }
+    return 0;
+  });
   const [posts, setPosts] = useState<BoardPostSummary[]>(() =>
-    getMockBoardPosts(room.id)
+    initialPosts ?? getMockBoardPosts(room.id, referenceTime || undefined)
   );
   const [text, setText] = useState("");
   const [isJoined, setIsJoined] = useState<boolean>(() =>
@@ -30,7 +48,12 @@ export default function RoomBoardFeed({ room }: Props) {
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    const interval = setInterval(() => {
+      setReferenceTime(Date.now());
+    }, TIME_REFRESH_INTERVAL_MS);
+
     return () => {
+      clearInterval(interval);
       if (toastTimeoutRef.current) {
         clearTimeout(toastTimeoutRef.current);
       }
@@ -52,11 +75,15 @@ export default function RoomBoardFeed({ room }: Props) {
     const trimmed = text.trim();
     if (!trimmed) return;
 
+    const nowMs = Date.now();
+    const nowIso = new Date(nowMs).toISOString();
+
     const newPost: BoardPostSummary = {
-      id: `post-${Date.now()}`,
+      id: `post-${nowMs}`,
       roomId: room.id,
       authorId: "user-platoo",
       author: currentUser.alias,
+      createdAt: nowIso,
       createdAtOffsetMs: 0,
       timeLabel: "เมื่อสักครู่",
       content: trimmed,
@@ -64,6 +91,7 @@ export default function RoomBoardFeed({ room }: Props) {
       replyCount: 0,
     };
 
+    setReferenceTime(nowMs);
     setPosts((prev) => [newPost, ...prev]);
     setText("");
   }
@@ -219,7 +247,12 @@ export default function RoomBoardFeed({ room }: Props) {
                 id={post.id}
                 roomId={room.id}
                 author={post.author}
-                time={post.timeLabel}
+                time={
+                  post.createdAt
+                    ? formatRelativeTimeThai(post.createdAt, referenceTime)
+                    : post.timeLabel
+                }
+                createdAt={post.createdAt}
                 content={post.content}
                 isOwner={post.authorId === CURRENT_USER_ID}
                 isEdited={post.isEdited}

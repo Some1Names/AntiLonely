@@ -1,4 +1,5 @@
 import type {
+  BoardPostSummary,
   CommentSortOrder,
   PostThread,
   ReactionItem,
@@ -6,7 +7,6 @@ import type {
   ThreadComment,
   ThreadReply,
 } from '@/types/post-thread';
-import type { BoardPostSummary } from './mock/post-thread.ts';
 
 export const PRESET_REACTION_EMOJIS: readonly string[] = [
   '❤️',
@@ -331,6 +331,13 @@ export function countTotalComments(comments: ThreadComment[]): number {
   );
 }
 
+export const SECOND_MS = 1000;
+export const MINUTE_MS = 60 * SECOND_MS;
+export const HOUR_MS = 60 * MINUTE_MS;
+export const DAY_MS = 24 * HOUR_MS;
+export const MAX_RELATIVE_DAYS = 7;
+export const TIME_REFRESH_INTERVAL_MS = MINUTE_MS;
+
 export function formatRelativeTimeThai(
   dateString: string,
   now: number | Date = Date.now()
@@ -343,9 +350,9 @@ export function formatRelativeTimeThai(
   }
 
   const diffMs = Math.max(0, nowMs - itemTime);
-  const diffMinutes = Math.floor(diffMs / (60 * 1000));
-  const diffHours = Math.floor(diffMs / (60 * 60 * 1000));
-  const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+  const diffMinutes = Math.floor(diffMs / MINUTE_MS);
+  const diffHours = Math.floor(diffMs / HOUR_MS);
+  const diffDays = Math.floor(diffMs / DAY_MS);
 
   if (diffMinutes < 1) {
     return 'เมื่อสักครู่';
@@ -356,7 +363,7 @@ export function formatRelativeTimeThai(
   if (diffHours < 24) {
     return `${diffHours} ชม. ที่แล้ว`;
   }
-  if (diffDays < 7) {
+  if (diffDays < MAX_RELATIVE_DAYS) {
     return `${diffDays} วัน ที่แล้ว`;
   }
   return new Date(itemTime).toLocaleDateString('th-TH', {

@@ -72,7 +72,7 @@ export function PostCard({
             </div>
             <div className="text-[13px] text-[#71717a] truncate">
               ใน{thread.boardName} ·{' '}
-              <time dateTime={thread.createdAt}>
+              <time dateTime={thread.createdAt} suppressHydrationWarning>
                 {formatRelativeTimeThai(thread.createdAt, referenceTime)}
               </time>
             </div>

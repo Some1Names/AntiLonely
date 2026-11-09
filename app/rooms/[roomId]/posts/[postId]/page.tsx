@@ -23,6 +23,7 @@ async function PostThreadContent({ params }: PostThreadPageProps) {
 
   return (
     <PostThreadClient
+      key={feed.thread.id}
       initialThread={feed.thread}
       currentUser={feed.currentUser}
       serverTime={feed.serverTime}

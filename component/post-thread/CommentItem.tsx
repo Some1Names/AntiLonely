@@ -241,6 +241,7 @@ export function CommentItem({
               )}
               <time
                 dateTime={comment.createdAt}
+                suppressHydrationWarning
                 className="text-xs text-[#71717a]"
               >
                 {formatRelativeTimeThai(comment.createdAt, referenceTime)}
@@ -306,6 +307,7 @@ export function CommentItem({
                     )}
                     <time
                       dateTime={reply.createdAt}
+                      suppressHydrationWarning
                       className="text-xs text-[#71717a]"
                     >
                       {formatRelativeTimeThai(reply.createdAt, referenceTime)}

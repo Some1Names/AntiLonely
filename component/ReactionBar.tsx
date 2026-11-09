@@ -93,10 +93,16 @@ export function ReactionBar({
         </button>
       ))}
 
-      <div className="relative inline-flex">
+      <div className="inline-flex">
         <button
           type="button"
-          onClick={() => setIsPickerOpen((prev) => !prev)}
+          onClick={() => {
+            setIsPickerOpen((prev) => {
+              const next = !prev;
+              if (!next) setShowAllPickerEmojis(false);
+              return next;
+            });
+          }}
           aria-label="เพิ่มรีแอคชัน"
           aria-expanded={isPickerOpen}
           className={`inline-flex items-center justify-center rounded-full border border-[#e4e4e7] bg-white text-[#71717a] hover:bg-[#f4f4f5] hover:text-[#18181b] active:scale-[0.98] transition-all duration-150 cursor-pointer select-none focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2 relative after:absolute after:inset-[-6px] after:content-[''] ${triggerClasses}`}

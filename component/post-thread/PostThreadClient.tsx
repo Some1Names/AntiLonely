@@ -17,6 +17,7 @@ import {
   sortComments,
   toggleCommentReaction,
   togglePostReaction,
+  TIME_REFRESH_INTERVAL_MS,
 } from '@/lib/post-thread';
 import Header from '@/component/Header';
 import { currentUser as mockCurrentUser, myRooms } from '@/lib/mock';
@@ -103,7 +104,7 @@ export function PostThreadClient({
   useEffect(() => {
     const interval = setInterval(() => {
       setReferenceTime(Date.now());
-    }, 60000);
+    }, TIME_REFRESH_INTERVAL_MS);
 
     return () => clearInterval(interval);
   }, []);
@@ -373,34 +374,40 @@ export function PostThreadClient({
         {/* Replies List Card */}
         <section
           aria-label="รายการความคิดเห็น"
-          className="bg-white border border-[#e4e4e7] rounded-xl px-6 py-2 divide-y divide-[#e4e4e7]"
+          className="bg-white border border-[#e4e4e7] rounded-xl px-4 sm:px-6 py-2 divide-y divide-[#e4e4e7]"
         >
-          {sortedComments.map((comment) => (
-            <CommentItem
-              key={comment.id}
-              comment={comment}
-              referenceTime={referenceTime}
-              currentUserId={currentUser.id}
-              currentUserName={currentUser.name}
-              isExpanded={expandedCommentIds.includes(comment.id)}
-              isReplying={replyingTo?.commentId === comment.id}
-              activeReplyTargetName={
-                replyingTo?.commentId === comment.id
-                  ? replyingTo.targetName
-                  : undefined
-              }
-              onExpandReplies={handleExpandReplies}
-              onToggleReaction={handleToggleCommentReaction}
-              onStartReply={(commentId, targetName, replyTo) =>
-                setReplyingTo({ commentId, targetName, replyTo })
-              }
-              onCancelReply={() => setReplyingTo(null)}
-              onSubmitReply={handleAddNestedReply}
-              onEditComment={handleEditComment}
-              onDeleteComment={handleDeleteComment}
-              onReportComment={handleReportComment}
-            />
-          ))}
+          {sortedComments.length === 0 ? (
+            <p className="py-8 text-center text-sm text-[#71717a]">
+              ยังไม่มีความคิดเห็น · มาเป็นคนแรกที่พูดคุยในกระทู้นี้กัน
+            </p>
+          ) : (
+            sortedComments.map((comment) => (
+              <CommentItem
+                key={comment.id}
+                comment={comment}
+                referenceTime={referenceTime}
+                currentUserId={currentUser.id}
+                currentUserName={currentUser.name}
+                isExpanded={expandedCommentIds.includes(comment.id)}
+                isReplying={replyingTo?.commentId === comment.id}
+                activeReplyTargetName={
+                  replyingTo?.commentId === comment.id
+                    ? replyingTo.targetName
+                    : undefined
+                }
+                onExpandReplies={handleExpandReplies}
+                onToggleReaction={handleToggleCommentReaction}
+                onStartReply={(commentId, targetName, replyTo) =>
+                  setReplyingTo({ commentId, targetName, replyTo })
+                }
+                onCancelReply={() => setReplyingTo(null)}
+                onSubmitReply={handleAddNestedReply}
+                onEditComment={handleEditComment}
+                onDeleteComment={handleDeleteComment}
+                onReportComment={handleReportComment}
+              />
+            ))
+          )}
         </section>
       </main>
 

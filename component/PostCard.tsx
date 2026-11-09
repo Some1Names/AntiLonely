@@ -13,6 +13,7 @@ type Props = {
   author?: string;
   room?: string;
   time: string;
+  createdAt?: string;
   content: string;
   isOwner?: boolean;
   isEdited?: boolean;
@@ -29,6 +30,7 @@ export default function PostCard({
   author,
   room,
   time,
+  createdAt,
   content,
   isOwner = false,
   isEdited = false,
@@ -156,10 +158,21 @@ export default function PostCard({
                 </span>
               )}
             </div>
-            <time className="text-xs font-normal text-[#71717a] leading-[1.4]">
-              {time}
-              {isEdited ? " (แก้ไขแล้ว)" : ""}
-            </time>
+            {createdAt ? (
+              <time
+                dateTime={createdAt}
+                suppressHydrationWarning
+                className="text-xs font-normal text-[#71717a] leading-[1.4]"
+              >
+                {time}
+                {isEdited ? " (แก้ไขแล้ว)" : ""}
+              </time>
+            ) : (
+              <span className="text-xs font-normal text-[#71717a] leading-[1.4]">
+                {time}
+                {isEdited ? " (แก้ไขแล้ว)" : ""}
+              </span>
+            )}
           </div>
         </div>
 
@@ -182,23 +195,25 @@ export default function PostCard({
               className="absolute right-0 top-[calc(100%+4px)] z-20 flex w-44 flex-col rounded-[10px] border border-[#e4e4e7] bg-white p-1.5 shadow-[0_4px_16px_rgba(0,0,0,0.08)]"
             >
               {threadHref && (
-                <Link
-                  href={threadHref}
-                  role="menuitem"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="w-full rounded-md px-2.5 py-2 text-left text-xs sm:text-[13px] font-medium text-[#18181b] hover:bg-[#f4f4f5] transition-colors"
-                >
-                  เปิดดูกระทู้
-                </Link>
+                <>
+                  <Link
+                    href={threadHref}
+                    role="menuitem"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="w-full rounded-md px-2.5 py-2 text-left text-xs sm:text-[13px] font-medium text-[#18181b] hover:bg-[#f4f4f5] transition-colors"
+                  >
+                    เปิดดูกระทู้
+                  </Link>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={handleCopyLink}
+                    className="w-full rounded-md px-2.5 py-2 text-left text-xs sm:text-[13px] font-medium text-[#18181b] hover:bg-[#f4f4f5] transition-colors cursor-pointer"
+                  >
+                    คัดลอกลิงก์กระทู้
+                  </button>
+                </>
               )}
-              <button
-                type="button"
-                role="menuitem"
-                onClick={handleCopyLink}
-                className="w-full rounded-md px-2.5 py-2 text-left text-xs sm:text-[13px] font-medium text-[#18181b] hover:bg-[#f4f4f5] transition-colors cursor-pointer"
-              >
-                คัดลอกลิงก์กระทู้
-              </button>
               {isOwner ? (
                 <>
                   <button
@@ -274,7 +289,7 @@ export default function PostCard({
             {threadHref ? (
               <Link
                 href={threadHref}
-                className={`block text-[15px] font-normal text-[#18181b] leading-[1.4] [overflow-wrap:anywhere] break-words hover:text-[#71717a] transition-colors ${
+                className={`block text-[15px] font-normal text-[#18181b] leading-[1.4] whitespace-pre-wrap [overflow-wrap:anywhere] break-words hover:text-[#71717a] transition-colors ${
                   !isExpanded && isLongContent ? "line-clamp-6" : ""
                 }`}
               >
@@ -282,7 +297,7 @@ export default function PostCard({
               </Link>
             ) : (
               <p
-                className={`text-[15px] font-normal text-[#18181b] leading-[1.4] [overflow-wrap:anywhere] break-words ${
+                className={`text-[15px] font-normal text-[#18181b] leading-[1.4] whitespace-pre-wrap [overflow-wrap:anywhere] break-words ${
                   !isExpanded && isLongContent ? "line-clamp-6" : ""
                 }`}
               >
