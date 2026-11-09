@@ -1,6 +1,13 @@
 export type CommentSortOrder = 'oldest' | 'newest';
 
-export type ReportTargetType = 'post' | 'comment';
+export type ReportTargetType = 'post' | 'comment' | 'room';
+
+export type BoardMembershipStatus = 'joined' | 'requested' | 'none';
+
+export interface RoomBoardMembershipState {
+  status: BoardMembershipStatus;
+  memberCount: number;
+}
 
 export type ReportReason =
   | 'inappropriate'

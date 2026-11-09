@@ -21,7 +21,11 @@ import {
   REMAINING_PICKER_EMOJIS,
   editBoardPost,
   deleteBoardPost,
+  getInitialBoardMembership,
+  joinBoardRoom,
+  leaveBoardRoom,
 } from './post-thread.ts';
+import type { RoomBoardMembershipState } from '../types/post-thread.ts';
 import { getMockBoardPosts, getMockPostThread } from './mock/post-thread.ts';
 
 describe('post-thread domain logic', () => {
@@ -452,5 +456,47 @@ describe('post-thread domain logic', () => {
       [...INITIAL_PICKER_EMOJIS, ...REMAINING_PICKER_EMOJIS],
       [...PRESET_REACTION_EMOJIS]
     );
+  });
+
+  it('manages board room membership transitions for public and private rooms safely', () => {
+    const initialJoined = getInitialBoardMembership(
+      { id: 'songs', members: 120 },
+      ['chat', 'songs']
+    );
+    assert.deepEqual(initialJoined, { status: 'joined', memberCount: 120 });
+
+    const leftState = leaveBoardRoom(initialJoined);
+    assert.deepEqual(leftState, { status: 'none', memberCount: 119 });
+
+    // Re-joining public room increments memberCount
+    const rejoinedPublic = joinBoardRoom(leftState, false);
+    assert.deepEqual(rejoinedPublic, { status: 'joined', memberCount: 120 });
+
+    // Joining while already joined is a no-op
+    assert.deepEqual(joinBoardRoom(rejoinedPublic, false), rejoinedPublic);
+
+    // Private room transitions to requested without changing memberCount
+    const initialPrivate = getInitialBoardMembership(
+      { id: 'secret', members: 50 },
+      ['chat']
+    );
+    assert.deepEqual(initialPrivate, { status: 'none', memberCount: 50 });
+
+    const requestedPrivate = joinBoardRoom(initialPrivate, true);
+    assert.deepEqual(requestedPrivate, { status: 'requested', memberCount: 50 });
+
+    // Canceling request returns to none without decrementing memberCount
+    const cancelledRequest = leaveBoardRoom(requestedPrivate);
+    assert.deepEqual(cancelledRequest, { status: 'none', memberCount: 50 });
+
+    // Leaving when memberCount is 0 never goes negative
+    const zeroCountJoined: RoomBoardMembershipState = {
+      status: 'joined',
+      memberCount: 0,
+    };
+    assert.deepEqual(leaveBoardRoom(zeroCountJoined), {
+      status: 'none',
+      memberCount: 0,
+    });
   });
 });

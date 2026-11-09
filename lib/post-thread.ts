@@ -1,8 +1,10 @@
 import type {
+  BoardMembershipStatus,
   BoardPostSummary,
   CommentSortOrder,
   PostThread,
   ReactionItem,
+  RoomBoardMembershipState,
   ThreadAuthor,
   ThreadComment,
   ThreadReply,
@@ -370,3 +372,51 @@ export function formatRelativeTimeThai(
     timeZone: 'Asia/Bangkok',
   });
 }
+
+export type { BoardMembershipStatus, RoomBoardMembershipState };
+
+export function getInitialBoardMembership(
+  room: { id: string; members: number },
+  joinedRoomIds: readonly string[]
+): RoomBoardMembershipState {
+  const isJoined = joinedRoomIds.includes(room.id);
+  return {
+    status: isJoined ? 'joined' : 'none',
+    memberCount: Math.max(0, room.members),
+  };
+}
+
+export function joinBoardRoom(
+  state: RoomBoardMembershipState,
+  isPrivate?: boolean
+): RoomBoardMembershipState {
+  if (state.status === 'joined') {
+    return state;
+  }
+  if (isPrivate) {
+    return {
+      ...state,
+      status: 'requested',
+    };
+  }
+  return {
+    status: 'joined',
+    memberCount: state.memberCount + 1,
+  };
+}
+
+export function leaveBoardRoom(
+  state: RoomBoardMembershipState
+): RoomBoardMembershipState {
+  if (state.status === 'joined') {
+    return {
+      status: 'none',
+      memberCount: Math.max(0, state.memberCount - 1),
+    };
+  }
+  return {
+    ...state,
+    status: 'none',
+  };
+}
+
