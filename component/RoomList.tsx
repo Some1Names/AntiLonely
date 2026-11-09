@@ -37,12 +37,10 @@ function onFilterChange(className: string) {
 
 export default function RoomList({
   rooms,
-  memberRoomIds,
   query,
   onClearQuery,
 }: {
   rooms: Room[];
-  memberRoomIds: string[];
   query: string;
   onClearQuery: () => void;
 }) {
@@ -122,10 +120,7 @@ export default function RoomList({
                 default={onFilterChange("room-move")}
               >
                 <li>
-                  <RoomCard
-                    room={room}
-                    isMember={memberRoomIds.includes(room.id)}
-                  />
+                  <RoomCard room={room} />
                 </li>
               </ViewTransition>
             ))}
