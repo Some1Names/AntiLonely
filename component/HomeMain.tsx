@@ -11,11 +11,9 @@ import { fieldFrameClass } from "@/lib/styles";
 // server component.
 export default function HomeMain({
   rooms,
-  memberRoomIds,
   children,
 }: {
   rooms: Room[];
-  memberRoomIds: string[];
   children: React.ReactNode;
 }) {
   const [query, setQuery] = useState("");
@@ -40,7 +38,6 @@ export default function HomeMain({
       {children}
       <RoomList
         rooms={rooms}
-        memberRoomIds={memberRoomIds}
         query={query}
         onClearQuery={() => setQuery("")}
       />

@@ -5,11 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import Icon from "@/component/Icon";
 import { authClient } from "@/lib/auth-client";
-import { outlineButtonClass } from "@/lib/styles";
-
-// A round peach sticker with the person's initial.
-const avatarClass =
-  "flex size-9 shrink-0 items-center justify-center rounded-full border-[1.5px] border-ink bg-peach font-display font-semibold text-ink shadow-sticker";
+import { avatarClass, outlineButtonClass } from "@/lib/styles";
 
 const menuItemClass =
   "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-butter disabled:opacity-60";

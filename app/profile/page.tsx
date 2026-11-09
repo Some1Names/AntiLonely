@@ -1,9 +1,20 @@
 "use client";
 
 import { useState } from "react";
+import { authClient } from "@/lib/auth-client";
+import EditProfileButton from "@/component/EditProfileButton";
+import EmptyNote from "@/component/EmptyNote";
 import Header from "@/component/Header";
+import Icon from "@/component/Icon";
 import PostCard from "@/component/PostCard";
+import Tape from "@/component/Tape";
 import { currentUser, myRooms } from "@/lib/mock";
+import {
+  highlightClass,
+  indexCardClass,
+  tabClass,
+  tabListClass,
+} from "@/lib/styles";
 
 type MyPost = {
   id: number;
@@ -27,49 +38,93 @@ const myPosts: MyPost[] = [];
 export default function ProfilePage() {
   // จำว่ากำลังเลือกแท็บไหนอยู่
   const [activeTab, setActiveTab] = useState<Tab>("posts");
+  
+  const { data: session, refetch } = authClient.useSession();
+
+  const user = session?.user;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="flex flex-1 flex-col">
       <Header
         notifications={currentUser.notifications}
         rooms={myRooms}
         alias={currentUser.alias}
       />
 
-      <main className="mx-auto max-w-4xl px-6 py-8">
-        <div className="mb-6 rounded-lg bg-gray-100 px-4 py-3 text-sm">
-          🔒 <b>หน้านี้เห็นได้แค่คุณคนเดียว</b> คนอื่นจะเห็นแค่ชื่อเล่นของคุณในกระทู้
-          แต่เปิดดูรวมทุกโพสต์ของคุณไม่ได้
+      <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-6 sm:py-8">
+        {/* โน้ตสีเทาแบบป้าย "ส่วนตัว" */}
+        <div className="flex items-start gap-2 rounded-lg border-[1.5px] border-dashed border-kmutt-grey/50 bg-mist px-4 py-3 text-sm text-mist-ink">
+          <Icon name="lock" className="mt-0.5 size-4" />
+          <p>
+            <b>หน้านี้เห็นได้แค่คุณคนเดียว</b> คนอื่นจะเห็นแค่ชื่อเล่นของคุณในกระทู้
+            แต่เปิดดูรวมทุกโพสต์ของคุณไม่ได้
+          </p>
         </div>
 
-        <div className="mb-8 flex items-start justify-between">
-          <div className="flex gap-5">
-            <div className="h-24 w-24 rounded-full bg-gray-300" />
+        {/* บัตรโปรไฟล์: การ์ดแปะเทป */}
+        <section
+          className={`relative flex flex-col gap-5 p-5 pt-7 sm:flex-row sm:items-start sm:justify-between sm:p-6 sm:pt-7 ${indexCardClass}`}
+        >
+          <Tape />
+          <div className="flex items-center gap-5">
+            <span className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-full border-[1.5px] border-ink bg-peach shadow-sticker-lg sm:size-24">
+              {user?.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={user.image}
+                  alt="รูปโปรไฟล์"
+                  className="size-full object-cover"
+                />
+              ) : (
+                <Icon name="user" className="size-10 sm:size-12" />
+              )}
+            </span>
             <div className="space-y-1">
-              <p className="font-medium">user1</p>
-              <p className="text-sm text-gray-500">เพิ่งมาอยู่กับเรา</p>
-              <p className="text-sm">
-                <b>{myPosts.length}</b> กระทู้ &nbsp; <b>0</b> รีแอคชัน &nbsp;
-                เข้าร่วม <b>0</b> ห้อง
+              <h1 className="font-display text-2xl font-semibold">
+                <span className={highlightClass}>
+                  {user?.name ?? "ผู้ใช้งาน"}
+                </span>
+              </h1>
+              <p className="text-sm text-ink-soft">เพิ่งมาอยู่กับเรา</p>
+              <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                <span className="flex items-center gap-1">
+                  <Icon name="message" className="size-4 text-ink-soft" />
+                  <b>{myPosts.length}</b> กระทู้
+                </span>
+                <span className="flex items-center gap-1">
+                  <Icon name="heart" className="size-4 text-ink-soft" />
+                  <b>0</b> รีแอคชัน
+                </span>
+                <span className="flex items-center gap-1">
+                  <Icon name="users" className="size-4 text-ink-soft" />
+                  เข้าร่วม <b>0</b> ห้อง
+                </span>
               </p>
             </div>
           </div>
-          <button className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold">
-            แก้ไขโปรไฟล์
-          </button>
-        </div>
+          <EditProfileButton
+            initialName={user?.name ?? ""}
+            initialImage={user?.image ?? null}
+            onSaved={refetch}
+          />
+        </section>
 
         {/* แท็บ */}
-        <div className="mb-6 flex gap-6 border-b border-gray-200 text-sm">
+        <div
+          role="tablist"
+          aria-label="เนื้อหาของฉัน"
+          className={`self-start max-w-full overflow-x-auto no-scrollbar ${tabListClass}`}
+        >
           {tabs.map((t) => (
             <button
               key={t.key}
+              type="button"
+              role="tab"
+              id={`profile-tab-${t.key}`}
+              aria-selected={activeTab === t.key}
+              aria-controls="profile-panel"
               onClick={() => setActiveTab(t.key)}
-              className={`pb-3 ${
-                activeTab === t.key
-                  ? "border-b-2 border-neutral-900 font-semibold"
-                  : "text-gray-500"
-              }`}
+              className={tabClass}
             >
               {t.label}
             </button>
@@ -77,13 +132,16 @@ export default function ProfilePage() {
         </div>
 
         {/* เนื้อหาตามแท็บ */}
-        <div className="space-y-4">
+        <div
+          role="tabpanel"
+          id="profile-panel"
+          aria-labelledby={`profile-tab-${activeTab}`}
+          className="space-y-4"
+        >
           {activeTab === "posts" && (
             <>
               {myPosts.length === 0 && (
-                <p className="py-10 text-center text-sm text-gray-400">
-                  ยังไม่มีกระทู้
-                </p>
+                <EmptyNote icon="pencil" title="ยังไม่มีกระทู้" />
               )}
               {myPosts.map((p) => (
                 <PostCard key={p.id} {...p} />
@@ -92,15 +150,11 @@ export default function ProfilePage() {
           )}
 
           {activeTab === "comments" && (
-            <p className="py-10 text-center text-sm text-gray-400">
-              ยังไม่มีความคิดเห็น
-            </p>
+            <EmptyNote icon="message" title="ยังไม่มีความคิดเห็น" />
           )}
 
           {activeTab === "saved" && (
-            <p className="py-10 text-center text-sm text-gray-400">
-              ยังไม่มีที่บันทึกไว้
-            </p>
+            <EmptyNote icon="bookmark" title="ยังไม่มีที่บันทึกไว้" />
           )}
         </div>
       </main>

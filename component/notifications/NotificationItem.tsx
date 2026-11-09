@@ -2,6 +2,7 @@
 
 import React from 'react';
 import type { NotificationItem as NotificationItemType } from '@/types/notification';
+import Icon from '@/component/Icon';
 import { formatTimeAgo } from '@/lib/notifications';
 
 interface NotificationItemProps {
@@ -42,17 +43,18 @@ export function NotificationItem({
           onClick(id);
         }
       }}
-      className={`group flex items-start gap-3 p-4 sm:p-5 transition-colors cursor-pointer text-left ${
+      // The list card clips its rows, so the focus ring is drawn inside.
+      className={`group flex items-start gap-3 p-4 sm:p-5 cursor-pointer text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-kmutt-orange-dark motion-safe:transition-colors ${
         isImportantUnread
-          ? 'bg-[#FFF6F6] hover:bg-[#FEE2E2]/60'
-          : 'bg-white hover:bg-zinc-50'
+          ? 'bg-peach/50 hover:bg-peach'
+          : 'bg-white hover:bg-butter/60'
       }`}
     >
       {/* Unread indicator dot */}
       <div className="pt-2 flex-shrink-0 w-2.5 flex justify-center">
         {!isRead ? (
           <span
-            className="w-2 h-2 rounded-full bg-red-500 shadow-xs"
+            className="size-2 rounded-full bg-kmutt-orange"
             title="ยังไม่ได้อ่าน"
           >
             <span className="sr-only">ยังไม่ได้อ่าน</span>
@@ -62,41 +64,18 @@ export function NotificationItem({
         )}
       </div>
 
-      {/* Avatar / Centered Team Icon */}
+      {/* Avatar / Centered Team Icon: a peach tile for warnings, a yellow
+          sticker for the care team, otherwise a plain butter circle. */}
       {systemIcon === 'alert' || (isImportant && !actor.avatarUrl) ? (
-        <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-[#FEE2E2] text-[#B91C1C] select-none">
-          <svg
-            className="w-5 h-5 text-[#B91C1C]"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
-            />
-          </svg>
+        <div className="flex-shrink-0 size-10 rounded-full flex items-center justify-center border-[1.5px] border-peach-edge bg-peach text-kmutt-orange-dark select-none">
+          <Icon name="alert" className="size-5" />
         </div>
       ) : systemIcon === 'shield' ? (
-        <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-zinc-900 text-white select-none">
-          <svg
-            className="w-5 h-5 text-white"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
-            />
-          </svg>
+        <div className="flex-shrink-0 size-10 rounded-full flex items-center justify-center border-[1.5px] border-ink bg-kmutt-yellow text-ink shadow-sticker select-none">
+          <Icon name="shield" className="size-5" />
         </div>
       ) : (
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-zinc-200 select-none overflow-hidden flex items-center justify-center">
+        <div className="flex-shrink-0 size-10 rounded-full border-[1.5px] border-butter-edge bg-butter select-none overflow-hidden flex items-center justify-center">
           {actor.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -110,29 +89,29 @@ export function NotificationItem({
 
       {/* Content */}
       <div className="flex-1 min-w-0 pr-2">
-        <p className="text-sm text-zinc-900 leading-snug">
-          <span className="font-semibold text-zinc-900">{actor.name}</span>{' '}
-          <span className="text-zinc-800">{actionText}</span>
+        <p className="text-sm leading-snug">
+          <span className="font-semibold">{actor.name}</span>{' '}
+          <span>{actionText}</span>
         </p>
 
         {contentPreview && (
-          <p className="text-sm text-zinc-500 mt-1 line-clamp-2 leading-relaxed">
+          <p className="text-sm text-ink-soft mt-1 line-clamp-2 leading-relaxed">
             {contentPreview}
           </p>
         )}
       </div>
 
       {/* Time & Badge */}
-      <div className="flex-shrink-0 flex flex-col items-end gap-2 pt-0.5 text-xs text-zinc-400 whitespace-nowrap">
+      <div className="flex-shrink-0 flex flex-col items-end gap-2 pt-0.5 text-xs text-ink-soft whitespace-nowrap">
         <time dateTime={isValidDate ? createdAt : undefined}>
           {displayedTime}
         </time>
         {badge && (
           <span
-            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold select-none ${
+            className={`inline-flex items-center px-2 rounded-full text-xs leading-5 font-semibold select-none ${
               badge.variant === 'warning' || badge.variant === 'important'
-                ? 'bg-[#FEE2E2] text-[#B91C1C]'
-                : 'bg-zinc-100 text-zinc-600'
+                ? 'bg-peach text-kmutt-orange-dark'
+                : 'bg-mist text-mist-ink'
             }`}
           >
             {badge.text}

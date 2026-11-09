@@ -12,6 +12,8 @@ type Props = {
   }>;
 };
 
+export const instant = false;
+
 async function RoomBoardFeedContent({ params }: Props) {
   await connection();
   const { roomId } = await params;
