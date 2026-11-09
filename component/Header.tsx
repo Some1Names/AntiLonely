@@ -1,8 +1,12 @@
 import Link from "next/link";
+import AccountMenu from "@/component/AccountMenu";
 import CreateButton from "@/component/CreateButton";
+import Icon from "@/component/Icon";
 import type { MyRoom } from "@/lib/mock";
 import { primaryButtonClass } from "@/lib/styles";
 
+// A strip of paper along the top with a stitched (dashed) edge. On phones
+// "สร้าง" and "โนติ" collapse to their icons so everything fits on one line.
 export default function Header({
   notifications,
   rooms,
@@ -13,34 +17,43 @@ export default function Header({
   alias: string;
 }) {
   return (
-    <header className="border-b-[1.5px] border-edge bg-white">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
-        <Link href="/" className="font-display text-xl font-semibold">
-          Anti<span className="text-kmutt-orange">Lonely</span>
+    <header className="border-b-2 border-dashed border-edge-strong bg-paper">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-4">
+        <Link
+          href="/"
+          className="group flex shrink-0 items-center font-display text-xl font-semibold sm:text-2xl"
+        >
+          Anti
+          <span className="bg-[linear-gradient(transparent_60%,var(--color-highlight)_60%)] text-kmutt-orange">
+            Lonely
+          </span>
+          <Icon
+            name="heart"
+            className="ml-0.5 hidden size-4 -translate-y-2 rotate-12 fill-current text-kmutt-orange group-hover:scale-125 motion-safe:transition-transform sm:block"
+          />
         </Link>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           <CreateButton
             rooms={rooms}
             alias={alias}
-            className={`px-3 py-2 ${primaryButtonClass}`}
+            className={`flex h-9 items-center gap-1 px-2.5 sm:px-3 ${primaryButtonClass}`}
           >
-            + สร้าง
+            <Icon name="plus" className="size-4" />
+            <span className="sr-only sm:not-sr-only">สร้าง</span>
           </CreateButton>
-          <button
-            type="button"
-            className="flex h-9 items-center gap-2 rounded-md bg-butter px-3 text-sm hover:bg-highlight"
-          >
-            โนติ
-            <span className="rounded bg-kmutt-orange-dark px-1.5 text-xs font-semibold text-white">
-              {notifications}
-            </span>
-          </button>
-          {/* No logged-out state in the wireframes yet, so the avatar opens log in. */}
           <Link
-            href="/login"
-            aria-label="เข้าสู่ระบบ"
-            className="size-9 rounded-full border-2 border-kmutt-yellow bg-peach"
-          />
+            href="/notifications"
+            className="flex h-9 items-center gap-1.5 rounded-lg border-[1.5px] border-ink bg-butter px-2.5 text-sm font-semibold hover:bg-highlight"
+          >
+            <Icon name="bell" className="size-4" />
+            <span className="sr-only sm:not-sr-only">โนติ</span>
+            {notifications > 0 && (
+              <span className="rounded-full bg-kmutt-orange-dark px-1.5 text-xs leading-5 text-white">
+                {notifications}
+              </span>
+            )}
+          </Link>
+          <AccountMenu />
         </div>
       </div>
     </header>
