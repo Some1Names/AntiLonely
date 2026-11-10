@@ -255,7 +255,7 @@ export function PostThreadClient({
         rooms={myRooms}
         alias={mockCurrentUser.alias}
       />
-      <main className="w-full max-w-[760px] mx-auto px-4 sm:px-6 pt-6 pb-16 space-y-4 flex-1">
+      <main className="w-full max-w-[760px] mx-auto px-4 sm:px-6 pt-6 pb-32 sm:pb-16 space-y-4 flex-1">
         {/* Back link */}
         <div>
           <Link

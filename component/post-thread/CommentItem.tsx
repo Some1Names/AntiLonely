@@ -126,9 +126,9 @@ export function CommentItem({
           onClick={() =>
             setOpenMenuId((prev) => (prev === itemId ? null : itemId))
           }
-          aria-label="ตัวเลือกความคิดเห็น"
+          aria-label="ตัวเลือกเพิ่มเติม"
           aria-expanded={isMenuOpen}
-          className="px-2 py-0.5 rounded-md text-xs text-[#71717a] hover:text-[#18181b] hover:bg-zinc-100 transition-colors cursor-pointer select-none leading-none tracking-wider"
+          className="px-2 py-0.5 rounded-md text-xs text-[#71717a] hover:text-[#18181b] hover:bg-zinc-100 transition-colors cursor-pointer select-none leading-none tracking-wider relative flex items-center justify-center min-w-[28px] min-h-[28px] after:absolute after:w-[44px] after:h-[44px] after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
         >
           •••
         </button>
@@ -221,7 +221,7 @@ export function CommentItem({
   );
 
   return (
-    <div className="py-3.5">
+    <div data-comment-item className="py-3.5">
       {/* Top-level comment */}
       <div className="flex items-start gap-3">
         <div
@@ -260,7 +260,7 @@ export function CommentItem({
             </p>
           )}
 
-          <div className="flex items-center flex-wrap gap-2 pt-0.5">
+          <div className="flex items-center flex-wrap gap-x-2 gap-y-3 pt-0.5">
             <ReactionBar
               reactions={comment.reactions}
               onToggleReaction={(emoji) => onToggleReaction(comment.id, emoji)}
@@ -270,7 +270,7 @@ export function CommentItem({
             <button
               type="button"
               onClick={() => onStartReply(comment.id, comment.author.name)}
-              className="text-xs font-medium text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer select-none px-1"
+              className="text-xs font-medium text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer select-none px-1 relative after:absolute after:inset-y-[-14px] after:inset-x-0 after:content-['']"
             >
               ตอบกลับ
             </button>
@@ -282,7 +282,7 @@ export function CommentItem({
       {(comment.replies.length > 0 || isReplying) && (
         <div className="ml-2 sm:ml-4 mt-2 pl-3 sm:pl-5 border-l-2 border-[#e4e4e7] space-y-1">
           {visibleReplies.map((reply) => (
-            <div key={reply.id} className="flex items-start gap-3 py-2.5">
+            <div key={reply.id} data-comment-item className="flex items-start gap-3 py-2.5">
               <div
                 aria-hidden="true"
                 className="w-7 h-7 rounded-full bg-[#d4d4d8] shrink-0 mt-0.5"
@@ -327,7 +327,7 @@ export function CommentItem({
                   </p>
                 )}
 
-                <div className="flex items-center flex-wrap gap-2 pt-0.5">
+                <div className="flex items-center flex-wrap gap-x-2 gap-y-3 pt-0.5">
                   <ReactionBar
                     reactions={reply.reactions}
                     onToggleReaction={(emoji) =>
@@ -344,7 +344,7 @@ export function CommentItem({
                         name: reply.author.name,
                       })
                     }
-                    className="text-sm font-medium text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer select-none px-1"
+                    className="text-xs md:text-sm font-medium text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer select-none px-1 relative after:absolute after:inset-y-[-14px] after:inset-x-0 after:content-['']"
                   >
                     ตอบกลับ
                   </button>

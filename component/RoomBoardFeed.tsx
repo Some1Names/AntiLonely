@@ -374,18 +374,37 @@ export default function RoomBoardFeed({
       </section>
 
       {/* เนื้อหาหลัก (Body) */}
-      <main className="mx-auto w-full max-w-[1440px] px-4 sm:px-8 lg:px-12 xl:px-[120px] pt-6 pb-16 flex flex-col lg:flex-row items-start gap-6 lg:gap-8 flex-1">
+      <main className="mx-auto w-full max-w-[1440px] px-4 sm:px-8 lg:px-12 xl:px-[120px] pt-6 pb-32 sm:pb-16 flex flex-col lg:flex-row items-start gap-6 lg:gap-8 flex-1">
         {/* Accordion กติกาของห้องสำหรับหน้าจอ < 1024px */}
-        <details className="lg:hidden w-full rounded-xl border border-[#e4e4e7] bg-white p-4 transition-colors">
-          <summary className="font-semibold text-sm text-[#18181b] cursor-pointer select-none focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2">
-            กติกาของห้อง (แตะเพื่อดูรายละเอียด)
+        <details className="group lg:hidden w-full rounded-xl border border-[#e4e4e7] bg-white transition-colors overflow-hidden">
+          <summary className="min-h-[44px] px-4 py-3 flex items-center justify-between font-semibold text-sm text-[#18181b] cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2">
+            <span>กติกาของห้อง</span>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="text-[#71717a] transition-transform duration-120 motion-reduce:transition-none group-open:rotate-90 shrink-0"
+              aria-hidden="true"
+            >
+              <path
+                d="M6 3.5L10.5 8L6 12.5"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </summary>
-          <ol className="mt-3 space-y-2 text-sm font-normal text-[#18181b] leading-[1.4] border-t border-[#e4e4e7] pt-3">
-            <li>1. ใจดีต่อกัน เพราะหลังจอก็คือคนเหมือนกันน้า</li>
-            <li>2. ไม่เปิดเผยข้อมูลส่วนตัว ทั้งของตัวเองและของคนอื่น</li>
-            <li>3. ไม่สแปม ไม่ขายของ</li>
-            <li>4. เจอคนไม่น่ารัก กดรายงานดีกว่าตอบโต้นะ</li>
-          </ol>
+          <div className="px-4 pb-4">
+            <ol className="space-y-2 text-sm font-normal text-[#18181b] leading-[1.4] border-t border-[#e4e4e7] pt-3">
+              <li>1. ใจดีต่อกัน เพราะหลังจอก็คือคนเหมือนกันน้า</li>
+              <li>2. ไม่เปิดเผยข้อมูลส่วนตัว ทั้งของตัวเองและของคนอื่น</li>
+              <li>3. ไม่สแปม ไม่ขายของ</li>
+              <li>4. เจอคนไม่น่ารัก กดรายงานดีกว่าตอบโต้นะ</li>
+            </ol>
+          </div>
         </details>
 
         {/* ฟีดกระทู้ (Feed Column) */}

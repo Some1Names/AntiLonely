@@ -86,7 +86,7 @@ export function PostCard({
             onClick={() => setIsMenuOpen((prev) => !prev)}
             aria-label="ตัวเลือกเพิ่มเติม"
             aria-expanded={isMenuOpen}
-            className="px-2 py-1 rounded-md text-[#71717a] hover:text-[#18181b] hover:bg-zinc-100 transition-colors cursor-pointer select-none leading-none tracking-wider"
+            className="px-2 py-1 rounded-md text-[#71717a] hover:text-[#18181b] hover:bg-zinc-100 transition-colors cursor-pointer select-none leading-none tracking-wider relative flex items-center justify-center min-w-[28px] min-h-[28px] after:absolute after:w-[44px] after:h-[44px] after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
           >
             •••
           </button>
@@ -141,7 +141,7 @@ export function PostCard({
       </div>
 
       {/* Bottom Action Bar */}
-      <div className="flex items-center justify-between flex-wrap gap-2 pt-1">
+      <div className="flex items-center justify-between flex-wrap gap-x-2 gap-y-3 pt-1">
         <ReactionBar
           reactions={thread.reactions}
           onToggleReaction={onToggleReaction}
@@ -154,14 +154,14 @@ export function PostCard({
           <button
             type="button"
             onClick={onReplyClick}
-            className="h-8 px-3 rounded-full border border-[#e4e4e7] bg-white text-[13px] font-medium text-[#18181b] hover:bg-zinc-100 transition-colors cursor-pointer select-none"
+            className="h-8 px-3 rounded-full border border-[#e4e4e7] bg-white text-[13px] font-medium text-[#18181b] hover:bg-zinc-100 transition-colors cursor-pointer select-none relative after:absolute after:inset-y-[-6px] after:inset-x-0 after:content-['']"
           >
             ตอบกลับ
           </button>
           <button
             type="button"
             onClick={onShareClick}
-            className="h-8 px-3 rounded-full border border-[#e4e4e7] bg-white text-[13px] font-medium text-[#18181b] hover:bg-zinc-100 transition-colors cursor-pointer select-none"
+            className="h-8 px-3 rounded-full border border-[#e4e4e7] bg-white text-[13px] font-medium text-[#18181b] hover:bg-zinc-100 transition-colors cursor-pointer select-none relative after:absolute after:inset-y-[-6px] after:inset-x-0 after:content-['']"
           >
             แชร์
           </button>

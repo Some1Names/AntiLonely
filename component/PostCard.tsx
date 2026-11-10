@@ -131,11 +131,6 @@ export default function PostCard({
     onReportSubmitted?.("คัดลอกลิงก์กระทู้เรียบร้อยแล้ว");
   };
 
-  const replyLabel =
-    replyCount > 0
-      ? `ตอบกลับ ${replyCount}`
-      : "ยังไม่มีใครตอบ · มาเป็นคนแรกกัน";
-
   return (
     <article className="w-full rounded-xl border border-[#e4e4e7] bg-white p-4 sm:p-5 flex flex-col gap-3 transition-colors duration-150 hover:border-[#d4d4d8] leading-[1.4]">
       <div ref={headerRef} className="flex items-center justify-between gap-3">
@@ -184,7 +179,7 @@ export default function PostCard({
             aria-label="ตัวเลือกเพิ่มเติม"
             aria-haspopup="menu"
             aria-expanded={isMenuOpen}
-            className="p-1 rounded-md text-sm font-bold text-[#a1a1aa] hover:text-[#18181b] transition-colors cursor-pointer select-none leading-none tracking-wider focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2 relative after:absolute after:inset-[-6px] after:content-['']"
+            className="p-1 rounded-md text-sm font-bold text-[#a1a1aa] hover:text-[#18181b] transition-colors cursor-pointer select-none leading-none tracking-wider focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2 relative flex items-center justify-center min-w-[28px] min-h-[28px] after:absolute after:w-[44px] after:h-[44px] after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
           >
             •••
           </button>
@@ -319,7 +314,7 @@ export default function PostCard({
         )}
       </div>
 
-      <div className="flex items-center justify-between gap-2 flex-wrap w-full pt-1">
+      <div className="flex items-center justify-between gap-x-2 gap-y-3 flex-wrap w-full pt-1">
         <ReactionBar
           reactions={reactions}
           onToggleReaction={handleToggleReaction}
@@ -331,16 +326,30 @@ export default function PostCard({
         {threadHref ? (
           <Link
             href={threadHref}
-            className="inline-flex h-8 max-w-full items-center rounded-full border border-[#e4e4e7] bg-white px-3 py-1.5 text-[13px] font-medium leading-[1.4] text-[#18181b] hover:bg-[#f4f4f5] transition-colors relative after:absolute after:inset-[-6px] after:content-[''] focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2 ml-auto truncate"
+            className="inline-flex h-8 max-w-full items-center rounded-full border border-[#e4e4e7] bg-white px-3 py-1.5 text-[13px] font-medium leading-[1.4] text-[#18181b] hover:bg-[#f4f4f5] transition-colors relative after:absolute after:inset-y-[-6px] after:inset-x-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2 ml-auto truncate"
           >
-            {replyLabel}
+            {replyCount > 0 ? (
+              `ตอบกลับ ${replyCount}`
+            ) : (
+              <>
+                <span className="hidden min-[381px]:inline">ยังไม่มีใครตอบ · มาเป็นคนแรกกัน</span>
+                <span className="inline min-[381px]:hidden">มาเป็นคนแรก</span>
+              </>
+            )}
           </Link>
         ) : (
           <button
             type="button"
-            className="inline-flex h-8 max-w-full items-center rounded-full border border-[#e4e4e7] bg-white px-3 py-1.5 text-[13px] font-medium leading-[1.4] text-[#18181b] hover:bg-[#f4f4f5] transition-colors relative after:absolute after:inset-[-6px] after:content-[''] focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2 ml-auto truncate"
+            className="inline-flex h-8 max-w-full items-center rounded-full border border-[#e4e4e7] bg-white px-3 py-1.5 text-[13px] font-medium leading-[1.4] text-[#18181b] hover:bg-[#f4f4f5] transition-colors relative after:absolute after:inset-y-[-6px] after:inset-x-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2 ml-auto truncate"
           >
-            {replyLabel}
+            {replyCount > 0 ? (
+              `ตอบกลับ ${replyCount}`
+            ) : (
+              <>
+                <span className="hidden min-[381px]:inline">ยังไม่มีใครตอบ · มาเป็นคนแรกกัน</span>
+                <span className="inline min-[381px]:hidden">มาเป็นคนแรก</span>
+              </>
+            )}
           </button>
         )}
       </div>
