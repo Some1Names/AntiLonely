@@ -206,13 +206,11 @@ export default function RoomBoardFeed({
 
   function handleToggleMute() {
     setIsRoomMenuOpen(false);
-    setIsMuted((prev) => {
-      const next = !prev;
-      showToast(
-        next ? "ปิดการแจ้งเตือนห้องนี้แล้ว" : "เปิดการแจ้งเตือนห้องนี้แล้ว"
-      );
-      return next;
-    });
+    const nextMuted = !isMuted;
+    setIsMuted(nextMuted);
+    showToast(
+      nextMuted ? "ปิดการแจ้งเตือนห้องนี้แล้ว" : "เปิดการแจ้งเตือนห้องนี้แล้ว"
+    );
   }
 
   function handleReportRoomSubmit() {
