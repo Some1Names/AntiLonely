@@ -24,6 +24,7 @@ import {
   getInitialBoardMembership,
   joinBoardRoom,
   leaveBoardRoom,
+  REACTION_SIZES,
 } from './post-thread.ts';
 import type { RoomBoardMembershipState } from '../types/post-thread.ts';
 import { getMockBoardPosts, getMockPostThread } from './mock/post-thread.ts';
@@ -497,6 +498,13 @@ describe('post-thread domain logic', () => {
     assert.deepEqual(leaveBoardRoom(zeroCountJoined), {
       status: 'none',
       memberCount: 0,
+    });
+  });
+
+  it('defines unified reaction sizing token with 18px for md and 16px for sm', () => {
+    assert.deepEqual(REACTION_SIZES, {
+      md: { emoji: 18, addIcon: 20 },
+      sm: { emoji: 16, addIcon: 18 },
     });
   });
 });

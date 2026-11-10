@@ -28,6 +28,13 @@ export const INITIAL_PICKER_EMOJIS: readonly string[] =
 export const REMAINING_PICKER_EMOJIS: readonly string[] =
   PRESET_REACTION_EMOJIS.slice(4);
 
+export const REACTION_SIZES = {
+  md: { emoji: 18, addIcon: 20 }, // feed + thread main post
+  sm: { emoji: 16, addIcon: 18 }, // thread comments
+} as const;
+
+export type ReactionSize = keyof typeof REACTION_SIZES;
+
 export function toggleReaction(
   reactions: ReactionItem[],
   emoji: string
