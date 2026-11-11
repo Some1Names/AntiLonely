@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { connection } from "next/server";
 import { headers } from "next/headers";
 
@@ -5,7 +6,19 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import AdminReports from "@/component/admin/AdminReports";
 
-export default async function AdminReportsPage() {
+export default function AdminReportsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-6 text-sm text-ink-soft">กำลังโหลดรายงาน...</div>
+      }
+    >
+      <AdminReportsData />
+    </Suspense>
+  );
+}
+
+async function AdminReportsData() {
   // รอ Request จริงก่อนดึงข้อมูลและใช้เวลาปัจจุบัน
   await connection();
 
@@ -21,7 +34,7 @@ export default async function AdminReportsPage() {
       <h1 className="text-xl font-bold text-red-600">
         ไม่พบ Session
       </h1>
-      <p className="mt-2 text-gray-600">
+      <p className="mt-2 text-ink-soft">
         ระบบไม่พบข้อมูลการเข้าสู่ระบบ กรุณาตรวจสอบการ Login อีกครั้ง
       </p>
     </div>
@@ -34,10 +47,10 @@ if (role !== "admin" && role !== "moderator") {
       <h1 className="text-xl font-bold text-red-600">
         ไม่มีสิทธิ์เข้าถึงหน้านี้
       </h1>
-      <p className="mt-2 text-gray-600">
+      <p className="mt-2 text-ink-soft">
         Role ปัจจุบันของบัญชี: {role ?? "ไม่พบ Role"}
       </p>
-      <p className="mt-2 text-sm text-gray-500">
+      <p className="mt-2 text-sm text-ink-soft">
         ต้องเป็น admin หรือ moderator จึงจะเข้าหน้าจัดการรายงานได้
       </p>
     </div>

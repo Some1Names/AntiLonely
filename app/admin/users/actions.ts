@@ -22,7 +22,33 @@ async function checkAdminPermission() {
     throw new Error("คุณไม่มีสิทธิ์ดำเนินการนี้");
   }
 
-  return session.user.id;
+  return { id: session.user.id, role };
+}
+
+type UserRole = "user" | "moderator" | "admin";
+
+// เปลี่ยน role ของผู้ใช้ (เฉพาะ admin เท่านั้น)
+export async function updateUserRole(userId: string, role: UserRole) {
+  const actor = await checkAdminPermission();
+
+  if (actor.role !== "admin") {
+    throw new Error("เฉพาะ admin เท่านั้นที่เปลี่ยน role ได้");
+  }
+
+  if (!["user", "moderator", "admin"].includes(role)) {
+    throw new Error("role ไม่ถูกต้อง");
+  }
+
+  if (userId === actor.id) {
+    throw new Error("ไม่สามารถเปลี่ยน role ของตัวเองได้");
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { role },
+  });
+
+  return { success: true };
 }
 
 // เปลี่ยนสถานะผู้ใช้ใน Database
@@ -30,7 +56,7 @@ export async function updateUsersStatus(
   userIds: string[],
   status: UserStatus,
 ) {
-  const adminId = await checkAdminPermission();
+  const { id: adminId } = await checkAdminPermission();
 
   if (userIds.length === 0) {
     throw new Error("กรุณาเลือกผู้ใช้");

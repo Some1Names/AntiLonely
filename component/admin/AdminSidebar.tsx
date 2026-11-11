@@ -18,10 +18,14 @@ export default function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col border-r border-gray-200 bg-white px-4 py-7">
+    <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col border-r-[1.5px] border-dashed border-edge-strong bg-paper px-4 py-7">
       <div className="px-3">
-        <p className="text-lg font-bold tracking-tight">AntiLonely</p>
-        <p className="mt-0.5 text-xs text-gray-500">แผงควบคุม</p>
+        <p className="font-display text-lg font-bold tracking-tight">
+          <span className="box-decoration-clone bg-[linear-gradient(transparent_55%,var(--color-highlight)_55%)] px-1">
+            AntiLonely
+          </span>
+        </p>
+        <p className="mt-1 text-xs text-ink-soft">แผงควบคุม</p>
       </div>
 
       <nav className="mt-8 flex flex-col gap-1">
@@ -32,10 +36,10 @@ export default function AdminSidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-sm ${
+              className={`flex items-center justify-between rounded-lg border-[1.5px] px-3 py-2.5 text-sm ${
                 active
-                  ? "bg-gray-100 font-semibold text-neutral-900"
-                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+                  ? "border-ink bg-kmutt-yellow font-semibold text-ink shadow-sticker"
+                  : "border-transparent text-ink-soft hover:bg-butter hover:text-ink"
               }`}
             >
               {item.label}
@@ -48,6 +52,14 @@ export default function AdminSidebar() {
           );
         })}
       </nav>
+
+      <Link
+        href="/"
+        className="mt-auto flex items-center gap-2 rounded-lg border-[1.5px] border-ink bg-white px-3 py-2.5 text-sm font-semibold text-ink shadow-sticker hover:bg-butter active:translate-0.5 active:shadow-none"
+      >
+        <span aria-hidden="true">←</span>
+        กลับไปหน้าหลัก
+      </Link>
     </aside>
   );
 }

@@ -1,7 +1,23 @@
+import { Suspense } from "react";
+import { connection } from "next/server";
 import { prisma } from "@/lib/prisma";
 import AdminUsersClient from "./AdminUsersClient";
 
-export default async function AdminUsersPage() {
+export default function AdminUsersPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-6 text-sm text-ink-soft">กำลังโหลดผู้ใช้...</div>
+      }
+    >
+      <AdminUsersData />
+    </Suspense>
+  );
+}
+
+async function AdminUsersData() {
+  await connection();
+
   const now = new Date();
 
   // ดึงข้อมูลผู้ใช้จาก Database
@@ -15,6 +31,7 @@ export default async function AdminUsersPage() {
       displayUsername: true,
       name: true,
       email: true,
+      role: true,
       createdAt: true,
 
       // ดึงประวัติการระงับและแบนที่ยังมีผล
@@ -70,6 +87,7 @@ export default async function AdminUsersPage() {
       id: user.id,
       name: user.displayUsername || user.username,
       email: user.email,
+      role: user.role,
       joinedAt: user.createdAt.toISOString(),
       lastActiveAt: null,
       posts: user._count.messages,

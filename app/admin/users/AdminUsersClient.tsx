@@ -4,14 +4,22 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useNow } from "@/component/useNow";
-import { updateUsersStatus } from "./actions";
+import { updateUsersStatus, updateUserRole } from "./actions";
 
 type Status = "active" | "suspended" | "banned";
+type Role = "user" | "moderator" | "admin";
+
+const roleLabel: Record<Role, string> = {
+  user: "ผู้ใช้",
+  moderator: "Moderator",
+  admin: "Admin",
+};
 
 type User = {
   id: string;
   name: string;
   email: string;
+  role: Role;
   joinedAt: string;
   lastActiveAt: string | null;
   posts: number;
@@ -37,7 +45,7 @@ const statusLabel: Record<Status, string> = {
 
 const statusStyle: Record<Status, string> = {
   active: "bg-green-50 text-green-600",
-  suspended: "bg-yellow-100 text-yellow-800",
+  suspended: "bg-butter text-ink",
   banned: "bg-red-50 text-red-500",
 };
 
@@ -186,16 +194,43 @@ export default function AdminUsersClient({ initialUsers }: Props) {
     });
   }
 
+  function changeRole(user: User, role: Role) {
+    if (role === user.role || isPending) return;
+
+    if (
+      !window.confirm(
+        `เปลี่ยน role ของ ${user.name} เป็น ${roleLabel[role]}?`,
+      )
+    ) {
+      return;
+    }
+
+    setError("");
+
+    startTransition(async () => {
+      try {
+        await updateUserRole(user.id, role);
+        router.refresh();
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "เกิดข้อผิดพลาดในการเปลี่ยน role",
+        );
+      }
+    });
+  }
+
   return (
     <div>
       {/* หัวหน้า + ค้นหา */}
       <div className="flex flex-wrap items-start justify-between gap-6">
         <div>
-          <h1 className="text-[28px] font-bold leading-tight tracking-tight">
+          <h1 className="font-display text-[28px] font-bold leading-tight tracking-tight">
             ผู้ใช้
           </h1>
 
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-ink-soft">
             {registered.toLocaleString("en-US")} คนลงทะเบียน
             {" · "}ข้อมูลออนไลน์ยังไม่มี
           </p>
@@ -203,7 +238,7 @@ export default function AdminUsersClient({ initialUsers }: Props) {
 
         <div className="relative w-80 max-w-full">
           <svg
-            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft/70"
             viewBox="0 0 16 16"
             fill="none"
             stroke="currentColor"
@@ -221,13 +256,13 @@ export default function AdminUsersClient({ initialUsers }: Props) {
               setSelected(new Set());
             }}
             placeholder="ค้นหาผู้ใช้..."
-            className="h-10 w-full rounded-lg border border-gray-200 bg-white pl-10 pr-4 text-sm outline-none placeholder:text-gray-400 focus:border-gray-400"
+            className="h-10 w-full rounded-lg border-[1.5px] border-edge-strong bg-white pl-10 pr-4 text-sm outline-none placeholder:text-ink-soft/70 focus:border-kmutt-orange"
           />
         </div>
       </div>
 
       {/* ข้อมูลออนไลน์ */}
-      <div className="mt-5 flex items-center gap-2 text-[13px] text-gray-500">
+      <div className="mt-5 flex items-center gap-2 text-[13px] text-ink-soft">
         <span className="h-2 w-2 rounded-full bg-gray-400" />
         ยังไม่มีข้อมูลเวลาใช้งานล่าสุด
       </div>
@@ -251,8 +286,8 @@ export default function AdminUsersClient({ initialUsers }: Props) {
             }}
             className={`rounded-full border px-4 py-1.5 text-[13px] ${
               filter === f.key
-                ? "border-neutral-900 bg-neutral-900 font-medium text-white"
-                : "border-gray-200 bg-white hover:bg-gray-50"
+                ? "border-ink bg-ink font-medium text-white"
+                : "border-edge-strong bg-white hover:bg-butter"
             }`}
           >
             {f.label}
@@ -262,7 +297,7 @@ export default function AdminUsersClient({ initialUsers }: Props) {
 
       {/* แถบดำเมื่อมีการเลือก */}
       {selected.size > 0 && (
-        <div className="mt-5 flex items-center justify-between rounded-xl bg-neutral-900 px-4 py-3.5 text-white">
+        <div className="mt-5 flex items-center justify-between rounded-xl bg-ink px-4 py-3.5 text-white">
           <span className="text-[13px] font-semibold">
             เลือกแล้ว {selected.size} รายการ
           </span>
@@ -273,7 +308,7 @@ export default function AdminUsersClient({ initialUsers }: Props) {
               onClick={() =>
                 changeStatus(Array.from(selected), "suspended")
               }
-              className="rounded-md bg-neutral-700 px-3.5 py-1.5 text-xs font-semibold hover:bg-neutral-600 disabled:opacity-50"
+              className="rounded-md bg-ink-soft px-3.5 py-1.5 text-xs font-semibold hover:bg-ink-soft disabled:opacity-50"
             >
               ระงับ
             </button>
@@ -292,9 +327,9 @@ export default function AdminUsersClient({ initialUsers }: Props) {
       )}
 
       {/* ตาราง */}
-      <div className="mt-5 overflow-x-auto rounded-2xl border border-gray-200 bg-white">
-        <table className="w-full min-w-[860px] text-left text-[13px]">
-          <thead className="border-b border-gray-200 bg-gray-100 text-gray-500">
+      <div className="mt-5 overflow-x-auto rounded-xl border-[1.5px] border-ink bg-white shadow-[4px_4px_0_var(--color-edge-strong)]">
+        <table className="w-full min-w-[960px] text-left text-[13px]">
+          <thead className="border-b border-edge-strong bg-butter text-ink-soft">
             <tr>
               <th className="w-12 px-4 py-3">
                 <input
@@ -303,7 +338,7 @@ export default function AdminUsersClient({ initialUsers }: Props) {
                   disabled={visible.length === 0 || isPending}
                   onChange={toggleAll}
                   aria-label="เลือกทั้งหมด"
-                  className="h-4 w-4 accent-neutral-900"
+                  className="h-4 w-4 accent-kmutt-orange-dark"
                 />
               </th>
 
@@ -312,6 +347,7 @@ export default function AdminUsersClient({ initialUsers }: Props) {
               <th className="px-4 py-3 font-medium">เข้าร่วม</th>
               <th className="px-4 py-3 font-medium">ใช้งานล่าสุด</th>
               <th className="px-4 py-3 font-medium">โพสต์</th>
+              <th className="px-4 py-3 font-medium">Role</th>
               <th className="px-4 py-3 font-medium">สถานะ</th>
               <th className="px-4 py-3 font-medium">การจัดการ</th>
             </tr>
@@ -321,7 +357,7 @@ export default function AdminUsersClient({ initialUsers }: Props) {
             {visible.map((u) => (
               <tr
                 key={u.id}
-                className="border-b border-gray-200 last:border-b-0 hover:bg-gray-50"
+                className="border-b border-edge-strong last:border-b-0 hover:bg-butter"
               >
                 <td className="px-4 py-4">
                   <input
@@ -330,7 +366,7 @@ export default function AdminUsersClient({ initialUsers }: Props) {
                     disabled={isPending}
                     onChange={() => toggleOne(u.id)}
                     aria-label={`เลือก ${u.name}`}
-                    className="h-4 w-4 accent-neutral-900"
+                    className="h-4 w-4 accent-kmutt-orange-dark"
                   />
                 </td>
 
@@ -345,16 +381,34 @@ export default function AdminUsersClient({ initialUsers }: Props) {
                   {maskEmail(u.email)}
                 </td>
 
-                <td className="whitespace-nowrap px-4 py-4 text-gray-500">
+                <td className="whitespace-nowrap px-4 py-4 text-ink-soft">
                   {formatDate(u.joinedAt)}
                 </td>
 
-                <td className="whitespace-nowrap px-4 py-4 text-gray-500">
+                <td className="whitespace-nowrap px-4 py-4 text-ink-soft">
                   {timeAgo(u.lastActiveAt, now)}
                 </td>
 
                 <td className="px-4 py-4">
                   {u.posts.toLocaleString("en-US")}
+                </td>
+
+                <td className="px-4 py-4">
+                  <select
+                    value={u.role}
+                    disabled={isPending}
+                    onChange={(e) =>
+                      changeRole(u, e.target.value as Role)
+                    }
+                    aria-label={`role ของ ${u.name}`}
+                    className="rounded border border-edge-strong bg-white px-2 py-1 text-[12px] disabled:opacity-50"
+                  >
+                    {(Object.keys(roleLabel) as Role[]).map((r) => (
+                      <option key={r} value={r}>
+                        {roleLabel[r]}
+                      </option>
+                    ))}
+                  </select>
                 </td>
 
                 <td className="px-4 py-4">
@@ -369,7 +423,7 @@ export default function AdminUsersClient({ initialUsers }: Props) {
                   <div className="flex gap-1.5">
                     <Link
                       href={`/admin/users/${u.id}`}
-                      className="rounded border border-gray-200 bg-white px-2 py-0.5 text-[11px] font-medium hover:bg-gray-50"
+                      className="rounded border border-edge-strong bg-white px-2 py-0.5 text-[11px] font-medium hover:bg-butter"
                     >
                       ดู
                     </Link>
@@ -382,7 +436,7 @@ export default function AdminUsersClient({ initialUsers }: Props) {
                           toggleAction[u.status].next,
                         )
                       }
-                      className="rounded border border-gray-200 bg-white px-2 py-0.5 text-[11px] font-medium hover:bg-gray-50 disabled:opacity-50"
+                      className="rounded border border-edge-strong bg-white px-2 py-0.5 text-[11px] font-medium hover:bg-butter disabled:opacity-50"
                     >
                       {toggleAction[u.status].label}
                     </button>
@@ -394,8 +448,8 @@ export default function AdminUsersClient({ initialUsers }: Props) {
             {visible.length === 0 && (
               <tr>
                 <td
-                  colSpan={8}
-                  className="py-14 text-center text-sm text-gray-400"
+                  colSpan={9}
+                  className="py-14 text-center text-sm text-ink-soft/70"
                 >
                   {users.length === 0
                     ? "ยังไม่มีผู้ใช้"
@@ -408,7 +462,7 @@ export default function AdminUsersClient({ initialUsers }: Props) {
       </div>
 
       {isPending && (
-        <p className="mt-3 text-sm text-gray-500">
+        <p className="mt-3 text-sm text-ink-soft">
           กำลังบันทึกข้อมูล...
         </p>
       )}
