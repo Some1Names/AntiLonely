@@ -165,8 +165,7 @@ or the final state).
   state, not a route. "+ สร้างห้องใหม่" in the sidebar opens it on ห้อง.
 - `ReportModal` reports a comment on the board feed. It is built but not
   wired in yet: the board feed has to open it from a comment's menu.
-- `/rooms/[id]` is the room page and its board feed (`/boardfeed` shows one
-  room as a demo). It and `/profile` are owned by a teammate, and
+- `/rooms/[id]` is the room page and its board feed. It and `/profile` are owned by a teammate, and
   `/notifications` by another, so keep design changes there in sync with them.
 - `/admin/preview` tries the admin dialogs with fake users, in development
   only.
