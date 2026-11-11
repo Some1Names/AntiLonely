@@ -187,7 +187,7 @@ export default function AdminRooms({ rooms, summary }: Props) {
     <div className="min-h-full text-[#202124]">
       <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-[28px] font-bold leading-tight">ห้องแชท</h1>
+          <h1 className="font-display text-[28px] font-bold leading-tight">ห้องแชท</h1>
           <p className="mt-1 text-sm text-[#777780]">
             {summary.total.toLocaleString("en-US")} ห้อง ·{" "}
             {summary.private.toLocaleString("en-US")} ห้องส่วนตัว
@@ -247,12 +247,12 @@ export default function AdminRooms({ rooms, summary }: Props) {
       {notice && (
         <div
           role="status"
-          className="mb-4 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm"
+          className="mb-4 rounded-lg border-[1.5px] border-edge-strong bg-white px-4 py-3 text-sm"
         >
           {notice}
           <button
             onClick={() => setNotice("")}
-            className="ml-3 text-gray-500 underline"
+            className="ml-3 text-ink-soft underline"
           >
             ปิด
           </button>
@@ -265,7 +265,7 @@ export default function AdminRooms({ rooms, summary }: Props) {
           <div className="flex gap-2">
             <button
               onClick={() => setSelected([])}
-              className="rounded-md border px-3 py-1.5 hover:bg-gray-50"
+              className="rounded-md border px-3 py-1.5 hover:bg-butter"
             >
               ยกเลิกการเลือก
             </button>
@@ -368,14 +368,14 @@ export default function AdminRooms({ rooms, summary }: Props) {
                     <button
                       disabled={room.status === "archived"}
                       onClick={() => setEditing(room)}
-                      className="rounded-md border border-[#dedee3] px-2.5 py-1 text-xs hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="rounded-md border border-[#dedee3] px-2.5 py-1 text-xs hover:bg-butter disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       แก้ไข
                     </button>
                     <button
                       disabled={room.status === "archived"}
                       onClick={() => setConfirmArchive(room)}
-                      className="rounded-md border border-[#dedee3] px-2.5 py-1 text-xs hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="rounded-md border border-[#dedee3] px-2.5 py-1 text-xs hover:bg-butter disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       จัดเก็บ
                     </button>
@@ -420,7 +420,7 @@ export default function AdminRooms({ rooms, summary }: Props) {
                 setEditing({ ...editing, name: event.target.value })
               }
               maxLength={100}
-              className="mt-2 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-gray-500"
+              className="mt-2 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-kmutt-orange"
             />
 
             <label className="mt-4 block text-sm font-medium">
@@ -433,7 +433,7 @@ export default function AdminRooms({ rooms, summary }: Props) {
               }
               rows={3}
               maxLength={500}
-              className="mt-2 w-full resize-none rounded-lg border px-3 py-2 text-sm outline-none focus:border-gray-500"
+              className="mt-2 w-full resize-none rounded-lg border px-3 py-2 text-sm outline-none focus:border-kmutt-orange"
             />
 
             <div className="mt-6 flex justify-end gap-2">
@@ -460,7 +460,7 @@ export default function AdminRooms({ rooms, summary }: Props) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
             <h2 className="text-lg font-semibold">จัดเก็บห้องแชท?</h2>
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-ink-soft">
               ต้องการจัดเก็บห้อง &quot;{confirmArchive.name}&quot; ใช่หรือไม่?
               ข้อมูลห้องจะยังอยู่ในระบบ แต่สถานะจะเปลี่ยนเป็นจัดเก็บแล้ว
             </p>

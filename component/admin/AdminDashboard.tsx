@@ -76,14 +76,14 @@ function UserChart({
         )}
       </svg>
 
-      <div className="mt-1 flex justify-between text-[11px] text-gray-500">
+      <div className="mt-1 flex justify-between text-[11px] text-ink-soft">
         {labels.map((label, index) => (
           <span key={`${label}-${index}`}>{label}</span>
         ))}
       </div>
 
       {!data.some((value) => value > 0) && (
-        <p className="mt-2 text-center text-xs text-gray-400">
+        <p className="mt-2 text-center text-xs text-ink-soft/70">
           ยังไม่มีข้อมูลผู้สมัครในช่วง 7 วันที่ผ่านมา
         </p>
       )}
@@ -122,14 +122,14 @@ function PostsChart({
         })}
       </div>
 
-      <div className="mt-4 flex justify-between text-[11px] text-gray-500">
+      <div className="mt-4 flex justify-between text-[11px] text-ink-soft">
         {labels.map((label, index) => (
           <span key={`${label}-${index}`}>{label}</span>
         ))}
       </div>
 
       {!data.some((value) => value > 0) && (
-        <p className="mt-2 text-center text-xs text-gray-400">
+        <p className="mt-2 text-center text-xs text-ink-soft/70">
           ยังไม่มีโพสต์ในช่วง 7 วันที่ผ่านมา
         </p>
       )}
@@ -140,7 +140,7 @@ function PostsChart({
 // ไอคอนกิจกรรม
 function ActivityIcon({ type }: { type: "room" | "report" }) {
   return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-gray-100 text-gray-500">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-butter text-ink-soft">
       {type === "room" ? (
         <svg
           width="17"
@@ -212,10 +212,10 @@ export default function AdminDashboard({
     <div className="w-full">
       {/* Header */}
       <header className="mb-6">
-        <h1 className="text-[28px] font-bold leading-tight text-[#19191d]">
+        <h1 className="font-display text-[28px] font-bold leading-tight text-[#19191d]">
           แดชบอร์ด
         </h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-ink-soft">
           ข้อมูลภาพรวมของกิจกรรมต่างๆบน AntiLonely
         </p>
       </header>
@@ -225,9 +225,9 @@ export default function AdminDashboard({
         {cards.map((card) => (
           <div
             key={card.title}
-            className="min-w-0 rounded-[10px] border border-gray-200 bg-white px-5 py-5"
+            className="min-w-0 rounded-[10px] border border-edge-strong bg-white px-5 py-5"
           >
-            <p className="text-xs font-semibold text-gray-500">
+            <p className="text-xs font-semibold text-ink-soft">
               {card.title}
             </p>
 
@@ -241,7 +241,7 @@ export default function AdminDashboard({
 
             <p
               className={`mt-3 text-xs ${
-                card.danger ? "text-[#ef4444]" : "text-gray-500"
+                card.danger ? "text-[#ef4444]" : "text-ink-soft"
               }`}
             >
               {card.description}
@@ -252,22 +252,22 @@ export default function AdminDashboard({
 
       {/* Charts */}
       <section className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <div className="min-w-0 rounded-[12px] border border-gray-200 bg-white px-6 py-6">
+        <div className="min-w-0 rounded-[12px] border border-edge-strong bg-white px-6 py-6">
           <h2 className="text-base font-bold text-[#19191d]">
             การเติบโตของผู้ใช้
           </h2>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-ink-soft">
             ผู้ใช้ที่ลงทะเบียนในช่วง 7 วันที่ผ่านมา
           </p>
 
           <UserChart labels={chartLabels} data={usersSeries} />
         </div>
 
-        <div className="min-w-0 rounded-[12px] border border-gray-200 bg-white px-6 py-6">
+        <div className="min-w-0 rounded-[12px] border border-edge-strong bg-white px-6 py-6">
           <h2 className="text-base font-bold text-[#19191d]">
             โพสต์ต่อวัน
           </h2>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-ink-soft">
             จำนวนโพสต์ทั้งหมดต่อวัน
           </p>
 
@@ -276,7 +276,7 @@ export default function AdminDashboard({
       </section>
 
       {/* Recent Activities */}
-      <section className="mt-6 rounded-[12px] border border-gray-200 bg-white px-6 py-6">
+      <section className="mt-6 rounded-[12px] border border-edge-strong bg-white px-6 py-6">
         <h2 className="mb-4 text-base font-bold text-[#19191d]">
           กิจกรรมล่าสุด
         </h2>
@@ -288,7 +288,7 @@ export default function AdminDashboard({
                 key={activity.id}
                 className={`flex min-w-0 items-center gap-3 py-3 ${
                   index !== activities.length - 1
-                    ? "border-b border-gray-200"
+                    ? "border-b border-edge-strong"
                     : ""
                 }`}
               >
@@ -298,14 +298,14 @@ export default function AdminDashboard({
                   {activity.text}
                 </p>
 
-                <span className="shrink-0 text-xs text-gray-500">
+                <span className="shrink-0 text-xs text-ink-soft">
                   {activity.timeAgo}
                 </span>
               </div>
             ))}
           </div>
         ) : (
-          <div className="flex min-h-[120px] items-center justify-center text-sm text-gray-400">
+          <div className="flex min-h-[120px] items-center justify-center text-sm text-ink-soft/70">
             ยังไม่มีกิจกรรมล่าสุด
           </div>
         )}

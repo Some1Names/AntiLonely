@@ -29,7 +29,7 @@ const REASONS = [
   { value: "spam", label: "สแปม", color: "bg-yellow-50 text-yellow-700" },
   { value: "image", label: "ภาพไม่เหมาะสม", color: "bg-red-50 text-red-600" },
   { value: "bully", label: "กลั่นแกล้ง", color: "bg-red-50 text-red-600" },
-  { value: "other", label: "อื่นๆ", color: "bg-gray-100 text-gray-600" },
+  { value: "other", label: "อื่นๆ", color: "bg-butter text-ink-soft" },
 ];
 
 function getReasonLabel(reason: string) {
@@ -39,7 +39,7 @@ function getReasonLabel(reason: string) {
 function getReasonColor(reason: string) {
   return (
     REASONS.find((item) => item.value === reason)?.color ??
-    "bg-gray-100 text-gray-600"
+    "bg-butter text-ink-soft"
   );
 }
 
@@ -207,8 +207,8 @@ export default function AdminReports({ reports }: AdminReportsProps) {
       {/* Header */}
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-bold text-neutral-900">รายงาน</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-3xl font-bold text-ink">รายงาน</h1>
+          <p className="mt-1 text-sm text-ink-soft">
             {statusCounts.pending} รายการรอดำเนินการ · ล่าสุด{" "}
             {reports.length > 0
               ? getTimeAgo(
@@ -227,12 +227,12 @@ export default function AdminReports({ reports }: AdminReportsProps) {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="ค้นหารายงาน, ผู้ใช้, ห้อง..."
-          className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-neutral-500 md:w-80"
+          className="w-full rounded-lg border-[1.5px] border-edge-strong bg-white px-4 py-3 text-sm outline-none focus:border-kmutt-orange md:w-80"
         />
       </div>
 
       {/* Status tabs */}
-      <div className="flex flex-wrap gap-6 border-b border-gray-200">
+      <div className="flex flex-wrap gap-6 border-b border-edge-strong">
         {tabs.map((tab) => (
           <button
             key={tab.value}
@@ -244,8 +244,8 @@ export default function AdminReports({ reports }: AdminReportsProps) {
             }}
             className={`border-b-2 pb-3 text-sm transition ${
               status === tab.value
-                ? "border-neutral-900 font-semibold text-neutral-900"
-                : "border-transparent text-gray-500 hover:text-neutral-900"
+                ? "border-ink font-semibold text-ink"
+                : "border-transparent text-ink-soft hover:text-ink"
             }`}
           >
             {tab.label} ({statusCounts[tab.value]})
@@ -260,8 +260,8 @@ export default function AdminReports({ reports }: AdminReportsProps) {
           onClick={() => setReason("all")}
           className={`rounded-full border px-4 py-2 text-xs ${
             reason === "all"
-              ? "border-neutral-900 bg-neutral-900 text-white"
-              : "border-gray-200 bg-white text-gray-700"
+              ? "border-ink bg-ink text-white"
+              : "border-edge-strong bg-white text-ink"
           }`}
         >
           ทุกเหตุผล
@@ -276,8 +276,8 @@ export default function AdminReports({ reports }: AdminReportsProps) {
             }
             className={`rounded-full border px-4 py-2 text-xs ${
               reason === item.value
-                ? "border-neutral-900 bg-neutral-900 text-white"
-                : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                ? "border-ink bg-ink text-white"
+                : "border-edge-strong bg-white text-ink hover:bg-butter"
             }`}
           >
             {item.label} · {reasonCounts[item.value] ?? 0}
@@ -287,7 +287,7 @@ export default function AdminReports({ reports }: AdminReportsProps) {
 
       {/* Bulk action bar */}
       {selected.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-neutral-900 px-4 py-4 text-white">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-ink px-4 py-4 text-white">
           <span className="text-sm">
             เลือกแล้ว {selected.length} รายการ
           </span>
@@ -318,16 +318,16 @@ export default function AdminReports({ reports }: AdminReportsProps) {
       {notice && (
         <div
           role="status"
-          className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700"
+          className="rounded-lg border border-edge-strong bg-cream px-4 py-3 text-sm text-ink"
         >
           {notice}
         </div>
       )}
 
       {/* Reports table */}
-      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+      <div className="overflow-x-auto rounded-xl border-[1.5px] border-ink bg-white shadow-[4px_4px_0_var(--color-edge-strong)]">
         <table className="w-full min-w-[850px] border-collapse text-left">
-          <thead className="bg-gray-100 text-xs text-gray-500">
+          <thead className="bg-butter text-xs text-ink-soft">
             <tr>
               <th className="w-14 px-4 py-3">
                 <input
@@ -335,7 +335,7 @@ export default function AdminReports({ reports }: AdminReportsProps) {
                   checked={allVisibleSelected}
                   onChange={toggleSelectAll}
                   aria-label="เลือกทั้งหมด"
-                  className="h-4 w-4 accent-neutral-900"
+                  className="h-4 w-4 accent-kmutt-orange-dark"
                 />
               </th>
               <th className="px-4 py-3">เนื้อหา</th>
@@ -351,22 +351,22 @@ export default function AdminReports({ reports }: AdminReportsProps) {
               const isPending = item.status === "pending";
 
               return (
-                <tr key={item.messageId} className="hover:bg-gray-50">
+                <tr key={item.messageId} className="hover:bg-butter">
                   <td className="px-4 py-4">
                     <input
                       type="checkbox"
                       checked={selected.includes(item.messageId)}
                       onChange={() => toggleSelect(item.messageId)}
                       aria-label={`เลือกข้อความจาก ${item.author}`}
-                      className="h-4 w-4 accent-neutral-900"
+                      className="h-4 w-4 accent-kmutt-orange-dark"
                     />
                   </td>
 
                   <td className="max-w-[380px] px-4 py-4">
-                    <p className="truncate font-medium text-neutral-900">
+                    <p className="truncate font-medium text-ink">
                       {item.content || "[ไม่มีเนื้อหา]"}
                     </p>
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-ink-soft">
                       {item.room} · by {item.author}
                     </p>
                   </td>
@@ -379,11 +379,11 @@ export default function AdminReports({ reports }: AdminReportsProps) {
                     </span>
                   </td>
 
-                  <td className="px-4 py-4 font-semibold text-neutral-900">
+                  <td className="px-4 py-4 font-semibold text-ink">
                     {item.count}
                   </td>
 
-                  <td className="px-4 py-4 text-gray-500">
+                  <td className="px-4 py-4 text-ink-soft">
                     {getTimeAgo(item.createdAt)}
                   </td>
 
@@ -393,7 +393,7 @@ export default function AdminReports({ reports }: AdminReportsProps) {
                         type="button"
                         disabled={!isPending || busy}
                         onClick={() => handleDismiss([item.messageId])}
-                        className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="rounded-lg border border-edge-strong px-3 py-2 text-xs font-medium hover:bg-butter disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         ยกเลิก
                       </button>
@@ -412,7 +412,7 @@ export default function AdminReports({ reports }: AdminReportsProps) {
                         onClick={() => setDetail(item)}
                         aria-label="ดูรายละเอียดรายงาน"
                         title="ดูรายละเอียด"
-                        className="rounded-lg px-2 py-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                        className="rounded-lg px-2 py-2 text-ink-soft/70 hover:bg-butter hover:text-ink"
                       >
                         •••
                       </button>
@@ -425,12 +425,12 @@ export default function AdminReports({ reports }: AdminReportsProps) {
             {filteredReports.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-16 text-center">
-                  <p className="font-medium text-gray-700">
+                  <p className="font-medium text-ink">
                     {reports.length === 0
                       ? "ยังไม่มีรายงาน"
                       : "ไม่พบรายงานที่ตรงกับเงื่อนไข"}
                   </p>
-                  <p className="mt-2 text-sm text-gray-400">
+                  <p className="mt-2 text-sm text-ink-soft/70">
                     {reports.length === 0
                       ? "เมื่อมีผู้ใช้ส่งรายงาน ข้อมูลจะแสดงที่นี่"
                       : "ลองเปลี่ยนสถานะ เหตุผล หรือคำค้นหา"}
@@ -458,14 +458,14 @@ export default function AdminReports({ reports }: AdminReportsProps) {
             <div className="flex items-center justify-between">
               <h2
                 id="report-detail-title"
-                className="text-lg font-bold text-neutral-900"
+                className="text-lg font-bold text-ink"
               >
                 รายละเอียดรายงาน
               </h2>
               <button
                 type="button"
                 onClick={() => setDetail(null)}
-                className="text-xl text-gray-400 hover:text-gray-800"
+                className="text-xl text-ink-soft/70 hover:text-ink"
                 aria-label="ปิด"
               >
                 ×
@@ -474,39 +474,39 @@ export default function AdminReports({ reports }: AdminReportsProps) {
 
             <div className="mt-5 space-y-4 text-sm">
               <div>
-                <p className="text-xs text-gray-500">เนื้อหา</p>
-                <p className="mt-1 whitespace-pre-wrap text-neutral-900">
+                <p className="text-xs text-ink-soft">เนื้อหา</p>
+                <p className="mt-1 whitespace-pre-wrap text-ink">
                   {detail.content}
                 </p>
               </div>
 
               <div>
-                <p className="text-xs text-gray-500">ห้อง</p>
-                <p className="mt-1 text-neutral-900">{detail.room}</p>
+                <p className="text-xs text-ink-soft">ห้อง</p>
+                <p className="mt-1 text-ink">{detail.room}</p>
               </div>
 
               <div>
-                <p className="text-xs text-gray-500">ผู้เขียน</p>
-                <p className="mt-1 text-neutral-900">{detail.author}</p>
+                <p className="text-xs text-ink-soft">ผู้เขียน</p>
+                <p className="mt-1 text-ink">{detail.author}</p>
               </div>
 
               <div>
-                <p className="text-xs text-gray-500">เหตุผลหลัก</p>
-                <p className="mt-1 text-neutral-900">
+                <p className="text-xs text-ink-soft">เหตุผลหลัก</p>
+                <p className="mt-1 text-ink">
                   {getReasonLabel(detail.reason)}
                 </p>
               </div>
 
               <div>
-                <p className="text-xs text-gray-500">จำนวนรายงาน</p>
-                <p className="mt-1 text-neutral-900">{detail.count}</p>
+                <p className="text-xs text-ink-soft">จำนวนรายงาน</p>
+                <p className="mt-1 text-ink">{detail.count}</p>
               </div>
             </div>
 
             <button
               type="button"
               onClick={() => setDetail(null)}
-              className="mt-6 w-full rounded-lg bg-neutral-900 py-3 text-sm font-medium text-white hover:bg-neutral-700"
+              className="mt-6 w-full rounded-lg bg-ink py-3 text-sm font-medium text-white hover:bg-ink-soft"
             >
               ปิด
             </button>

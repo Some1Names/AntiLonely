@@ -50,6 +50,8 @@ export default function AccountMenu() {
   }
 
   const name = session.user.name;
+  const isStaff =
+    session.user.role === "admin" || session.user.role === "moderator";
 
   async function signOut() {
     setSigningOut(true);
@@ -88,6 +90,17 @@ export default function AccountMenu() {
             <Icon name="user" className="size-4 text-ink-soft" />
             โปรไฟล์
           </Link>
+          {isStaff && (
+            <Link
+              href="/admin"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className={menuItemClass}
+            >
+              <Icon name="shield" className="size-4 text-ink-soft" />
+              แผงควบคุมแอดมิน
+            </Link>
+          )}
           <button
             type="button"
             role="menuitem"

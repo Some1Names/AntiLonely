@@ -1,10 +1,25 @@
-
+import { Suspense } from "react";
+import { connection } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import AdminRooms from "@/component/admin/AdminRooms";
 
-export default async function AdminRoomsPage() {
+export default function AdminRoomsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-6 text-sm text-ink-soft">กำลังโหลดห้องแชท...</div>
+      }
+    >
+      <AdminRoomsData />
+    </Suspense>
+  );
+}
+
+async function AdminRoomsData() {
+  await connection();
+
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -15,7 +30,7 @@ export default async function AdminRoomsPage() {
     return (
       <div className="rounded-xl border bg-white p-8">
         <h1 className="text-xl font-semibold">ไม่พบ Session</h1>
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-ink-soft">
           กรุณาเข้าสู่ระบบก่อนใช้งานหน้าจัดการห้องแชท
         </p>
       </div>
@@ -26,7 +41,7 @@ export default async function AdminRoomsPage() {
     return (
       <div className="rounded-xl border bg-white p-8">
         <h1 className="text-xl font-semibold">ไม่มีสิทธิ์เข้าถึง</h1>
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-ink-soft">
           หน้านี้สำหรับ Admin และ Moderator เท่านั้น
         </p>
       </div>
