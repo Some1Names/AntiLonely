@@ -25,8 +25,9 @@ import {
   joinBoardRoom,
   leaveBoardRoom,
   REACTION_SIZES,
+  groupRepliesIntoBranches,
 } from './post-thread.ts';
-import type { RoomBoardMembershipState } from '../types/post-thread.ts';
+import type { RoomBoardMembershipState, ThreadReply } from '../types/post-thread.ts';
 import { getMockBoardPosts, getMockPostThread } from './mock/post-thread.ts';
 
 describe('post-thread domain logic', () => {
@@ -126,6 +127,40 @@ describe('post-thread domain logic', () => {
     );
     const lastReply = updated[0].replies.at(-1);
     assert.deepEqual(lastReply?.replyTo, { id: 'anon-512', name: 'สายฝน' });
+  });
+
+  it('ignores replyTo when replying to oneself on a top comment (same id or same name)', () => {
+    const { thread, currentUser } = getMockPostThread('music', 'post-1', refNow);
+    const updated = addNestedReply(
+      thread.comments,
+      'comment-1',
+      'ตอบตัวเอง',
+      currentUser,
+      '2026-10-24T12:04:00.000Z',
+      thread.author.id,
+      { id: currentUser.id, name: currentUser.name }
+    );
+    const lastReply = updated[0].replies.at(-1);
+    assert.equal(lastReply?.replyTo, undefined);
+  });
+
+  it('preserves replyTo when replying to a nested reply even by the same author (isNested: true)', () => {
+    const { thread, currentUser } = getMockPostThread('music', 'post-1', refNow);
+    const updated = addNestedReply(
+      thread.comments,
+      'comment-1',
+      'ข้อความ 3 ตอบกลับข้อความ 2',
+      currentUser,
+      '2026-10-24T12:05:00.000Z',
+      thread.author.id,
+      { id: currentUser.id, name: currentUser.name, isNested: true }
+    );
+    const lastReply = updated[0].replies.at(-1);
+    assert.deepEqual(lastReply?.replyTo, {
+      id: currentUser.id,
+      name: currentUser.name,
+      isNested: true,
+    });
   });
 
   it('sorts top-level comments by oldest and newest while keeping nested replies chronological', () => {
@@ -373,6 +408,10 @@ describe('post-thread domain logic', () => {
     const t2 = getMockPostThread('songs', 'board-2', refNow);
     assert.equal(t2.thread.author.name, 'ปวยเล้ง');
     assert.equal(t2.thread.content, 'นิโคติน - mirrr เศร้าแบบเกือบตาย');
+    assert.deepEqual(t2.thread.comments[0].replies[0].replyTo, {
+      id: 'anon-203',
+      name: 'ต้นหอม',
+    });
 
     const t3 = getMockPostThread('songs', 'board-3', refNow);
     assert.equal(t3.thread.author.name, 'ผักกาด');
@@ -506,5 +545,68 @@ describe('post-thread domain logic', () => {
       md: { emoji: 18, addIcon: 20 },
       sm: { emoji: 16, addIcon: 18 },
     });
+  });
+
+  it('groups flat replies into structured branches for top-level and nested replies', () => {
+    const replies: ThreadReply[] = [
+      {
+        id: 'r1',
+        author: { id: 'u1', name: 'ปวยเล้ง' },
+        replyTo: { id: 'c1', name: 'ต้นหอม', isNested: false },
+        content: 'ตอบต้นหอม',
+        createdAt: '2026-10-24T12:00:00.000Z',
+        reactions: [],
+      },
+      {
+        id: 'r2',
+        author: { id: 'u2', name: 'ปลาทู' },
+        replyTo: { id: 'r1', name: 'ปวยเล้ง', isNested: true },
+        content: 'ตอบปวยเล้ง',
+        createdAt: '2026-10-24T12:01:00.000Z',
+        reactions: [],
+      },
+      {
+        id: 'r3',
+        author: { id: 'u2', name: 'ปลาทู' },
+        replyTo: { id: 'r2', name: 'ปลาทู', isNested: true },
+        content: 'ตอบปลาทูตัวเอง',
+        createdAt: '2026-10-24T12:02:00.000Z',
+        reactions: [],
+      },
+      {
+        id: 'r4',
+        author: { id: 'u2', name: 'ปลาทู' },
+        replyTo: { id: 'c1', name: 'ต้นหอม', isNested: false },
+        content: 'ตอบต้นหอมอีกที',
+        createdAt: '2026-10-24T12:03:00.000Z',
+        reactions: [],
+      },
+    ];
+
+    const branches = groupRepliesIntoBranches(replies, 'ต้นหอม');
+    assert.equal(branches.length, 2);
+    assert.equal(branches[0].parent.id, 'r1');
+    assert.equal(branches[0].children.length, 2);
+    assert.equal(branches[0].children[0].id, 'r2');
+    assert.equal(branches[0].children[1].id, 'r3');
+    assert.equal(branches[1].parent.id, 'r4');
+    assert.equal(branches[1].children.length, 0);
+  });
+
+  it('handles orphan nested replies gracefully when no level-1 reply precedes them', () => {
+    const orphanReplies: ThreadReply[] = [
+      {
+        id: 'r-orphan',
+        author: { id: 'u2', name: 'ปลาทู' },
+        replyTo: { id: 'r0', name: 'คนอื่น', isNested: true },
+        content: 'กำพร้า',
+        createdAt: '2026-10-24T12:00:00.000Z',
+        reactions: [],
+      },
+    ];
+    const branches = groupRepliesIntoBranches(orphanReplies, 'ต้นหอม');
+    assert.equal(branches.length, 1);
+    assert.equal(branches[0].parent.id, 'r-orphan');
+    assert.equal(branches[0].children.length, 0);
   });
 });

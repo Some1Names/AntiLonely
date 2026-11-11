@@ -141,6 +141,10 @@ function buildCommentsForBoardPost(
           {
             id: 'reply-1',
             author: postAuthor,
+            replyTo: {
+              id: 'anon-203',
+              name: 'ต้นหอม',
+            },
             isPostAuthor: true,
             content: 'ฟังวนมาสิบกว่าทีแล้วเนี่ย',
             createdAt: new Date(referenceTime - 80 * MINUTE_MS).toISOString(),

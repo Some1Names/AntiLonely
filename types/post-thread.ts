@@ -33,12 +33,18 @@ export interface ThreadReply {
   replyTo?: {
     id?: string;
     name: string;
+    isNested?: boolean;
   };
   isPostAuthor?: boolean;
   isEdited?: boolean;
   content: string;
   createdAt: string;
   reactions: ReactionItem[];
+}
+
+export interface ThreadBranch {
+  parent: ThreadReply;
+  children: ThreadReply[];
 }
 
 export interface ThreadComment {

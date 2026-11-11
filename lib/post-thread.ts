@@ -6,6 +6,7 @@ import type {
   ReactionItem,
   RoomBoardMembershipState,
   ThreadAuthor,
+  ThreadBranch,
   ThreadComment,
   ThreadReply,
 } from '@/types/post-thread';
@@ -152,7 +153,7 @@ export function addNestedReply(
   author: ThreadAuthor,
   nowIso: string = new Date().toISOString(),
   postAuthorId?: string,
-  replyTo?: { id?: string; name: string }
+  replyTo?: { id?: string; name: string; isNested?: boolean }
 ): ThreadComment[] {
   const trimmed = content.trim();
   if (!trimmed) {
@@ -170,10 +171,18 @@ export function addNestedReply(
     }
 
     const timeSeed = Date.parse(nowIso) || Date.now();
+    const isSelfReplyToTopComment = Boolean(
+      replyTo &&
+      !replyTo.isNested &&
+      ((replyTo.id && replyTo.id === author.id) ||
+        (replyTo.name && replyTo.name === author.name))
+    );
+    const validReplyTo = replyTo && !isSelfReplyToTopComment ? replyTo : undefined;
+
     const newReply: ThreadReply = {
       id: `reply-${timeSeed}-${comment.replies.length + 1}`,
       author,
-      ...(replyTo ? { replyTo } : {}),
+      ...(validReplyTo ? { replyTo: validReplyTo } : {}),
       isPostAuthor: Boolean(postAuthorId && author.id === postAuthorId),
       content: trimmed,
       createdAt: nowIso,
@@ -425,5 +434,30 @@ export function leaveBoardRoom(
     ...state,
     status: 'none',
   };
+}
+
+export function groupRepliesIntoBranches(
+  replies: ThreadReply[],
+  topCommentAuthorName: string
+): ThreadBranch[] {
+  const branches: ThreadBranch[] = [];
+
+  for (const reply of replies) {
+    const isNested = Boolean(
+      reply.replyTo?.isNested ||
+      (reply.replyTo && reply.replyTo.name !== topCommentAuthorName)
+    );
+
+    if (!isNested || branches.length === 0) {
+      branches.push({
+        parent: reply,
+        children: [],
+      });
+    } else {
+      branches[branches.length - 1].children.push(reply);
+    }
+  }
+
+  return branches;
 }
 

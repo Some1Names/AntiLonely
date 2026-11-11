@@ -49,7 +49,8 @@ export function PostThreadClient({
   const [replyingTo, setReplyingTo] = useState<{
     commentId: string;
     targetName: string;
-    replyTo?: { id?: string; name: string };
+    replyTo?: { id?: string; name: string; isNested?: boolean };
+    targetReplyId?: string;
   } | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [reportTarget, setReportTarget] = useState<{
@@ -395,10 +396,15 @@ export function PostThreadClient({
                     ? replyingTo.targetName
                     : undefined
                 }
+                activeReplyTargetId={
+                  replyingTo?.commentId === comment.id
+                    ? replyingTo.targetReplyId
+                    : undefined
+                }
                 onExpandReplies={handleExpandReplies}
                 onToggleReaction={handleToggleCommentReaction}
-                onStartReply={(commentId, targetName, replyTo) =>
-                  setReplyingTo({ commentId, targetName, replyTo })
+                onStartReply={(commentId, targetName, replyTo, targetReplyId) =>
+                  setReplyingTo({ commentId, targetName, replyTo, targetReplyId })
                 }
                 onCancelReply={() => setReplyingTo(null)}
                 onSubmitReply={handleAddNestedReply}

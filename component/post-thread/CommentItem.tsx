@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import type { ThreadComment } from '@/types/post-thread';
-import { formatRelativeTimeThai } from '@/lib/post-thread';
+import type { ThreadComment, ThreadReply, ThreadBranch } from '@/types/post-thread';
+import { formatRelativeTimeThai, groupRepliesIntoBranches } from '@/lib/post-thread';
 import { ReactionBar } from './ReactionBar';
 import { ReplyComposer } from './ReplyComposer';
 
@@ -14,12 +14,14 @@ interface CommentItemProps {
   isExpanded: boolean;
   isReplying: boolean;
   activeReplyTargetName?: string;
+  activeReplyTargetId?: string;
   onExpandReplies: (commentId: string) => void;
   onToggleReaction: (targetId: string, emoji: string) => void;
   onStartReply: (
     commentId: string,
     targetAuthorName: string,
-    replyTo?: { id?: string; name: string }
+    replyTo?: { id?: string; name: string; isNested?: boolean },
+    targetReplyId?: string
   ) => void;
   onCancelReply: () => void;
   onSubmitReply: (commentId: string, content: string) => void;
@@ -36,6 +38,7 @@ export function CommentItem({
   isExpanded,
   isReplying,
   activeReplyTargetName,
+  activeReplyTargetId,
   onExpandReplies,
   onToggleReaction,
   onStartReply,
@@ -223,12 +226,21 @@ export function CommentItem({
   return (
     <div data-comment-item className="py-3.5">
       {/* Top-level comment */}
-      <div className="flex items-start gap-3">
-        <div
-          aria-hidden="true"
-          className="w-8 h-8 rounded-full bg-[#d4d4d8] shrink-0 mt-0.5"
-        />
-        <div className="flex-1 min-w-0 space-y-1.5">
+      <div className="relative flex items-start gap-3">
+        {/* Avatar column with thread line starting directly below avatar */}
+        <div className="relative flex flex-col items-center self-stretch shrink-0">
+          <div
+            aria-hidden="true"
+            className="w-8 h-8 rounded-full bg-[#d4d4d8] shrink-0 mt-0.5 z-10"
+          />
+          {(comment.replies.length > 0 || isReplying) && (
+            <div
+              aria-hidden="true"
+              className="w-0.5 grow bg-[#e4e4e7] mt-1 -mb-1 pointer-events-none"
+            />
+          )}
+        </div>
+        <div className="flex-1 min-w-0 space-y-1.5 pb-1">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center flex-wrap gap-2">
               <span className="text-sm font-semibold text-[#18181b]">
@@ -269,7 +281,17 @@ export function CommentItem({
             />
             <button
               type="button"
-              onClick={() => onStartReply(comment.id, comment.author.name)}
+              onClick={() =>
+                onStartReply(
+                  comment.id,
+                  comment.author.name,
+                  comment.author.id !== currentUserId &&
+                    comment.author.name !== currentUserName
+                    ? { id: comment.author.id, name: comment.author.name, isNested: false }
+                    : undefined,
+                  comment.id
+                )
+              }
               className="text-xs font-medium text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer select-none px-1 relative after:absolute after:inset-y-[-14px] after:inset-x-0 after:content-['']"
             >
               ตอบกลับ
@@ -279,21 +301,87 @@ export function CommentItem({
       </div>
 
       {/* Nested replies or inline reply composer */}
-      {(comment.replies.length > 0 || isReplying) && (
-        <div className="ml-2 sm:ml-4 mt-2 pl-3 sm:pl-5 border-l-2 border-[#e4e4e7] space-y-1">
-          {visibleReplies.map((reply) => (
-            <div key={reply.id} data-comment-item className="flex items-start gap-3 py-2.5">
+      {(comment.replies.length > 0 || isReplying) && (() => {
+        const branches = groupRepliesIntoBranches(visibleReplies, comment.author.name);
+
+        const isTargetInBranch = (branch: ThreadBranch) => {
+          if (activeReplyTargetId) {
+            return (
+              branch.parent.id === activeReplyTargetId ||
+              branch.children.some((c) => c.id === activeReplyTargetId)
+            );
+          }
+          if (activeReplyTargetName) {
+            if (activeReplyTargetName === comment.author.name) return false;
+            return (
+              branch.parent.author.name === activeReplyTargetName ||
+              branch.children.some((c) => c.author.name === activeReplyTargetName)
+            );
+          }
+          return false;
+        };
+
+        const isReplyingToTopComment =
+          isReplying &&
+          (!activeReplyTargetId || activeReplyTargetId === comment.id) &&
+          (!activeReplyTargetName || activeReplyTargetName === comment.author.name);
+
+        const anyBranchMatched = branches.some(isTargetInBranch);
+        const showComposerAtRoot =
+          isReplying && (isReplyingToTopComment || !anyBranchMatched);
+
+        const renderReplyItem = (
+          reply: ThreadReply,
+          isChild: boolean,
+          hasSubChildren = false,
+          isLastItem = false
+        ) => (
+          <div
+            key={reply.id}
+            data-comment-item
+            className="relative flex items-start gap-3 py-2.5 transition-all"
+          >
+            {/* If not the last item in this sub-branch, continue vertical line down to next sibling */}
+            {isChild && !isLastItem && (
               <div
                 aria-hidden="true"
-                className="w-7 h-7 rounded-full bg-[#d4d4d8] shrink-0 mt-0.5"
+                className="absolute -left-4 top-0 bottom-0 w-0.5 bg-[#e4e4e7] pointer-events-none"
               />
-              <div className="flex-1 min-w-0 space-y-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center flex-wrap gap-2">
-                    <span className="text-sm font-semibold text-[#18181b]">
-                      {reply.author.name}
-                    </span>
-                    {reply.replyTo && (
+            )}
+
+            {/* Elbow connector branching from guide line into avatar */}
+            <div
+              aria-hidden="true"
+              className={
+                isChild
+                  ? 'absolute -left-4 top-0 w-4 h-4 border-b-2 border-l-2 border-[#e4e4e7] rounded-bl-lg pointer-events-none'
+                  : 'absolute -left-5 top-0 w-5 h-4 border-b-2 border-l-2 border-[#e4e4e7] rounded-bl-lg pointer-events-none'
+              }
+            />
+
+            {/* Avatar column */}
+            <div className="relative flex flex-col items-center self-stretch shrink-0">
+              <div
+                aria-hidden="true"
+                className="w-7 h-7 rounded-full bg-[#d4d4d8] shrink-0 mt-0.5 z-10"
+              />
+              {/* If this reply has children, run vertical line down to sub-branch */}
+              {hasSubChildren && (
+                <div
+                  aria-hidden="true"
+                  className="w-0.5 grow bg-[#e4e4e7] mt-1 -mb-2.5 pointer-events-none"
+                />
+              )}
+            </div>
+
+            <div className="flex-1 min-w-0 space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center flex-wrap gap-2">
+                  <span className="text-sm font-semibold text-[#18181b]">
+                    {reply.author.name}
+                  </span>
+                  {reply.replyTo &&
+                    reply.replyTo.name !== reply.author.name && (
                       <span className="inline-flex items-center gap-1 text-sm text-[#71717a]">
                         <span>ตอบกลับ</span>
                         <span className="font-medium text-[#18181b]">
@@ -301,84 +389,172 @@ export function CommentItem({
                         </span>
                       </span>
                     )}
-                    {reply.isPostAuthor && (
-                      <span className="inline-flex items-center rounded-full bg-[#18181b] px-2.5 py-0.5 text-[11px] font-medium text-white">
-                        เจ้าของกระทู้
-                      </span>
-                    )}
-                    <time
-                      dateTime={reply.createdAt}
-                      suppressHydrationWarning
-                      className="text-xs text-[#71717a]"
-                    >
-                      {formatRelativeTimeThai(reply.createdAt, referenceTime)}
-                      {reply.isEdited ? ' (แก้ไขแล้ว)' : ''}
-                    </time>
-                  </div>
-
-                  {renderActionMenu(reply.id, reply.author.id, reply.content)}
+                  {reply.isPostAuthor && (
+                    <span className="inline-flex items-center rounded-full bg-[#18181b] px-2.5 py-0.5 text-[11px] font-medium text-white">
+                      เจ้าของกระทู้
+                    </span>
+                  )}
+                  <time
+                    dateTime={reply.createdAt}
+                    suppressHydrationWarning
+                    className="text-xs text-[#71717a]"
+                  >
+                    {formatRelativeTimeThai(reply.createdAt, referenceTime)}
+                    {reply.isEdited ? ' (แก้ไขแล้ว)' : ''}
+                  </time>
                 </div>
 
-                {editingId === reply.id ? (
-                  renderEditForm(reply.id, reply.content)
-                ) : (
-                  <p className="text-sm text-[#18181b] leading-relaxed whitespace-pre-wrap break-words">
-                    {reply.content}
-                  </p>
-                )}
+                {renderActionMenu(reply.id, reply.author.id, reply.content)}
+              </div>
 
-                <div className="flex items-center flex-wrap gap-x-2 gap-y-3 pt-0.5">
-                  <ReactionBar
-                    reactions={reply.reactions}
-                    onToggleReaction={(emoji) =>
-                      onToggleReaction(reply.id, emoji)
-                    }
-                    size="sm"
-                    pickerId={`reply-${reply.id}`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      onStartReply(comment.id, reply.author.name, {
+              {editingId === reply.id ? (
+                renderEditForm(reply.id, reply.content)
+              ) : (
+                <p className="text-sm text-[#18181b] leading-relaxed whitespace-pre-wrap break-words">
+                  {reply.content}
+                </p>
+              )}
+
+              <div className="flex items-center flex-wrap gap-x-2 gap-y-3 pt-0.5">
+                <ReactionBar
+                  reactions={reply.reactions}
+                  onToggleReaction={(emoji) =>
+                    onToggleReaction(reply.id, emoji)
+                  }
+                  size="sm"
+                  pickerId={`reply-${reply.id}`}
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    onStartReply(
+                      comment.id,
+                      reply.author.name,
+                      {
                         id: reply.author.id,
                         name: reply.author.name,
-                      })
-                    }
-                    className="text-xs md:text-sm font-medium text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer select-none px-1 relative after:absolute after:inset-y-[-14px] after:inset-x-0 after:content-['']"
-                  >
-                    ตอบกลับ
-                  </button>
-                </div>
+                        isNested: true,
+                      },
+                      reply.id
+                    )
+                  }
+                  className="text-xs md:text-sm font-medium text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer select-none px-1 relative after:absolute after:inset-y-[-14px] after:inset-x-0 after:content-['']"
+                >
+                  ตอบกลับ
+                </button>
               </div>
             </div>
-          ))}
+          </div>
+        );
 
-          {hiddenCount > 0 && (
-            <div className="pl-10 py-1.5">
-              <button
-                type="button"
-                onClick={() => onExpandReplies(comment.id)}
-                className="text-[13px] font-medium text-[#18181b] hover:underline cursor-pointer select-none"
-              >
-                ดูอีก {hiddenCount} ความคิดเห็น
-              </button>
-            </div>
-          )}
+        return (
+          <div className="ml-[15px] pl-5 space-y-1">
+            {branches.map((branch, branchIndex) => {
+              const isReplyingToThisBranch = isReplying && isTargetInBranch(branch);
+              const hasSubChildren =
+                branch.children.length > 0 || isReplyingToThisBranch;
+              const isLastLevel1 =
+                branchIndex === branches.length - 1 && !showComposerAtRoot;
 
-          {isReplying && (
-            <div className="pl-0 sm:pl-2 pt-1 pb-2">
-              <ReplyComposer
-                currentUserName={currentUserName}
-                placeholder={`ตอบกลับ ${activeReplyTargetName ?? comment.author.name} ในชื่อ ${currentUserName}...`}
-                onSubmit={(content) => onSubmitReply(comment.id, content)}
-                onCancel={onCancelReply}
-                autoFocus
-                size="sm"
-              />
-            </div>
-          )}
-        </div>
-      )}
+              return (
+                <div key={branch.parent.id} className="relative">
+                  {/* Vertical trunk line connecting to next Level 1 branch (only if not last Level 1) */}
+                  {!isLastLevel1 && (
+                    <div
+                      aria-hidden="true"
+                      className="absolute -left-5 top-0 bottom-0 w-0.5 bg-[#e4e4e7] pointer-events-none"
+                    />
+                  )}
+
+                  {/* Level 1 Reply */}
+                  {renderReplyItem(
+                    branch.parent,
+                    false,
+                    hasSubChildren,
+                    isLastLevel1
+                  )}
+
+                  {/* Level 2 Sub-branch: renders only if branch has children or composer is active here */}
+                  {hasSubChildren && (
+                    <div className="relative ml-3.5 pl-4 space-y-1">
+                      {branch.children.map((child, childIndex) => {
+                        const isLastChild =
+                          childIndex === branch.children.length - 1 &&
+                          !isReplyingToThisBranch;
+
+                        return renderReplyItem(
+                          child,
+                          true,
+                          false,
+                          isLastChild
+                        );
+                      })}
+
+                      {isReplyingToThisBranch && (
+                        <div className="relative pt-1 pb-2">
+                          <div
+                            aria-hidden="true"
+                            className="absolute -left-4 top-0 w-4 h-[22px] border-b-2 border-l-2 border-[#e4e4e7] rounded-bl-lg pointer-events-none"
+                          />
+                          <ReplyComposer
+                            currentUserName={currentUserName}
+                            placeholder={
+                              activeReplyTargetName && activeReplyTargetName !== currentUserName
+                                ? `ตอบกลับ ${activeReplyTargetName} ในชื่อ ${currentUserName}...`
+                                : `ตอบกลับในชื่อ ${currentUserName}...`
+                            }
+                            onSubmit={(content) => onSubmitReply(comment.id, content)}
+                            onCancel={onCancelReply}
+                            autoFocus
+                            size="sm"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {hiddenCount > 0 && (
+              <div className="pl-4 py-1.5">
+                <button
+                  type="button"
+                  onClick={() => onExpandReplies(comment.id)}
+                  className="text-[13px] font-medium text-[#18181b] hover:underline cursor-pointer select-none"
+                >
+                  ดูอีก {hiddenCount} ความคิดเห็น
+                </button>
+              </div>
+            )}
+
+            {showComposerAtRoot && (
+              <div className="relative pt-1 pb-2">
+                <div
+                  aria-hidden="true"
+                  className="absolute -left-5 top-0 w-5 h-[22px] border-b-2 border-l-2 border-[#e4e4e7] rounded-bl-lg pointer-events-none"
+                />
+                <ReplyComposer
+                  currentUserName={currentUserName}
+                  placeholder={
+                    activeReplyTargetName && activeReplyTargetName !== currentUserName
+                      ? `ตอบกลับ ${activeReplyTargetName} ในชื่อ ${currentUserName}...`
+                      : activeReplyTargetName === currentUserName
+                      ? `ตอบกลับในชื่อ ${currentUserName}...`
+                      : comment.author.name !== currentUserName
+                      ? `ตอบกลับ ${comment.author.name} ในชื่อ ${currentUserName}...`
+                      : `ตอบกลับในชื่อ ${currentUserName}...`
+                  }
+                  onSubmit={(content) => onSubmitReply(comment.id, content)}
+                  onCancel={onCancelReply}
+                  autoFocus
+                  size="sm"
+                />
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
