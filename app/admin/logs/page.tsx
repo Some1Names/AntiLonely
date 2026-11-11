@@ -54,9 +54,9 @@ const maskIp = (ip: string) => ip.replace(/\.\d+$/, ".x");
 
 function tagStyle(action: string) {
   const base = baseAction(action);
-  if (warnActions.includes(base)) return "bg-yellow-100 text-yellow-800";
+  if (warnActions.includes(base)) return "bg-butter text-ink";
   if (dangerActions.includes(base)) return "bg-red-50 text-red-600";
-  return "bg-gray-100 text-gray-800";
+  return "bg-butter text-ink";
 }
 
 // เลขหน้าที่จะแสดง เช่น [1, 2, 3, "…", 37]
@@ -98,12 +98,12 @@ function FilterSelect({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-9 cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white pl-3.5 pr-9 text-[13px] outline-none hover:border-gray-300 focus:border-gray-400"
+        className="h-9 cursor-pointer appearance-none rounded-lg border-[1.5px] border-edge-strong bg-white pl-3.5 pr-9 text-[13px] outline-none hover:border-gray-300 focus:border-kmutt-orange"
       >
         {children}
       </select>
       <svg
-        className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-500"
+        className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-soft"
         viewBox="0 0 16 16"
         fill="none"
         stroke="currentColor"
@@ -152,13 +152,13 @@ export default function AdminLogsPage() {
       {/* หัวหน้า + ค้นหา */}
       <div className="flex flex-wrap items-start justify-between gap-6">
         <div>
-          <h1 className="text-[28px] font-bold leading-tight tracking-tight">บันทึกกิจกรรม</h1>
-          <p className="mt-1 text-sm text-gray-500">บันทึกกิจกรรมของระบบและผู้ดูแล</p>
+          <h1 className="font-display text-[28px] font-bold leading-tight tracking-tight">บันทึกกิจกรรม</h1>
+          <p className="mt-1 text-sm text-ink-soft">บันทึกกิจกรรมของระบบและผู้ดูแล</p>
         </div>
 
         <div className="relative w-80 max-w-full">
           <svg
-            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft/70"
             viewBox="0 0 16 16"
             fill="none"
             stroke="currentColor"
@@ -175,7 +175,7 @@ export default function AdminLogsPage() {
               setPage(1);
             }}
             placeholder="ค้นหาบันทึก..."
-            className="h-10 w-full rounded-lg border border-gray-200 bg-white pl-10 pr-4 text-sm outline-none placeholder:text-gray-400 focus:border-gray-400"
+            className="h-10 w-full rounded-lg border-[1.5px] border-edge-strong bg-white pl-10 pr-4 text-sm outline-none placeholder:text-ink-soft/70 focus:border-kmutt-orange"
           />
         </div>
       </div>
@@ -228,9 +228,9 @@ export default function AdminLogsPage() {
       </div>
 
       {/* ตาราง */}
-      <div className="mt-5 overflow-x-auto rounded-2xl border border-gray-200 bg-white">
+      <div className="mt-5 overflow-x-auto rounded-xl border-[1.5px] border-ink bg-white shadow-[4px_4px_0_var(--color-edge-strong)]">
         <table className="w-full min-w-[860px] text-left text-[13px]">
-          <thead className="border-b border-gray-200 bg-gray-100 text-gray-500">
+          <thead className="border-b border-edge-strong bg-butter text-ink-soft">
             <tr>
               <th className="px-4 py-3 font-medium">เวลา</th>
               <th className="px-4 py-3 font-medium">ผู้ดูแล</th>
@@ -244,7 +244,7 @@ export default function AdminLogsPage() {
             {rows.map((l) => (
               <tr
                 key={l.id}
-                className="border-b border-gray-200 last:border-b-0 hover:bg-gray-50"
+                className="border-b border-edge-strong last:border-b-0 hover:bg-butter"
               >
                 <td className="whitespace-nowrap px-4 py-4">{formatTime(l.createdAt)}</td>
                 <td className="px-4 py-4 font-semibold">{l.admin}</td>
@@ -256,14 +256,14 @@ export default function AdminLogsPage() {
                   </span>
                 </td>
                 <td className="px-4 py-4">{l.target}</td>
-                <td className="px-4 py-4 text-gray-500">{l.detail}</td>
-                <td className="px-4 py-4 text-gray-400">{maskIp(l.ip)}</td>
+                <td className="px-4 py-4 text-ink-soft">{l.detail}</td>
+                <td className="px-4 py-4 text-ink-soft/70">{maskIp(l.ip)}</td>
               </tr>
             ))}
 
             {rows.length === 0 && (
               <tr>
-                <td colSpan={6} className="py-14 text-center text-sm text-gray-400">
+                <td colSpan={6} className="py-14 text-center text-sm text-ink-soft/70">
                   {logs.length === 0 ? "ยังไม่มีบันทึกกิจกรรม" : "ไม่พบบันทึกที่ตรงกับเงื่อนไข"}
                 </td>
               </tr>
@@ -274,7 +274,7 @@ export default function AdminLogsPage() {
 
       {/* ท้ายตาราง: จำนวน + เลขหน้า */}
       <div className="mt-5 flex flex-wrap items-center justify-between gap-4 text-[13px]">
-        <p className="text-gray-500">
+        <p className="text-ink-soft">
           {filtered.length === 0
             ? "ไม่มีรายการ"
             : `แสดง ${start + 1}-${start + rows.length} จาก ${filtered.length.toLocaleString("en-US")} รายการ`}
@@ -285,14 +285,14 @@ export default function AdminLogsPage() {
             <button
               onClick={() => setPage(currentPage - 1)}
               disabled={currentPage === 1}
-              className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+              className="rounded-md border border-edge-strong bg-white px-3 py-1.5 text-ink-soft hover:bg-butter disabled:opacity-50"
             >
               ก่อนหน้า
             </button>
 
             {pageItems(currentPage, totalPages).map((item, i) =>
               item === "…" ? (
-                <span key={`gap-${i}`} className="px-1 text-gray-400">
+                <span key={`gap-${i}`} className="px-1 text-ink-soft/70">
                   …
                 </span>
               ) : (
@@ -301,8 +301,8 @@ export default function AdminLogsPage() {
                   onClick={() => setPage(item)}
                   className={`min-w-[32px] rounded-md border px-2.5 py-1.5 ${
                     item === currentPage
-                      ? "border-neutral-900 bg-neutral-900 font-medium text-white"
-                      : "border-gray-200 bg-white hover:bg-gray-50"
+                      ? "border-ink bg-ink font-medium text-white"
+                      : "border-edge-strong bg-white hover:bg-butter"
                   }`}
                 >
                   {item}
@@ -313,7 +313,7 @@ export default function AdminLogsPage() {
             <button
               onClick={() => setPage(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="rounded-md border border-gray-200 bg-white px-3 py-1.5 hover:bg-gray-50 disabled:opacity-50"
+              className="rounded-md border border-edge-strong bg-white px-3 py-1.5 hover:bg-butter disabled:opacity-50"
             >
               ถัดไป
             </button>
