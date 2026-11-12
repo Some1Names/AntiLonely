@@ -1,0 +1,224 @@
+'use client';
+
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import type { ReportReason, ReportTargetType } from '@/types/post-thread';
+
+interface ReportModalProps {
+  isOpen: boolean;
+  targetType?: ReportTargetType;
+  onClose: () => void;
+  onSubmit: (reason: ReportReason, details: string) => void;
+}
+
+const REPORT_REASON_OPTIONS: { value: ReportReason; label: string }[] = [
+  {
+    value: 'inappropriate',
+    label: 'เนื้อหาไม่เหมาะสม หรือคุกคามผู้อื่น',
+  },
+  {
+    value: 'spam',
+    label: 'สแปม หรือโฆษณาชวนเชื่อ',
+  },
+  {
+    value: 'misinformation',
+    label: 'ข้อมูลเท็จ หรือสร้างความเข้าใจผิด',
+  },
+  {
+    value: 'other',
+    label: 'อื่นๆ (ระบุรายละเอียดเพิ่มเติม)',
+  },
+];
+
+export function ReportModal({
+  isOpen,
+  targetType = 'post',
+  onClose,
+  onSubmit,
+}: ReportModalProps) {
+  const [selectedReason, setSelectedReason] =
+    useState<ReportReason>('inappropriate');
+  const [details, setDetails] = useState('');
+  const modalRef = useRef<HTMLDivElement | null>(null);
+
+  const handleClose = useCallback(() => {
+    setSelectedReason('inappropriate');
+    setDetails('');
+    onClose();
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const previousFocusedElement = document.activeElement as HTMLElement | null;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    // Focus the first radio option or close button on open
+    const modalElement = modalRef.current;
+    if (modalElement) {
+      const focusableSelector =
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+      const focusableElements = Array.from(
+        modalElement.querySelectorAll<HTMLElement>(focusableSelector)
+      ).filter((el) => !el.hasAttribute('disabled'));
+
+      if (focusableElements.length > 0) {
+        focusableElements[0].focus();
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        handleClose();
+        return;
+      }
+
+      if (event.key === 'Tab') {
+        if (!modalRef.current) return;
+        const focusableSelector =
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+        const focusableElements = Array.from(
+          modalRef.current.querySelectorAll<HTMLElement>(focusableSelector)
+        ).filter((el) => !el.hasAttribute('disabled'));
+
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (event.shiftKey) {
+          if (document.activeElement === firstElement) {
+            event.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            event.preventDefault();
+            firstElement.focus();
+          }
+        }
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+      if (previousFocusedElement && typeof previousFocusedElement.focus === 'function') {
+        previousFocusedElement.focus();
+      }
+    };
+  }, [isOpen, handleClose]);
+
+  if (!isOpen) {
+    return null;
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(selectedReason, details.trim());
+    setDetails('');
+    setSelectedReason('inappropriate');
+  };
+
+  const modalTitle =
+    targetType === 'comment'
+      ? 'รายงานความคิดเห็น'
+      : targetType === 'room'
+        ? 'รายงานห้อง'
+        : 'รายงานกระทู้';
+  const modalDescription =
+    targetType === 'comment'
+      ? 'ระบุเหตุผลที่ต้องการรายงานความคิดเห็นนี้ให้ทีมงานตรวจสอบ'
+      : targetType === 'room'
+        ? 'ระบุเหตุผลที่ต้องการรายงานห้องนี้ให้ทีมงานตรวจสอบ'
+        : 'ระบุเหตุผลที่ต้องการรายงานกระทู้นี้ให้ทีมงานตรวจสอบ';
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-zinc-900/45 flex items-center justify-center p-4"
+      onClick={handleClose}
+    >
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="report-modal-title"
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-[440px] rounded-xl bg-white border border-[#e4e4e7] p-6 shadow-xl"
+      >
+        <div className="flex items-center justify-between gap-2">
+          <h2
+            id="report-modal-title"
+            className="text-base sm:text-[17px] font-semibold text-[#18181b]"
+          >
+            {modalTitle}
+          </h2>
+          <button
+            type="button"
+            onClick={handleClose}
+            aria-label="ปิดหน้าต่างรายงาน"
+            className="w-7 h-7 rounded-md flex items-center justify-center text-[#71717a] hover:text-[#18181b] hover:bg-zinc-100 transition-colors cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+
+        <p className="text-[13px] text-[#71717a] mt-1.5 mb-3.5">
+          {modalDescription}
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-3.5">
+          <div className="space-y-2">
+            {REPORT_REASON_OPTIONS.map((option) => (
+              <label
+                key={option.value}
+                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg border text-sm cursor-pointer transition-colors ${
+                  selectedReason === option.value
+                    ? 'border-[#18181b] bg-zinc-50 text-[#18181b] font-medium'
+                    : 'border-[#e4e4e7] bg-white text-[#18181b] hover:bg-zinc-50'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="report-reason"
+                  value={option.value}
+                  checked={selectedReason === option.value}
+                  onChange={() => setSelectedReason(option.value)}
+                  className="accent-[#18181b]"
+                />
+                <span>{option.label}</span>
+              </label>
+            ))}
+          </div>
+
+          <div>
+            <textarea
+              rows={3}
+              value={details}
+              onChange={(e) => setDetails(e.target.value)}
+              placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)..."
+              className="w-full rounded-lg border border-[#e4e4e7] bg-white p-3 text-sm text-[#18181b] placeholder:text-[#a1a1aa] focus:outline-none focus:border-zinc-400 resize-none"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-1">
+            <button
+              type="button"
+              onClick={handleClose}
+              className="h-9 px-4 rounded-lg border border-[#e4e4e7] bg-white text-sm text-[#18181b] hover:bg-zinc-100 transition-colors cursor-pointer"
+            >
+              ยกเลิก
+            </button>
+            <button
+              type="submit"
+              className="h-9 px-4 rounded-lg bg-[#dc2626] text-white text-sm font-medium hover:bg-red-700 transition-colors cursor-pointer"
+            >
+              ส่งรายงาน
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

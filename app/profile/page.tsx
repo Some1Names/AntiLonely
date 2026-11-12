@@ -39,7 +39,7 @@ export default function ProfilePage() {
   // จำว่ากำลังเลือกแท็บไหนอยู่
   const [activeTab, setActiveTab] = useState<Tab>("posts");
   
-  const { data: session, isPending, refetch } = authClient.useSession();
+  const { data: session, refetch } = authClient.useSession();
 
   const user = session?.user;
 
@@ -69,6 +69,7 @@ export default function ProfilePage() {
           <div className="flex items-center gap-5">
             <span className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-full border-[1.5px] border-ink bg-peach shadow-sticker-lg sm:size-24">
               {user?.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={user.image}
                   alt="รูปโปรไฟล์"
