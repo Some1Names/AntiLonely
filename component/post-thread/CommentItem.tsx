@@ -236,7 +236,7 @@ export function CommentItem({
           {(comment.replies.length > 0 || isReplying) && (
             <div
               aria-hidden="true"
-              className="w-0.5 grow bg-[#e4e4e7] mt-1 -mb-1 pointer-events-none"
+              className="w-0.5 grow bg-[#e4e4e7] mt-1 -mb-3.5 pointer-events-none"
             />
           )}
         </div>
@@ -334,28 +334,32 @@ export function CommentItem({
           reply: ThreadReply,
           isChild: boolean,
           hasSubChildren = false,
-          isLastItem = false
+          isLastItem = false,
+          isFirstChild = false,
+          isFirstLevel1 = false
         ) => (
           <div
             key={reply.id}
             data-comment-item
             className="relative flex items-start gap-3 py-2.5 transition-all"
           >
-            {/* If not the last item in this sub-branch, continue vertical line down to next sibling */}
+            {/* If not the last item in this sub-branch, continue vertical line down to next sibling (with 4px overlap) */}
             {isChild && !isLastItem && (
               <div
                 aria-hidden="true"
-                className="absolute -left-4 top-0 bottom-0 w-0.5 bg-[#e4e4e7] pointer-events-none"
+                className="absolute -left-6 top-0 -bottom-1 w-0.5 bg-[#e4e4e7] pointer-events-none"
               />
             )}
 
-            {/* Elbow connector branching from guide line into avatar */}
+            {/* Elbow connector branching from guide line into avatar center at 26px */}
             <div
               aria-hidden="true"
               className={
-                isChild
-                  ? 'absolute -left-4 top-0 w-4 h-4 border-b-2 border-l-2 border-[#e4e4e7] rounded-bl-lg pointer-events-none'
-                  : 'absolute -left-5 top-0 w-5 h-4 border-b-2 border-l-2 border-[#e4e4e7] rounded-bl-lg pointer-events-none'
+                isFirstChild
+                  ? 'absolute -left-6 -top-5 w-6 h-[46px] border-b-2 border-l-2 border-[#e4e4e7] rounded-bl-xl pointer-events-none'
+                  : isFirstLevel1
+                  ? 'absolute -left-6 -top-2 w-6 h-[34px] border-b-2 border-l-2 border-[#e4e4e7] rounded-bl-xl pointer-events-none'
+                  : 'absolute -left-6 top-0 w-6 h-[26px] border-b-2 border-l-2 border-[#e4e4e7] rounded-bl-xl pointer-events-none'
               }
             />
 
@@ -365,11 +369,11 @@ export function CommentItem({
                 aria-hidden="true"
                 className="w-7 h-7 rounded-full bg-[#d4d4d8] shrink-0 mt-0.5 z-10"
               />
-              {/* If this reply has children, run vertical line down to sub-branch */}
+              {/* If this reply has children, run vertical line down to sub-branch with overlap */}
               {hasSubChildren && (
                 <div
                   aria-hidden="true"
-                  className="w-0.5 grow bg-[#e4e4e7] mt-1 -mb-2.5 pointer-events-none"
+                  className="w-0.5 grow bg-[#e4e4e7] mt-1 -mb-3.5 pointer-events-none"
                 />
               )}
             </div>
@@ -448,21 +452,22 @@ export function CommentItem({
         );
 
         return (
-          <div className="ml-[15px] pl-5 space-y-1">
+          <div className="relative ml-[15px] pl-6">
             {branches.map((branch, branchIndex) => {
               const isReplyingToThisBranch = isReplying && isTargetInBranch(branch);
               const hasSubChildren =
                 branch.children.length > 0 || isReplyingToThisBranch;
               const isLastLevel1 =
                 branchIndex === branches.length - 1 && !showComposerAtRoot;
+              const isFirstLevel1 = branchIndex === 0;
 
               return (
                 <div key={branch.parent.id} className="relative">
-                  {/* Vertical trunk line connecting to next Level 1 branch (only if not last Level 1) */}
+                  {/* Vertical trunk line connecting to next Level 1 branch (with 4px overlap) */}
                   {!isLastLevel1 && (
                     <div
                       aria-hidden="true"
-                      className="absolute -left-5 top-0 bottom-0 w-0.5 bg-[#e4e4e7] pointer-events-none"
+                      className={`absolute -left-6 ${isFirstLevel1 ? '-top-2' : 'top-0'} -bottom-1 w-0.5 bg-[#e4e4e7] pointer-events-none`}
                     />
                   )}
 
@@ -471,22 +476,26 @@ export function CommentItem({
                     branch.parent,
                     false,
                     hasSubChildren,
-                    isLastLevel1
+                    isLastLevel1,
+                    false,
+                    isFirstLevel1
                   )}
 
                   {/* Level 2 Sub-branch: renders only if branch has children or composer is active here */}
                   {hasSubChildren && (
-                    <div className="relative ml-3.5 pl-4 space-y-1">
+                    <div className="relative ml-[13px] pl-6">
                       {branch.children.map((child, childIndex) => {
                         const isLastChild =
                           childIndex === branch.children.length - 1 &&
                           !isReplyingToThisBranch;
+                        const isFirstChild = childIndex === 0;
 
                         return renderReplyItem(
                           child,
                           true,
                           false,
-                          isLastChild
+                          isLastChild,
+                          isFirstChild
                         );
                       })}
 
@@ -494,7 +503,11 @@ export function CommentItem({
                         <div className="relative pt-1 pb-2">
                           <div
                             aria-hidden="true"
-                            className="absolute -left-4 top-0 w-4 h-[22px] border-b-2 border-l-2 border-[#e4e4e7] rounded-bl-lg pointer-events-none"
+                            className={
+                              branch.children.length === 0
+                                ? 'absolute -left-6 -top-5 w-6 h-[46px] border-b-2 border-l-2 border-[#e4e4e7] rounded-bl-xl pointer-events-none'
+                                : 'absolute -left-6 top-0 w-6 h-[26px] border-b-2 border-l-2 border-[#e4e4e7] rounded-bl-xl pointer-events-none'
+                            }
                           />
                           <ReplyComposer
                             currentUserName={currentUserName}
@@ -517,7 +530,7 @@ export function CommentItem({
             })}
 
             {hiddenCount > 0 && (
-              <div className="pl-4 py-1.5">
+              <div className="pl-2 py-2">
                 <button
                   type="button"
                   onClick={() => onExpandReplies(comment.id)}
@@ -532,7 +545,11 @@ export function CommentItem({
               <div className="relative pt-1 pb-2">
                 <div
                   aria-hidden="true"
-                  className="absolute -left-5 top-0 w-5 h-[22px] border-b-2 border-l-2 border-[#e4e4e7] rounded-bl-lg pointer-events-none"
+                  className={
+                    branches.length === 0
+                      ? 'absolute -left-6 -top-2 w-6 h-[34px] border-b-2 border-l-2 border-[#e4e4e7] rounded-bl-xl pointer-events-none'
+                      : 'absolute -left-6 top-0 w-6 h-[26px] border-b-2 border-l-2 border-[#e4e4e7] rounded-bl-xl pointer-events-none'
+                  }
                 />
                 <ReplyComposer
                   currentUserName={currentUserName}
