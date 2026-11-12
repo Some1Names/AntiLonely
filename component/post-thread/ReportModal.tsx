@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { ReportReason, ReportTargetType } from '@/types/post-thread';
 
 interface ReportModalProps {
@@ -38,6 +38,7 @@ export function ReportModal({
   const [selectedReason, setSelectedReason] =
     useState<ReportReason>('inappropriate');
   const [details, setDetails] = useState('');
+  const modalRef = useRef<HTMLDivElement | null>(null);
 
   const handleClose = useCallback(() => {
     setSelectedReason('inappropriate');
@@ -48,15 +49,64 @@ export function ReportModal({
   useEffect(() => {
     if (!isOpen) return;
 
+    const previousFocusedElement = document.activeElement as HTMLElement | null;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    // Focus the first radio option or close button on open
+    const modalElement = modalRef.current;
+    if (modalElement) {
+      const focusableSelector =
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+      const focusableElements = Array.from(
+        modalElement.querySelectorAll<HTMLElement>(focusableSelector)
+      ).filter((el) => !el.hasAttribute('disabled'));
+
+      if (focusableElements.length > 0) {
+        focusableElements[0].focus();
+      }
+    }
+
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         handleClose();
+        return;
+      }
+
+      if (event.key === 'Tab') {
+        if (!modalRef.current) return;
+        const focusableSelector =
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+        const focusableElements = Array.from(
+          modalRef.current.querySelectorAll<HTMLElement>(focusableSelector)
+        ).filter((el) => !el.hasAttribute('disabled'));
+
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (event.shiftKey) {
+          if (document.activeElement === firstElement) {
+            event.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            event.preventDefault();
+            firstElement.focus();
+          }
+        }
       }
     }
 
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+      if (previousFocusedElement && typeof previousFocusedElement.focus === 'function') {
+        previousFocusedElement.focus();
+      }
     };
   }, [isOpen, handleClose]);
 
@@ -90,6 +140,7 @@ export function ReportModal({
       onClick={handleClose}
     >
       <div
+        ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="report-modal-title"

@@ -47,6 +47,16 @@ export default function PostCard({
       reactedByMe: Boolean(r.reactedByMe),
     }))
   );
+
+  useEffect(() => {
+    setReactions(
+      initialReactions.map((r) => ({
+        emoji: r.emoji,
+        count: r.count,
+        reactedByMe: Boolean(r.reactedByMe),
+      }))
+    );
+  }, [initialReactions]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isReporting, setIsReporting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
