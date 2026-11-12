@@ -111,9 +111,9 @@ export function toggleCommentReaction(
       replies: comment.replies.map((reply) =>
         reply.id === targetId
           ? {
-              ...reply,
-              reactions: toggleReaction(reply.reactions, emoji),
-            }
+            ...reply,
+            reactions: toggleReaction(reply.reactions, emoji),
+          }
           : reply
       ),
     };
@@ -453,6 +453,40 @@ export function groupRepliesIntoBranches(
         parent: reply,
         children: [],
       });
+      continue;
+    }
+
+    // Match this nested reply to its parent branch:
+    // 1. By direct reply/comment ID (matches branch parent or any child already in the branch)
+    let targetBranch = reply.replyTo?.id
+      ? branches.find(
+        (b) =>
+          b.parent.id === reply.replyTo?.id ||
+          b.children.some((c) => c.id === reply.replyTo?.id)
+      )
+      : undefined;
+
+    // 2. By author ID (if replyTo.id was user/author id)
+    if (!targetBranch && reply.replyTo?.id) {
+      targetBranch = [...branches].reverse().find(
+        (b) =>
+          b.parent.author.id === reply.replyTo?.id ||
+          b.children.some((c) => c.author.id === reply.replyTo?.id)
+      );
+    }
+
+    // 3. By author name (most recent branch matching the author name)
+    if (!targetBranch && reply.replyTo?.name) {
+      targetBranch = [...branches].reverse().find(
+        (b) =>
+          b.parent.author.name === reply.replyTo?.name ||
+          b.children.some((c) => c.author.name === reply.replyTo?.name)
+      );
+    }
+
+    // 4. Fallback: attach to latest branch if no specific branch matched
+    if (targetBranch) {
+      targetBranch.children.push(reply);
     } else {
       branches[branches.length - 1].children.push(reply);
     }

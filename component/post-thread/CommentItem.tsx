@@ -435,7 +435,7 @@ export function CommentItem({
                       comment.id,
                       reply.author.name,
                       {
-                        id: reply.author.id,
+                        id: reply.id,
                         name: reply.author.name,
                         isNested: true,
                       },

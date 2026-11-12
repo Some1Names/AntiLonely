@@ -609,4 +609,43 @@ describe('post-thread domain logic', () => {
     assert.equal(branches[0].parent.id, 'r-orphan');
     assert.equal(branches[0].children.length, 0);
   });
+
+  it('groups replies into the correct earlier branch when replied to an earlier Level 1 reply', () => {
+    const replies: ThreadReply[] = [
+      {
+        id: 'reply-1',
+        author: { id: 'user-platoo', name: 'ปลาทู' },
+        replyTo: undefined,
+        content: 'จริงครับ เปิดวนไปยาวๆ เลยคืนนี้',
+        createdAt: '2026-10-24T12:00:00.000Z',
+        reactions: [],
+      },
+      {
+        id: 'reply-2',
+        author: { id: 'anon-512', name: 'สายฝน' },
+        replyTo: undefined,
+        content: 'อินโทรขึ้นมาก็เศร้าแล้ว',
+        createdAt: '2026-10-24T12:05:00.000Z',
+        reactions: [],
+      },
+      {
+        id: 'reply-3',
+        author: { id: 'user-platoo', name: 'ปลาทู' },
+        replyTo: { id: 'reply-1', name: 'ปลาทู', isNested: true },
+        content: 'ข้อความตอบกลับปลาทู',
+        createdAt: '2026-10-24T12:10:00.000Z',
+        reactions: [],
+      },
+    ];
+
+    const branches = groupRepliesIntoBranches(replies, 'ต้นหอม');
+    assert.equal(branches.length, 2);
+    // reply-1 branch should have reply-3 as child
+    assert.equal(branches[0].parent.id, 'reply-1');
+    assert.equal(branches[0].children.length, 1);
+    assert.equal(branches[0].children[0].id, 'reply-3');
+    // reply-2 (สายฝน) should NOT receive reply-3
+    assert.equal(branches[1].parent.id, 'reply-2');
+    assert.equal(branches[1].children.length, 0);
+  });
 });
