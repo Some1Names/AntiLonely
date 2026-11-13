@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../lib/generated/prisma/client.ts';
+import { resolveUniqueRoomSlug } from '../lib/room-slug.ts';
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
@@ -389,10 +390,33 @@ async function main() {
     });
   }
 
+  const usedSlugs = new Set<string>();
+  const seededRoomUrls: Array<{ name: string; slug: string; isPrivate: boolean }> = [];
+
   for (const room of SEED_ROOMS) {
+    const slug = await resolveUniqueRoomSlug(
+      room.name,
+      async (candidate) => {
+        if (usedSlugs.has(candidate)) return true;
+        const existing = await prisma.room.findUnique({
+          where: { slug: candidate },
+          select: { id: true },
+        });
+        return existing !== null && existing.id !== room.id;
+      },
+      { deterministicKey: room.id }
+    );
+    usedSlugs.add(slug);
+    seededRoomUrls.push({
+      name: room.name,
+      slug,
+      isPrivate: Boolean(room.passwordHash),
+    });
+
     await prisma.room.upsert({
       where: { id: room.id },
       update: {
+        slug,
         name: room.name,
         description: room.description,
         rules: room.rules,
@@ -400,6 +424,7 @@ async function main() {
       },
       create: {
         ...room,
+        slug,
         status: 'active',
         isLocked: false,
       },
@@ -452,8 +477,8 @@ async function main() {
     `Seeded ${SEED_USERS.length} users, ${SEED_ROOMS.length} rooms, ${SEED_MEMBERS.length} memberships, ${SEED_MESSAGES.length} messages/replies, ${SEED_REACTIONS.length} reactions.`
   );
   console.log('Sample Room URLs:');
-  for (const room of SEED_ROOMS) {
-    console.log(`  - ${room.name}${room.passwordHash ? ' (Private)' : ''}: /rooms/${room.id}`);
+  for (const room of seededRoomUrls) {
+    console.log(`  - ${room.name}${room.isPrivate ? ' (Private)' : ''}: /rooms/${room.slug}`);
   }
 }
 

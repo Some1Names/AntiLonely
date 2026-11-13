@@ -1,5 +1,6 @@
 export type Room = {
   id: string;
+  slug?: string;
   name: string;
   description: string;
   members: number;
@@ -11,6 +12,7 @@ export type Room = {
 
 export type MyRoom = {
   id: string;
+  slug?: string;
   name: string;
   unread: number;
   isPrivate: boolean;

@@ -13,6 +13,7 @@ import {
   MAX_POST_CONTENT_LENGTH,
   parseRoomRules,
   resolveAuthorAlias,
+  resolveRoomLookupTarget,
   validatePostContent,
 } from './room-board.ts';
 
@@ -21,6 +22,33 @@ describe('room-board domain & DB mapping', () => {
     assert.equal(isUuid('22222222-2222-4222-8222-222222222222'), true);
     assert.equal(isUuid('songs'), false);
     assert.equal(isUuid(''), false);
+  });
+
+  it('resolves room lookup parameters to UUID, canonicalized lowercase slug, or null', () => {
+    assert.deepEqual(
+      resolveRoomLookupTarget('22222222-2222-4222-8222-222222222222'),
+      { kind: 'id', id: '22222222-2222-4222-8222-222222222222' }
+    );
+    assert.deepEqual(
+      resolveRoomLookupTarget('00000000-0000-0000-0000-000000000000'),
+      { kind: 'id', id: '00000000-0000-0000-0000-000000000000' }
+    );
+    assert.deepEqual(
+      resolveRoomLookupTarget('  22222222-2222-4222-8222-222222222222  '),
+      { kind: 'id', id: '22222222-2222-4222-8222-222222222222' }
+    );
+    assert.deepEqual(resolveRoomLookupTarget('local-postgres'), {
+      kind: 'slug',
+      slug: 'local-postgres',
+    });
+    assert.deepEqual(resolveRoomLookupTarget('  Local-Postgres  '), {
+      kind: 'slug',
+      slug: 'local-postgres',
+    });
+    assert.equal(resolveRoomLookupTarget(''), null);
+    assert.equal(resolveRoomLookupTarget('foo--bar'), null);
+    assert.equal(resolveRoomLookupTarget('บริจาคเพลง'), null);
+    assert.equal(resolveRoomLookupTarget('foo/bar'), null);
   });
 
   it('validates post content trimming, empty checks, and max length', () => {
@@ -127,6 +155,7 @@ describe('room-board domain & DB mapping', () => {
     const room = mapDbRoomToBoardRoom(
       {
         id: '22222222-2222-4222-8222-222222222222',
+        slug: 'r-123456',
         name: 'บริจาคเพลง',
         description: 'ห้องเพลงเศร้า',
         rules: '1. แปะชื่อเพลง\n2. สุภาพต่อกัน',
@@ -139,6 +168,7 @@ describe('room-board domain & DB mapping', () => {
       nowMs
     );
     assert.equal(room.id, '22222222-2222-4222-8222-222222222222');
+    assert.equal(room.slug, 'r-123456');
     assert.equal(room.isPrivate, false);
     assert.equal(room.isNew, true);
     assert.equal(room.members, 5);

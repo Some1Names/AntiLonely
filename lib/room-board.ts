@@ -5,6 +5,7 @@ import type {
   RoomBoardMembershipState,
 } from '@/types/post-thread';
 import { DAY_MS, formatRelativeTimeThai } from './post-thread.ts';
+import { isUuidString, isValidRoomSlug } from './room-slug.ts';
 
 export const DEFAULT_ROOM_EMOJI = '💬';
 
@@ -29,11 +30,30 @@ export function getStartOfBangkokDay(nowMs: number = Date.now()): Date {
   return new Date(utcMidnightOfBangkokDay - BANGKOK_OFFSET_MS);
 }
 
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
 export function isUuid(value: string): boolean {
-  return UUID_REGEX.test(value.trim());
+  return isUuidString(value);
+}
+
+export type RoomLookupTarget =
+  | { kind: 'id'; id: string }
+  | { kind: 'slug'; slug: string }
+  | null;
+
+/** Classifies a URL segment into a UUID lookup, canonicalized lowercase slug lookup, or null. */
+export function resolveRoomLookupTarget(rawParam: string): RoomLookupTarget {
+  const trimmed = rawParam.trim();
+  if (!trimmed) return null;
+
+  if (isUuid(trimmed)) {
+    return { kind: 'id', id: trimmed.toLowerCase() };
+  }
+
+  const normalizedSlug = trimmed.toLowerCase();
+  if (isValidRoomSlug(normalizedSlug)) {
+    return { kind: 'slug', slug: normalizedSlug };
+  }
+
+  return null;
 }
 
 export function validatePostContent(
@@ -176,6 +196,7 @@ export function aggregateReactions(
 
 export interface DbRoomRow {
   id: string;
+  slug: string;
   name: string;
   description: string;
   rules: string | null;
@@ -189,12 +210,13 @@ export interface DbRoomRow {
 export function mapDbRoomToBoardRoom(
   room: DbRoomRow,
   nowMs: number = Date.now()
-): Room & { rulesList: string[]; isLocked: boolean } {
+): Room & { slug: string; rulesList: string[]; isLocked: boolean } {
   const ageMs = Math.max(0, nowMs - room.createdAt.getTime());
   const isNew = ageMs <= NEW_ROOM_WINDOW_DAYS * DAY_MS;
 
   return {
     id: room.id,
+    slug: room.slug,
     name: room.name,
     description: room.description,
     members: Math.max(0, room.memberCount),

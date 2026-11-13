@@ -16,6 +16,7 @@ import {
   mapDbPostToBoardPost,
   mapDbRoomToBoardRoom,
   resolveAuthorAlias,
+  resolveRoomLookupTarget,
   validatePostContent,
 } from '@/lib/room-board';
 import type {
@@ -37,12 +38,19 @@ export interface RoomBoardViewer {
 }
 
 export interface RoomBoardData {
-  room: Room & { rulesList: string[]; isLocked: boolean };
+  room: Room & { slug: string; rulesList: string[]; isLocked: boolean };
   membership: RoomBoardMembershipState;
   initialPosts: BoardPostSummary[];
   currentUser: RoomBoardViewer | null;
   myRooms: MyRoom[];
   serverTime: string;
+}
+
+function revalidateRoomPaths(roomId: string, roomSlug?: string | null) {
+  if (roomSlug) {
+    revalidatePath(`/rooms/${roomSlug}`);
+  }
+  revalidatePath(`/rooms/${roomId}`);
 }
 
 const VALID_REPORT_REASONS = new Set<ReportReason>([
@@ -104,9 +112,10 @@ async function getViewerUser() {
 }
 
 export async function getRoomBoardData(
-  roomId: string
+  roomIdOrSlug: string
 ): Promise<RoomBoardData | null> {
-  if (!isUuid(roomId)) {
+  const target = resolveRoomLookupTarget(roomIdOrSlug);
+  if (!target) {
     return null;
   }
 
@@ -116,7 +125,7 @@ export async function getRoomBoardData(
 
   const [roomRecord, viewer] = await Promise.all([
     prisma.room.findUnique({
-      where: { id: roomId },
+      where: target.kind === 'id' ? { id: target.id } : { slug: target.slug },
       include: {
         _count: {
           select: {
@@ -134,6 +143,8 @@ export async function getRoomBoardData(
     return null;
   }
 
+  const canonicalRoomId = roomRecord.id;
+
   const [
     postsTodayCount,
     viewerMembership,
@@ -143,7 +154,7 @@ export async function getRoomBoardData(
   ] = await Promise.all([
     prisma.message.count({
       where: {
-        roomId,
+        roomId: canonicalRoomId,
         parentId: null,
         status: 'visible',
         createdAt: { gte: startOfToday },
@@ -154,7 +165,7 @@ export async function getRoomBoardData(
           where: {
             userId_roomId: {
               userId: viewer.id,
-              roomId,
+              roomId: canonicalRoomId,
             },
           },
           select: { status: true },
@@ -162,7 +173,7 @@ export async function getRoomBoardData(
       : Promise.resolve(null),
     prisma.message.findMany({
       where: {
-        roomId,
+        roomId: canonicalRoomId,
         parentId: null,
         status: 'visible',
       },
@@ -205,6 +216,7 @@ export async function getRoomBoardData(
             room: {
               select: {
                 id: true,
+                slug: true,
                 name: true,
                 passwordHash: true,
               },
@@ -225,6 +237,7 @@ export async function getRoomBoardData(
   const mappedRoom = mapDbRoomToBoardRoom(
     {
       id: roomRecord.id,
+      slug: roomRecord.slug,
       name: roomRecord.name,
       description: roomRecord.description,
       rules: roomRecord.rules,
@@ -261,6 +274,7 @@ export async function getRoomBoardData(
 
   const myRooms: MyRoom[] = myMemberships.map((m) => ({
     id: m.room.id,
+    slug: m.room.slug,
     name: m.room.name,
     unread: 0,
     isPrivate: Boolean(m.room.passwordHash),
@@ -308,7 +322,7 @@ export async function createRoomPost(input: {
     const [room, member] = await Promise.all([
       prisma.room.findUnique({
         where: { id: input.roomId },
-        select: { id: true, status: true, isLocked: true },
+        select: { id: true, slug: true, status: true, isLocked: true },
       }),
       prisma.roomMember.findUnique({
         where: {
@@ -353,7 +367,7 @@ export async function createRoomPost(input: {
       },
     });
 
-    revalidatePath(`/rooms/${room.id}`);
+    revalidateRoomPaths(room.id, room.slug);
 
     return {
       ok: true,
@@ -405,7 +419,7 @@ export async function updateRoomPost(input: {
         select: {
           id: true,
           authorId: true,
-          room: { select: { status: true, isLocked: true } },
+          room: { select: { slug: true, status: true, isLocked: true } },
         },
       }),
       prisma.roomMember.findUnique({
@@ -464,7 +478,7 @@ export async function updateRoomPost(input: {
       },
     });
 
-    revalidatePath(`/rooms/${input.roomId}`);
+    revalidateRoomPaths(input.roomId, existing.room.slug);
 
     const mapped = mapDbPostToBoardPost(
       {
@@ -515,6 +529,7 @@ export async function deleteRoomPost(input: {
       select: {
         id: true,
         authorId: true,
+        room: { select: { slug: true } },
       },
     });
 
@@ -531,7 +546,7 @@ export async function deleteRoomPost(input: {
       data: { status: 'deleted' },
     });
 
-    revalidatePath(`/rooms/${input.roomId}`);
+    revalidateRoomPaths(input.roomId, existing.room.slug);
 
     return { ok: true, data: { postId: existing.id } };
   }, 'ไม่สามารถลบกระทู้ได้ กรุณาลองใหม่อีกครั้ง');
@@ -567,7 +582,7 @@ export async function toggleRoomPostReaction(input: {
         },
         select: {
           id: true,
-          room: { select: { status: true } },
+          room: { select: { slug: true, status: true } },
         },
       }),
       prisma.roomMember.findUnique({
@@ -623,7 +638,7 @@ export async function toggleRoomPostReaction(input: {
       });
     });
 
-    revalidatePath(`/rooms/${input.roomId}`);
+    revalidateRoomPaths(input.roomId, post.room.slug);
 
     return {
       ok: true,
@@ -654,6 +669,7 @@ export async function updateRoomMembership(input: {
         where: { id: input.roomId },
         select: {
           id: true,
+          slug: true,
           status: true,
           isLocked: true,
           passwordHash: true,
@@ -732,7 +748,7 @@ export async function updateRoomMembership(input: {
       },
     });
 
-    revalidatePath(`/rooms/${room.id}`);
+    revalidateRoomPaths(room.id, room.slug);
 
     const nextStatus = input.action === 'join' ? 'active' : 'left';
     return {

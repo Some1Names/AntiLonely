@@ -103,6 +103,8 @@ export default function RoomBoardFeed({
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const canonicalRoomSegment = room.slug ?? room.id;
+
   const rulesList =
     room.rulesList && room.rulesList.length > 0
       ? room.rulesList
@@ -419,8 +421,8 @@ export default function RoomBoardFeed({
     try {
       const url =
         typeof window !== "undefined"
-          ? `${window.location.origin}/rooms/${room.id}`
-          : `/rooms/${room.id}`;
+          ? `${window.location.origin}/rooms/${canonicalRoomSegment}`
+          : `/rooms/${canonicalRoomSegment}`;
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(url);
       }
@@ -741,7 +743,7 @@ export default function RoomBoardFeed({
               <PostCard
                 key={post.id}
                 id={post.id}
-                roomId={room.id}
+                roomId={canonicalRoomSegment}
                 author={post.author}
                 time={
                   post.createdAt

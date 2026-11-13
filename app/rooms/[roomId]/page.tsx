@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Header from "@/component/Header";
 import RoomBoardFeed from "@/component/RoomBoardFeed";
 import { getRoomBoardData } from "./actions";
@@ -20,6 +20,9 @@ async function RoomBoardFeedContent({ params }: Props) {
   const data = await getRoomBoardData(roomId);
   if (!data) {
     notFound();
+  }
+  if (roomId !== data.room.slug) {
+    redirect(`/rooms/${data.room.slug}`);
   }
 
   return (
