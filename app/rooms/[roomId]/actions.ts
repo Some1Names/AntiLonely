@@ -11,7 +11,6 @@ import {
   canMemberPostInRoom,
   canMemberReactInRoom,
   DEFAULT_ROOM_EMOJI,
-  getStartOfBangkokDay,
   isUuid,
   mapDbMembershipToBoardState,
   mapDbPostToBoardPost,
@@ -127,7 +126,6 @@ export async function getRoomBoardData(
 
   const now = new Date();
   const nowMs = now.getTime();
-  const startOfToday = getStartOfBangkokDay(nowMs);
 
   const [roomRecord, viewer] = await Promise.all([
     prisma.room.findUnique({
@@ -137,9 +135,6 @@ export async function getRoomBoardData(
           select: {
             members: {
               where: { status: 'active' },
-            },
-            messages: {
-              where: { parentId: null, status: 'visible' },
             },
           },
         },
@@ -155,20 +150,11 @@ export async function getRoomBoardData(
   const canonicalRoomId = roomRecord.id;
 
   const [
-    postsTodayCount,
     viewerMembership,
     messageRows,
     myMemberships,
     unreadNotifications,
   ] = await Promise.all([
-    prisma.message.count({
-      where: {
-        roomId: canonicalRoomId,
-        parentId: null,
-        status: 'visible',
-        createdAt: { gte: startOfToday },
-      },
-    }),
     viewer
       ? prisma.roomMember.findUnique({
           where: {
@@ -254,8 +240,8 @@ export async function getRoomBoardData(
       isLocked: roomRecord.isLocked,
       createdAt: roomRecord.createdAt,
       memberCount: roomRecord._count.members,
-      postsToday: postsTodayCount,
-      totalPosts: roomRecord._count.messages,
+      postsToday: 0,
+      totalPosts: 0,
     },
     nowMs
   );

@@ -20,7 +20,6 @@ import {
   canMemberReactInRoom,
   DEFAULT_ROOM_EMOJI,
   DEFAULT_ROOM_RULES,
-  resolveRoomPostCountStats,
 } from "@/lib/room-board";
 import {
   createRoomPost,
@@ -124,7 +123,6 @@ export default function RoomBoardFeed({
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const canonicalRoomSegment = room.slug ?? room.id;
-  const postStats = resolveRoomPostCountStats(room);
 
   const rulesList =
     room.rulesList && room.rulesList.length > 0
@@ -598,16 +596,6 @@ export default function RoomBoardFeed({
                 <span className="rounded-full border border-edge-strong bg-cream px-2 py-0.5 text-xs font-medium text-ink-soft">
                   สมาชิก {formatCount(membership.memberCount)}
                 </span>
-                {postStats.totalPosts !== null && (
-                  <span className="rounded-full border border-edge-strong bg-cream px-2 py-0.5 text-xs font-medium text-ink-soft">
-                    กระทู้ทั้งหมด {formatCount(postStats.totalPosts)}
-                  </span>
-                )}
-                {postStats.postsToday !== null && (
-                  <span className="rounded-full border border-kmutt-yellow-dark/60 bg-highlight px-2 py-0.5 text-xs font-medium text-ink">
-                    โพสต์วันนี้ {formatCount(postStats.postsToday)}
-                  </span>
-                )}
               </div>
             </div>
           </div>
