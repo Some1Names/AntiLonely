@@ -86,6 +86,6 @@ export interface BoardPostSummary {
   timeLabel: string;
   content: string;
   isEdited?: boolean;
-  reactions: { emoji: string; count: number }[];
+  reactions: { emoji: string; count: number; reactedByMe?: boolean }[];
   replyCount: number;
 }

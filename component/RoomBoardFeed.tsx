@@ -6,35 +6,68 @@ import Header from "@/component/Header";
 import PostCard from "@/component/PostCard";
 import { ReportModal } from "@/component/post-thread/ReportModal";
 import { formatCount } from "@/lib/format";
-import { currentUser, myRooms, type Room } from "@/lib/mock";
 import {
-  getMockBoardPosts,
-  type BoardPostSummary,
-} from "@/lib/mock/post-thread";
-import {
-  editBoardPost,
   deleteBoardPost,
+  editBoardPost,
   formatRelativeTimeThai,
-  getInitialBoardMembership,
-  joinBoardRoom,
-  leaveBoardRoom,
   TIME_REFRESH_INTERVAL_MS,
+  toggleReaction,
 } from "@/lib/post-thread";
+import { DEFAULT_ROOM_RULES } from "@/lib/room-board";
+import {
+  createRoomPost,
+  deleteRoomPost,
+  reportRoomTarget,
+  toggleRoomPostReaction,
+  updateRoomMembership,
+  updateRoomPost,
+  type RoomBoardViewer,
+} from "@/app/rooms/[roomId]/actions";
+import type { MyRoom, Room } from "@/types/room";
 import type {
+  BoardPostSummary,
+  ReportReason,
   RoomBoardMembershipState,
 } from "@/types/post-thread";
 
 type Props = {
-  room: Room;
-  initialPosts?: BoardPostSummary[];
+  room: Room & { rulesList?: string[]; isLocked?: boolean };
+  initialPosts: BoardPostSummary[];
+  initialMembership: RoomBoardMembershipState;
+  currentUser?: RoomBoardViewer | null;
+  myRooms?: MyRoom[];
   serverTime?: string;
 };
 
-const CURRENT_USER_ID = "user-platoo";
+function createOptimisticPost(
+  roomId: string,
+  currentUser: RoomBoardViewer,
+  content: string
+): { nowMs: number; post: BoardPostSummary } {
+  const nowMs = Date.now();
+  return {
+    nowMs,
+    post: {
+      id: `temp-${nowMs}`,
+      roomId,
+      authorId: currentUser.id,
+      author: currentUser.alias,
+      createdAt: new Date(nowMs).toISOString(),
+      createdAtOffsetMs: 0,
+      timeLabel: "เมื่อสักครู่",
+      content,
+      reactions: [],
+      replyCount: 0,
+    },
+  };
+}
 
 export default function RoomBoardFeed({
   room,
   initialPosts,
+  initialMembership,
+  currentUser = null,
+  myRooms = [],
   serverTime,
 }: Props) {
   const [referenceTime, setReferenceTime] = useState<number>(() => {
@@ -44,16 +77,24 @@ export default function RoomBoardFeed({
     }
     return 0;
   });
-  const [posts, setPosts] = useState<BoardPostSummary[]>(() =>
-    initialPosts ?? getMockBoardPosts(room.id, referenceTime || undefined)
-  );
+  const [prevInitialPosts, setPrevInitialPosts] = useState(initialPosts);
+  const [posts, setPosts] = useState<BoardPostSummary[]>(initialPosts);
+  if (initialPosts !== prevInitialPosts) {
+    setPrevInitialPosts(initialPosts);
+    setPosts(initialPosts);
+  }
+
   const [text, setText] = useState("");
-  const [membership, setMembership] = useState<RoomBoardMembershipState>(() =>
-    getInitialBoardMembership(room, [
-      ...myRooms.map((r) => r.id),
-      ...(room.id === "songs" ? ["songs"] : []),
-    ])
-  );
+  const [isPosting, setIsPosting] = useState(false);
+  const [prevInitialMembership, setPrevInitialMembership] =
+    useState(initialMembership);
+  const [membership, setMembership] =
+    useState<RoomBoardMembershipState>(initialMembership);
+  if (initialMembership !== prevInitialMembership) {
+    setPrevInitialMembership(initialMembership);
+    setMembership(initialMembership);
+  }
+  const [isMembershipPending, setIsMembershipPending] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isRoomMenuOpen, setIsRoomMenuOpen] = useState(false);
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
@@ -61,6 +102,11 @@ export default function RoomBoardFeed({
   const roomMenuRef = useRef<HTMLDivElement>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const rulesList =
+    room.rulesList && room.rulesList.length > 0
+      ? room.rulesList
+      : [...DEFAULT_ROOM_RULES];
 
   useEffect(() => {
     if (!isRoomMenuOpen) return;
@@ -127,65 +173,245 @@ export default function RoomBoardFeed({
     }, 3000);
   };
 
-  function handlePost() {
+  async function handlePost() {
+    if (isPosting) return;
     const trimmed = text.trim();
     if (!trimmed) return;
 
-    const nowMs = Date.now();
-    const nowIso = new Date(nowMs).toISOString();
+    if (!currentUser) {
+      showToast("กรุณาเข้าสู่ระบบก่อนตั้งกระทู้");
+      return;
+    }
 
-    const newPost: BoardPostSummary = {
-      id: `post-${nowMs}`,
-      roomId: room.id,
-      authorId: "user-platoo",
-      author: currentUser.alias,
-      createdAt: nowIso,
-      createdAtOffsetMs: 0,
-      timeLabel: "เมื่อสักครู่",
-      content: trimmed,
-      reactions: [],
-      replyCount: 0,
-    };
+    if (room.isLocked) {
+      showToast("ห้องนี้ถูกล็อกชั่วคราว ไม่สามารถตั้งกระทู้ใหม่ได้");
+      return;
+    }
 
-    setReferenceTime(nowMs);
-    setPosts((prev) => [newPost, ...prev]);
-    setText("");
-  }
+    if (membership.status !== "joined") {
+      showToast("กรุณาเข้าร่วมห้องก่อนตั้งกระทู้");
+      return;
+    }
 
-  function handleEditPost(postId: string, newContent: string) {
-    setPosts((prev) =>
-      editBoardPost(prev, postId, newContent, CURRENT_USER_ID)
+    const { nowMs, post: optimisticPost } = createOptimisticPost(
+      room.id,
+      currentUser,
+      trimmed
     );
-    showToast("แก้ไขกระทู้เรียบร้อยแล้ว");
+    const tempId = optimisticPost.id;
+
+    setIsPosting(true);
+    setReferenceTime(nowMs);
+    setPosts((prev) => [optimisticPost, ...prev]);
+    setText("");
+
+    try {
+      const result = await createRoomPost({
+        roomId: room.id,
+        content: trimmed,
+      });
+      if (!result.ok) {
+        setPosts((prev) => prev.filter((p) => p.id !== tempId));
+        setText(trimmed);
+        showToast(result.error);
+        return;
+      }
+
+      setPosts((prev) =>
+        prev.map((p) => (p.id === tempId ? result.data : p))
+      );
+      showToast("ตั้งกระทู้เรียบร้อยแล้ว");
+    } catch {
+      setPosts((prev) => prev.filter((p) => p.id !== tempId));
+      setText(trimmed);
+      showToast("ไม่สามารถตั้งกระทู้ได้ กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setIsPosting(false);
+    }
   }
 
-  function handleDeletePost(postId: string) {
-    setPosts((prev) => deleteBoardPost(prev, postId, CURRENT_USER_ID));
-    showToast("ลบกระทู้เรียบร้อยแล้ว");
+  async function handleEditPost(postId: string, newContent: string) {
+    if (!currentUser) {
+      showToast("กรุณาเข้าสู่ระบบก่อนแก้ไขกระทู้");
+      return;
+    }
+
+    const previousPosts = posts;
+    setPosts((prev) =>
+      editBoardPost(prev, postId, newContent, currentUser.id)
+    );
+
+    try {
+      const result = await updateRoomPost({
+        roomId: room.id,
+        postId,
+        content: newContent,
+      });
+      if (!result.ok) {
+        setPosts(previousPosts);
+        showToast(result.error);
+        return;
+      }
+      setPosts((prev) =>
+        prev.map((p) => (p.id === postId ? result.data : p))
+      );
+      showToast("แก้ไขกระทู้เรียบร้อยแล้ว");
+    } catch {
+      setPosts(previousPosts);
+      showToast("ไม่สามารถแก้ไขกระทู้ได้ กรุณาลองใหม่อีกครั้ง");
+    }
   }
 
-  function handleMembershipClick() {
+  async function handleDeletePost(postId: string) {
+    if (!currentUser) {
+      showToast("กรุณาเข้าสู่ระบบก่อนลบกระทู้");
+      return;
+    }
+
+    const previousPosts = posts;
+    setPosts((prev) => deleteBoardPost(prev, postId, currentUser.id));
+
+    try {
+      const result = await deleteRoomPost({
+        roomId: room.id,
+        postId,
+      });
+      if (!result.ok) {
+        setPosts(previousPosts);
+        showToast(result.error);
+        return;
+      }
+      showToast("ลบกระทู้เรียบร้อยแล้ว");
+    } catch {
+      setPosts(previousPosts);
+      showToast("ไม่สามารถลบกระทู้ได้ กรุณาลองใหม่อีกครั้ง");
+    }
+  }
+
+  async function handleTogglePostReaction(postId: string, emoji: string) {
+    const previousPosts = posts;
+
+    if (!currentUser) {
+      setPosts(previousPosts);
+      showToast("กรุณาเข้าสู่ระบบก่อนกดรีแอคชัน");
+      return;
+    }
+
+    setPosts((prev) =>
+      prev.map((p) => {
+        if (p.id !== postId) return p;
+        const normalized = p.reactions.map((r) => ({
+          emoji: r.emoji,
+          count: r.count,
+          reactedByMe: Boolean(r.reactedByMe),
+        }));
+        return {
+          ...p,
+          reactions: toggleReaction(normalized, emoji),
+        };
+      })
+    );
+
+    try {
+      const result = await toggleRoomPostReaction({
+        roomId: room.id,
+        postId,
+        emoji,
+      });
+      if (!result.ok) {
+        setPosts(previousPosts);
+        showToast(result.error);
+        return;
+      }
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId ? { ...p, reactions: result.data.reactions } : p
+        )
+      );
+    } catch {
+      setPosts(previousPosts);
+      showToast("ไม่สามารถอัปเดตรีแอคชันได้ กรุณาลองใหม่อีกครั้ง");
+    }
+  }
+
+  async function handleMembershipClick() {
+    if (isMembershipPending) return;
+
+    if (!currentUser) {
+      showToast("กรุณาเข้าสู่ระบบก่อนดำเนินการ");
+      return;
+    }
+
     if (membership.status === "joined") {
       setIsLeaveModalOpen(true);
       return;
     }
-    if (membership.status === "requested") {
-      setMembership((prev) => leaveBoardRoom(prev));
-      showToast("ยกเลิกคำขอเข้าร่วมห้องแล้ว");
-      return;
+
+    const previousMembership = membership;
+    setIsMembershipPending(true);
+    try {
+      if (membership.status === "requested") {
+        const result = await updateRoomMembership({
+          roomId: room.id,
+          action: "leave",
+        });
+        if (!result.ok) {
+          setMembership(previousMembership);
+          showToast(result.error);
+          return;
+        }
+        setMembership(result.data);
+        showToast("ยกเลิกคำขอเข้าร่วมห้องแล้ว");
+        return;
+      }
+
+      const result = await updateRoomMembership({
+        roomId: room.id,
+        action: "join",
+      });
+      if (!result.ok) {
+        setMembership(previousMembership);
+        showToast(result.error);
+        return;
+      }
+      setMembership(result.data);
+      showToast(
+        room.isPrivate
+          ? "ส่งคำขอเข้าร่วมห้องเรียบร้อยแล้ว"
+          : `เข้าร่วม${room.name}เรียบร้อยแล้ว`
+      );
+    } catch {
+      setMembership(previousMembership);
+      showToast("ไม่สามารถดำเนินการได้ กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setIsMembershipPending(false);
     }
-    setMembership((prev) => joinBoardRoom(prev, room.isPrivate));
-    showToast(
-      room.isPrivate
-        ? "ส่งคำขอเข้าร่วมห้องเรียบร้อยแล้ว"
-        : `เข้าร่วม${room.name}เรียบร้อยแล้ว`
-    );
   }
 
-  function handleConfirmLeave() {
-    setMembership((prev) => leaveBoardRoom(prev));
+  async function handleConfirmLeave() {
+    if (isMembershipPending) return;
     setIsLeaveModalOpen(false);
-    showToast(`ออกจาก${room.name}แล้ว`);
+    const previousMembership = membership;
+    setIsMembershipPending(true);
+
+    try {
+      const result = await updateRoomMembership({
+        roomId: room.id,
+        action: "leave",
+      });
+      if (!result.ok) {
+        setMembership(previousMembership);
+        showToast(result.error);
+        return;
+      }
+      setMembership(result.data);
+      showToast(`ออกจาก${room.name}แล้ว`);
+    } catch {
+      setMembership(previousMembership);
+      showToast("ไม่สามารถออกจากห้องได้ กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setIsMembershipPending(false);
+    }
   }
 
   async function handleCopyRoomLink() {
@@ -213,17 +439,61 @@ export default function RoomBoardFeed({
     );
   }
 
-  function handleReportRoomSubmit() {
-    setIsReportingRoom(false);
-    showToast("ส่งรายงานห้องให้ทีมงานตรวจสอบเรียบร้อยแล้ว");
+  async function handleReportPostSubmit(
+    postId: string,
+    reason: ReportReason,
+    details: string
+  ) {
+    try {
+      const result = await reportRoomTarget({
+        roomId: room.id,
+        postId,
+        reason,
+        details,
+      });
+      if (!result.ok) {
+        showToast(result.error);
+        return;
+      }
+      showToast("ส่งรายงานกระทู้ให้ทีมงานตรวจสอบเรียบร้อยแล้ว");
+    } catch {
+      showToast("ไม่สามารถส่งรายงานได้ กรุณาลองใหม่อีกครั้ง");
+    }
   }
+
+  async function handleReportRoomSubmit(
+    reason: ReportReason,
+    details: string
+  ) {
+    setIsReportingRoom(false);
+    try {
+      const result = await reportRoomTarget({
+        roomId: room.id,
+        reason,
+        details,
+      });
+      if (!result.ok) {
+        showToast(result.error);
+        return;
+      }
+      showToast("ส่งรายงานห้องให้ทีมงานตรวจสอบเรียบร้อยแล้ว");
+    } catch {
+      showToast("ไม่สามารถส่งรายงานห้องได้ กรุณาลองใหม่อีกครั้ง");
+    }
+  }
+
+  const nonMemberComposerMessage = !currentUser
+    ? "เข้าสู่ระบบและเข้าร่วมห้องก่อนจึงจะตั้งกระทู้ได้"
+    : membership.status === "requested"
+      ? "ส่งคำขอเข้าร่วมห้องนี้แล้ว รอการอนุมัติก่อนตั้งกระทู้"
+      : "เข้าร่วมห้องก่อนจึงจะตั้งกระทู้และพูดคุยในห้องนี้ได้";
 
   return (
     <div className="min-h-screen flex flex-col bg-[#fafafa] text-[#18181b] font-sans leading-[1.4]">
       <Header
-        notifications={currentUser.notifications}
+        notifications={currentUser?.notifications ?? 0}
         rooms={myRooms}
-        alias={currentUser.alias}
+        alias={currentUser?.alias ?? "ผู้เยี่ยมชม"}
       />
 
       {/* ส่วนหัวห้อง (Board Header) */}
@@ -266,7 +536,7 @@ export default function RoomBoardFeed({
                   สมาชิก {formatCount(membership.memberCount)}
                 </span>
                 <span className="rounded-full bg-[#dcfce7] px-2 py-0.5 text-xs font-medium text-[#166534] leading-[1.4]">
-                  ออนไลน์ {room.postsToday} คน
+                  โพสต์วันนี้ {room.postsToday}
                 </span>
               </div>
             </div>
@@ -275,24 +545,27 @@ export default function RoomBoardFeed({
               {membership.status === "joined" ? (
                 <button
                   type="button"
+                  disabled={isMembershipPending}
                   onClick={handleMembershipClick}
-                  className="rounded-lg border border-[#e4e4e7] bg-white px-4 py-[9px] text-sm font-semibold text-[#18181b] hover:bg-[#f4f4f5] active:scale-[0.98] transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2"
+                  className="rounded-lg border border-[#e4e4e7] bg-white px-4 py-[9px] text-sm font-semibold text-[#18181b] hover:bg-[#f4f4f5] active:scale-[0.98] disabled:opacity-60 transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2"
                 >
                   เข้าร่วมแล้ว
                 </button>
               ) : membership.status === "requested" ? (
                 <button
                   type="button"
+                  disabled={isMembershipPending}
                   onClick={handleMembershipClick}
-                  className="rounded-lg border border-[#e4e4e7] bg-[#f4f4f5] px-4 py-[9px] text-sm font-semibold text-[#71717a] hover:bg-[#e4e4e7] active:scale-[0.98] transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2"
+                  className="rounded-lg border border-[#e4e4e7] bg-[#f4f4f5] px-4 py-[9px] text-sm font-semibold text-[#71717a] hover:bg-[#e4e4e7] active:scale-[0.98] disabled:opacity-60 transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2"
                 >
                   ส่งคำขอแล้ว
                 </button>
               ) : (
                 <button
                   type="button"
+                  disabled={isMembershipPending}
                   onClick={handleMembershipClick}
-                  className="rounded-lg bg-[#18181b] px-4 py-[9px] text-sm font-semibold text-white hover:bg-[#27272a] active:scale-[0.98] transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2"
+                  className="rounded-lg bg-[#18181b] px-4 py-[9px] text-sm font-semibold text-white hover:bg-[#27272a] active:scale-[0.98] disabled:opacity-60 transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2"
                 >
                   {room.isPrivate ? "ขอเข้าร่วม" : "เข้าร่วมห้อง"}
                 </button>
@@ -399,10 +672,11 @@ export default function RoomBoardFeed({
           </summary>
           <div className="px-4 pb-4">
             <ol className="space-y-2 text-sm font-normal text-[#18181b] leading-[1.4] border-t border-[#e4e4e7] pt-3">
-              <li>1. ใจดีต่อกัน เพราะหลังจอก็คือคนเหมือนกันน้า</li>
-              <li>2. ไม่เปิดเผยข้อมูลส่วนตัว ทั้งของตัวเองและของคนอื่น</li>
-              <li>3. ไม่สแปม ไม่ขายของ</li>
-              <li>4. เจอคนไม่น่ารัก กดรายงานดีกว่าตอบโต้นะ</li>
+              {rulesList.map((rule, index) => (
+                <li key={index}>
+                  {index + 1}. {rule}
+                </li>
+              ))}
             </ol>
           </div>
         </details>
@@ -412,34 +686,45 @@ export default function RoomBoardFeed({
           aria-label="ฟีดกระทู้"
           className="flex-1 min-w-0 flex flex-col gap-4 w-full"
         >
-          {/* กล่องตั้งกระทู้ (Composer) */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handlePost();
-            }}
-            className="flex items-center gap-2 sm:gap-3 rounded-xl border border-[#e4e4e7] bg-white p-3 sm:p-4 w-full"
-          >
-            <div
-              aria-hidden="true"
-              className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-full bg-[#d4d4d8]"
-            />
-
-            <input
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="ตั้งกระทู้ในห้องนี้…"
-              className="flex-1 min-w-0 h-[38px] sm:h-[42px] rounded-lg border border-[#e4e4e7] bg-white px-3 sm:px-3.5 py-2 sm:py-2.5 text-sm text-[#18181b] placeholder:text-[#a1a1aa] focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2 leading-[1.4]"
-            />
-
-            <button
-              type="submit"
-              disabled={!text.trim()}
-              className="h-[38px] px-3 sm:px-4 py-[9px] rounded-lg bg-[#18181b] text-white text-xs sm:text-sm font-semibold hover:bg-[#27272a] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 cursor-pointer shrink-0 whitespace-nowrap focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2"
+          {/* กล่องตั้งกระทู้ (Composer / Option A Membership Gate) */}
+          {room.isLocked ? (
+            <div className="rounded-xl border border-[#e4e4e7] bg-white px-4 py-3.5 text-sm text-[#71717a] w-full">
+              ห้องนี้ถูกล็อกชั่วคราว ไม่สามารถตั้งกระทู้ใหม่ได้
+            </div>
+          ) : membership.status !== "joined" ? (
+            <div className="rounded-xl border border-[#e4e4e7] bg-white px-4 py-3.5 text-sm text-[#71717a] w-full">
+              {nonMemberComposerMessage}
+            </div>
+          ) : (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void handlePost();
+              }}
+              className="flex items-center gap-2 sm:gap-3 rounded-xl border border-[#e4e4e7] bg-white p-3 sm:p-4 w-full"
             >
-              ตั้งกระทู้
-            </button>
-          </form>
+              <div
+                aria-hidden="true"
+                className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-full bg-[#d4d4d8]"
+              />
+
+              <input
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                disabled={isPosting}
+                placeholder="ตั้งกระทู้ในห้องนี้…"
+                className="flex-1 min-w-0 h-[38px] sm:h-[42px] rounded-lg border border-[#e4e4e7] bg-white px-3 sm:px-3.5 py-2 sm:py-2.5 text-sm text-[#18181b] placeholder:text-[#a1a1aa] focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2 leading-[1.4] disabled:opacity-60"
+              />
+
+              <button
+                type="submit"
+                disabled={!text.trim() || isPosting}
+                className="h-[38px] px-3 sm:px-4 py-[9px] rounded-lg bg-[#18181b] text-white text-xs sm:text-sm font-semibold hover:bg-[#27272a] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 cursor-pointer shrink-0 whitespace-nowrap focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2"
+              >
+                {isPosting ? "กำลังโพสต์..." : "ตั้งกระทู้"}
+              </button>
+            </form>
+          )}
 
           {/* แสดงโพสต์ หรือ Empty State */}
           {posts.length === 0 ? (
@@ -465,16 +750,24 @@ export default function RoomBoardFeed({
                 }
                 createdAt={post.createdAt}
                 content={post.content}
-                isOwner={post.authorId === CURRENT_USER_ID}
+                isOwner={Boolean(currentUser && post.authorId === currentUser.id)}
                 isEdited={post.isEdited}
                 reactions={post.reactions}
                 replyCount={post.replyCount}
                 onEditPost={(newContent) =>
-                  handleEditPost(post.id, newContent)
+                  void handleEditPost(post.id, newContent)
                 }
-                onDeletePost={() => handleDeletePost(post.id)}
+                onDeletePost={() => void handleDeletePost(post.id)}
+                onToggleReaction={(emoji) =>
+                  handleTogglePostReaction(post.id, emoji)
+                }
+                onReportPost={(reason, details) =>
+                  handleReportPostSubmit(post.id, reason, details)
+                }
                 onReportSubmitted={(msg) =>
-                  showToast(msg ?? "ส่งรายงานกระทู้ให้ทีมงานตรวจสอบเรียบร้อยแล้ว")
+                  showToast(
+                    msg ?? "ส่งรายงานกระทู้ให้ทีมงานตรวจสอบเรียบร้อยแล้ว"
+                  )
                 }
               />
             ))
@@ -491,10 +784,11 @@ export default function RoomBoardFeed({
           </h2>
 
           <ol className="space-y-2 text-sm font-normal text-[#18181b] leading-[1.4] break-words">
-            <li>1. ใจดีต่อกัน เพราะหลังจอก็คือคนเหมือนกันน้า</li>
-            <li>2. ไม่เปิดเผยข้อมูลส่วนตัว ทั้งของตัวเองและของคนอื่น</li>
-            <li>3. ไม่สแปม ไม่ขายของ</li>
-            <li>4. เจอคนไม่น่ารัก กดรายงานดีกว่าตอบโต้นะ</li>
+            {rulesList.map((rule, index) => (
+              <li key={index}>
+                {index + 1}. {rule}
+              </li>
+            ))}
           </ol>
         </aside>
       </main>
@@ -533,7 +827,7 @@ export default function RoomBoardFeed({
               </button>
               <button
                 type="button"
-                onClick={handleConfirmLeave}
+                onClick={() => void handleConfirmLeave()}
                 className="rounded-lg bg-[#dc2626] px-4 py-2 text-sm font-semibold text-white hover:bg-[#b91c1c] transition-colors cursor-pointer"
               >
                 ออกจากห้อง
@@ -548,7 +842,7 @@ export default function RoomBoardFeed({
         isOpen={isReportingRoom}
         targetType="room"
         onClose={() => setIsReportingRoom(false)}
-        onSubmit={handleReportRoomSubmit}
+        onSubmit={(reason, details) => void handleReportRoomSubmit(reason, details)}
       />
 
       {/* Toast Notification */}

@@ -3,8 +3,7 @@ import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import Header from "@/component/Header";
 import RoomBoardFeed from "@/component/RoomBoardFeed";
-import { rooms } from "@/lib/mock";
-import { getMockBoardPosts } from "@/lib/mock/post-thread";
+import { getRoomBoardData } from "./actions";
 
 type Props = {
   params: Promise<{
@@ -18,20 +17,19 @@ async function RoomBoardFeedContent({ params }: Props) {
   await connection();
   const { roomId } = await params;
 
-  const room = rooms.find((r) => r.id === roomId);
-
-  if (!room) {
+  const data = await getRoomBoardData(roomId);
+  if (!data) {
     notFound();
   }
 
-  const serverTime = new Date().toISOString();
-  const initialPosts = getMockBoardPosts(room.id, Date.parse(serverTime));
-
   return (
     <RoomBoardFeed
-      room={room}
-      initialPosts={initialPosts}
-      serverTime={serverTime}
+      room={data.room}
+      initialPosts={data.initialPosts}
+      initialMembership={data.membership}
+      currentUser={data.currentUser}
+      myRooms={data.myRooms}
+      serverTime={data.serverTime}
     />
   );
 }
