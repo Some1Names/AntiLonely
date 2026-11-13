@@ -5,6 +5,14 @@ import Link from "next/link";
 import ReactionBar from "@/component/ReactionBar";
 import { ReportModal } from "@/component/post-thread/ReportModal";
 import { toggleReaction } from "@/lib/post-thread";
+import {
+  avatarClass,
+  indexCardClass,
+  inputClass,
+  primaryButtonClass,
+  disabledButtonClass,
+  secondaryButtonClass,
+} from "@/lib/styles";
 import type { ReactionItem, ReportReason } from "@/types/post-thread";
 
 type Props = {
@@ -26,6 +34,20 @@ type Props = {
   onReportSubmitted?: (message?: string) => void;
 };
 
+// One shared empty list, so a post without reactions gets the same array on
+// every render instead of a new one that looks like a change.
+const noReactions: NonNullable<Props["reactions"]> = [];
+
+function toReactionItems(
+  reactions: NonNullable<Props["reactions"]>
+): ReactionItem[] {
+  return reactions.map((r) => ({
+    emoji: r.emoji,
+    count: r.count,
+    reactedByMe: Boolean(r.reactedByMe),
+  }));
+}
+
 export default function PostCard({
   id,
   roomId,
@@ -36,7 +58,7 @@ export default function PostCard({
   content,
   isOwner = false,
   isEdited = false,
-  reactions: initialReactions = [],
+  reactions: initialReactions = noReactions,
   replyCount,
   onEditPost,
   onDeletePost,
@@ -49,22 +71,12 @@ export default function PostCard({
     .join("|");
   const [prevReactionSig, setPrevReactionSig] = useState(reactionSig);
   const [reactions, setReactions] = useState<ReactionItem[]>(() =>
-    initialReactions.map((r) => ({
-      emoji: r.emoji,
-      count: r.count,
-      reactedByMe: Boolean(r.reactedByMe),
-    }))
+    toReactionItems(initialReactions)
   );
 
   if (reactionSig !== prevReactionSig) {
     setPrevReactionSig(reactionSig);
-    setReactions(
-      initialReactions.map((r) => ({
-        emoji: r.emoji,
-        count: r.count,
-        reactedByMe: Boolean(r.reactedByMe),
-      }))
-    );
+    setReactions(toReactionItems(initialReactions));
   }
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isReporting, setIsReporting] = useState(false);
@@ -155,24 +167,25 @@ export default function PostCard({
   };
 
   return (
-    <article className="w-full rounded-xl border border-[#e4e4e7] bg-white p-4 sm:p-5 flex flex-col gap-3 transition-colors duration-150 hover:border-[#d4d4d8] leading-[1.4]">
+    <article
+      className={`flex w-full flex-col gap-3 p-4 leading-[1.4] sm:p-5 ${indexCardClass}`}
+    >
       <div ref={headerRef} className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
           {author && (
-            <div
-              aria-hidden="true"
-              className="w-8 h-8 shrink-0 rounded-full bg-[#d4d4d8]"
-            />
+            <span aria-hidden="true" className={avatarClass}>
+              {author.charAt(0).toUpperCase()}
+            </span>
           )}
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2">
               {author && (
-                <span className="text-sm font-semibold text-[#18181b] leading-[1.4] truncate">
+                <span className="truncate text-sm font-semibold leading-[1.4]">
                   {author}
                 </span>
               )}
               {room && (
-                <span className="rounded-md bg-[#f4f4f5] px-2 py-0.5 text-xs font-medium text-[#71717a] leading-[1.4]">
+                <span className="rounded-full border border-butter-edge bg-butter px-2 py-0.5 text-xs font-medium leading-[1.4]">
                   {room}
                 </span>
               )}
@@ -181,13 +194,13 @@ export default function PostCard({
               <time
                 dateTime={createdAt}
                 suppressHydrationWarning
-                className="text-xs font-normal text-[#71717a] leading-[1.4]"
+                className="text-xs font-normal leading-[1.4] text-ink-soft"
               >
                 {time}
                 {isEdited ? " (แก้ไขแล้ว)" : ""}
               </time>
             ) : (
-              <span className="text-xs font-normal text-[#71717a] leading-[1.4]">
+              <span className="text-xs font-normal leading-[1.4] text-ink-soft">
                 {time}
                 {isEdited ? " (แก้ไขแล้ว)" : ""}
               </span>
@@ -202,7 +215,7 @@ export default function PostCard({
             aria-label="ตัวเลือกเพิ่มเติม"
             aria-haspopup="menu"
             aria-expanded={isMenuOpen}
-            className="p-1 rounded-md text-sm font-bold text-[#a1a1aa] hover:text-[#18181b] transition-colors cursor-pointer select-none leading-none tracking-wider focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2 relative flex items-center justify-center min-w-[28px] min-h-[28px] after:absolute after:w-[44px] after:h-[44px] after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
+            className="relative flex min-h-[28px] min-w-[28px] cursor-pointer select-none items-center justify-center rounded-md p-1 text-sm font-bold leading-none tracking-wider text-ink-soft hover:bg-butter hover:text-ink motion-safe:transition-colors after:absolute after:w-[44px] after:h-[44px] after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
           >
             •••
           </button>
@@ -211,7 +224,7 @@ export default function PostCard({
             <div
               role="menu"
               aria-label="ตัวเลือกกระทู้"
-              className="absolute right-0 top-[calc(100%+4px)] z-20 flex w-44 flex-col rounded-[10px] border border-[#e4e4e7] bg-white p-1.5 shadow-[0_4px_16px_rgba(0,0,0,0.08)]"
+              className="absolute right-0 top-[calc(100%+4px)] z-20 flex w-44 flex-col rounded-xl border-[1.5px] border-ink bg-white p-1.5 shadow-sticker"
             >
               {threadHref && (
                 <>
@@ -219,7 +232,7 @@ export default function PostCard({
                     href={threadHref}
                     role="menuitem"
                     onClick={() => setIsMenuOpen(false)}
-                    className="w-full rounded-md px-2.5 py-2 text-left text-xs sm:text-[13px] font-medium text-[#18181b] hover:bg-[#f4f4f5] transition-colors"
+                    className="w-full rounded-md px-2.5 py-2 text-left text-xs sm:text-[13px] font-medium text-ink hover:bg-butter motion-safe:transition-colors"
                   >
                     เปิดดูกระทู้
                   </Link>
@@ -227,7 +240,7 @@ export default function PostCard({
                     type="button"
                     role="menuitem"
                     onClick={handleCopyLink}
-                    className="w-full rounded-md px-2.5 py-2 text-left text-xs sm:text-[13px] font-medium text-[#18181b] hover:bg-[#f4f4f5] transition-colors cursor-pointer"
+                    className="w-full rounded-md px-2.5 py-2 text-left text-xs sm:text-[13px] font-medium text-ink hover:bg-butter motion-safe:transition-colors cursor-pointer"
                   >
                     คัดลอกลิงก์กระทู้
                   </button>
@@ -239,7 +252,7 @@ export default function PostCard({
                     type="button"
                     role="menuitem"
                     onClick={handleStartEdit}
-                    className="w-full rounded-md px-2.5 py-2 text-left text-xs sm:text-[13px] font-medium text-[#18181b] hover:bg-[#f4f4f5] transition-colors cursor-pointer"
+                    className="w-full rounded-md px-2.5 py-2 text-left text-xs sm:text-[13px] font-medium text-ink hover:bg-butter motion-safe:transition-colors cursor-pointer"
                   >
                     แก้ไขกระทู้
                   </button>
@@ -247,7 +260,7 @@ export default function PostCard({
                     type="button"
                     role="menuitem"
                     onClick={handleDelete}
-                    className="w-full rounded-md px-2.5 py-2 text-left text-xs sm:text-[13px] font-medium text-[#dc2626] hover:bg-red-50 transition-colors cursor-pointer"
+                    className="w-full rounded-md px-2.5 py-2 text-left text-xs sm:text-[13px] font-medium text-red-700 hover:bg-red-50 motion-safe:transition-colors cursor-pointer"
                   >
                     ลบกระทู้
                   </button>
@@ -260,7 +273,7 @@ export default function PostCard({
                     setIsMenuOpen(false);
                     setIsReporting(true);
                   }}
-                  className="w-full rounded-md px-2.5 py-2 text-left text-xs sm:text-[13px] font-medium text-[#dc2626] hover:bg-red-50 transition-colors cursor-pointer"
+                  className="w-full rounded-md px-2.5 py-2 text-left text-xs sm:text-[13px] font-medium text-red-700 hover:bg-red-50 motion-safe:transition-colors cursor-pointer"
                 >
                   รายงานกระทู้
                 </button>
@@ -284,20 +297,20 @@ export default function PostCard({
               }}
               autoFocus
               aria-label="แก้ไขกระทู้"
-              className="w-full h-[42px] rounded-lg border border-[#e4e4e7] bg-white px-3.5 py-2.5 text-sm text-[#18181b] focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2 leading-[1.4]"
+              className={`h-[42px] leading-[1.4] ${inputClass}`}
             />
             <div className="flex items-center gap-2">
               <button
                 type="submit"
                 disabled={!editDraft.trim()}
-                className="h-8 px-3 rounded-lg bg-[#18181b] text-white text-xs font-semibold hover:bg-[#27272a] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2"
+                className={`h-8 cursor-pointer px-3 text-xs ${primaryButtonClass} ${disabledButtonClass}`}
               >
                 บันทึก
               </button>
               <button
                 type="button"
                 onClick={handleCancelEdit}
-                className="h-8 px-3 rounded-lg border border-[#e4e4e7] bg-white text-xs font-medium text-[#71717a] hover:text-[#18181b] hover:bg-[#f4f4f5] transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2"
+                className={`h-8 cursor-pointer px-3 text-xs ${secondaryButtonClass}`}
               >
                 ยกเลิก
               </button>
@@ -308,7 +321,7 @@ export default function PostCard({
             {threadHref ? (
               <Link
                 href={threadHref}
-                className={`block text-[15px] font-normal text-[#18181b] leading-[1.4] whitespace-pre-wrap [overflow-wrap:anywhere] break-words hover:text-[#71717a] transition-colors ${
+                className={`block text-[15px] font-normal leading-[1.4] text-ink whitespace-pre-wrap [overflow-wrap:anywhere] break-words hover:text-ink-soft motion-safe:transition-colors ${
                   !isExpanded && isLongContent ? "line-clamp-6" : ""
                 }`}
               >
@@ -316,7 +329,7 @@ export default function PostCard({
               </Link>
             ) : (
               <p
-                className={`text-[15px] font-normal text-[#18181b] leading-[1.4] whitespace-pre-wrap [overflow-wrap:anywhere] break-words ${
+                className={`text-[15px] font-normal leading-[1.4] text-ink whitespace-pre-wrap [overflow-wrap:anywhere] break-words ${
                   !isExpanded && isLongContent ? "line-clamp-6" : ""
                 }`}
               >
@@ -328,7 +341,7 @@ export default function PostCard({
               <button
                 type="button"
                 onClick={() => setIsExpanded((prev) => !prev)}
-                className="mt-1 text-xs font-medium text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2"
+                className="mt-1 cursor-pointer text-xs font-semibold text-kmutt-orange-dark underline-offset-4 hover:underline"
               >
                 {isExpanded ? "ย่อกลับ" : "ดูเพิ่มเติม"}
               </button>
@@ -337,7 +350,7 @@ export default function PostCard({
         )}
       </div>
 
-      <div className="flex items-center justify-between gap-x-2 gap-y-3 flex-wrap w-full pt-1">
+      <div className="flex w-full flex-wrap items-center justify-between gap-x-2 gap-y-3 border-t-[1.5px] border-dashed border-edge pt-3">
         <ReactionBar
           reactions={reactions}
           onToggleReaction={handleToggleReaction}
@@ -349,7 +362,7 @@ export default function PostCard({
         {threadHref ? (
           <Link
             href={threadHref}
-            className="inline-flex h-8 max-w-full items-center rounded-full border border-[#e4e4e7] bg-white px-3 py-1.5 text-[13px] font-medium leading-[1.4] text-[#18181b] hover:bg-[#f4f4f5] transition-colors relative after:absolute after:inset-y-[-6px] after:inset-x-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2 ml-auto truncate"
+            className="relative ml-auto inline-flex h-8 max-w-full items-center truncate rounded-full px-3 py-1.5 text-[13px] font-semibold leading-[1.4] text-kmutt-orange-dark hover:bg-peach/70 motion-safe:transition-colors after:absolute after:inset-x-0 after:inset-y-[-6px] after:content-['']"
           >
             {replyCount > 0 ? (
               `ตอบกลับ ${replyCount}`
@@ -363,7 +376,7 @@ export default function PostCard({
         ) : (
           <button
             type="button"
-            className="inline-flex h-8 max-w-full items-center rounded-full border border-[#e4e4e7] bg-white px-3 py-1.5 text-[13px] font-medium leading-[1.4] text-[#18181b] hover:bg-[#f4f4f5] transition-colors relative after:absolute after:inset-y-[-6px] after:inset-x-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2 ml-auto truncate"
+            className="relative ml-auto inline-flex h-8 max-w-full items-center truncate rounded-full px-3 py-1.5 text-[13px] font-semibold leading-[1.4] text-kmutt-orange-dark hover:bg-peach/70 motion-safe:transition-colors after:absolute after:inset-x-0 after:inset-y-[-6px] after:content-['']"
           >
             {replyCount > 0 ? (
               `ตอบกลับ ${replyCount}`

@@ -35,7 +35,7 @@ export default function PostThreadPage(props: PostThreadPageProps) {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex flex-col bg-[#fafafa]">
+        <div className="min-h-screen flex flex-col">
           <Header notifications={0} />
         </div>
       }

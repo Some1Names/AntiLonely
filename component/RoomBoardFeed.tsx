@@ -2,7 +2,10 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import EmptyNote from "@/component/EmptyNote";
 import Header from "@/component/Header";
+import Icon from "@/component/Icon";
+import Tape from "@/component/Tape";
 import PostCard from "@/component/PostCard";
 import { ReportModal } from "@/component/post-thread/ReportModal";
 import { formatCount } from "@/lib/format";
@@ -13,7 +16,11 @@ import {
   TIME_REFRESH_INTERVAL_MS,
   toggleReaction,
 } from "@/lib/post-thread";
-import { DEFAULT_ROOM_RULES, resolveRoomPostCountStats } from "@/lib/room-board";
+import {
+  DEFAULT_ROOM_EMOJI,
+  DEFAULT_ROOM_RULES,
+  resolveRoomPostCountStats,
+} from "@/lib/room-board";
 import {
   createRoomPost,
   deleteRoomPost,
@@ -23,6 +30,17 @@ import {
   updateRoomPost,
   type RoomBoardViewer,
 } from "@/app/rooms/[roomId]/actions";
+import {
+  avatarClass,
+  dangerButtonClass,
+  disabledButtonClass,
+  highlightClass,
+  indexCardClass,
+  noteFieldClass,
+  outlineButtonClass,
+  primaryButtonClass,
+  roomLook,
+} from "@/lib/styles";
 import type { MyRoom, Room } from "@/types/room";
 import type {
   BoardPostSummary,
@@ -491,176 +509,195 @@ export default function RoomBoardFeed({
       ? "ส่งคำขอเข้าร่วมห้องนี้แล้ว รอการอนุมัติก่อนตั้งกระทู้"
       : "เข้าร่วมห้องก่อนจึงจะตั้งกระทู้และพูดคุยในห้องนี้ได้";
 
+  // สีเงา เทป และพื้นหลังอิโมจิ ตามประเภทห้อง เหมือนการ์ดห้องในหน้าหลัก
+  const look = roomLook(room);
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#fafafa] text-[#18181b] font-sans leading-[1.4]">
+    <div className="flex flex-1 flex-col">
       <Header
         notifications={currentUser?.notifications ?? 0}
         rooms={myRooms}
         alias={currentUser?.alias ?? "ผู้เยี่ยมชม"}
       />
 
-      {/* ส่วนหัวห้อง (Board Header) */}
-      <section className="border-b border-[#e4e4e7] bg-white">
-        <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-8 lg:px-12 xl:px-[120px] py-6 flex flex-col gap-3">
-          {/* Breadcrumb */}
-          <nav aria-label="breadcrumb">
-            <ol className="flex items-center text-[13px] font-normal text-[#71717a] leading-[1.4] whitespace-pre truncate">
-              <li>
-                <Link
-                  href="/"
-                  className="hover:text-[#18181b] transition-colors focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2"
-                >
-                  หน้าหลัก
-                </Link>
-              </li>
-              <li aria-hidden="true">  /  </li>
-              <li aria-current="page" className="text-[#18181b] font-normal">
-                {room.name}
-              </li>
-            </ol>
-          </nav>
+      {/* ส่วนหัวห้อง (Board Header): การ์ดแปะเทปสีตามห้อง */}
+      <section className="mx-auto w-full max-w-[1440px] px-4 pt-6 sm:px-8 lg:px-12 xl:px-[120px]">
+        {/* Breadcrumb */}
+        <nav aria-label="breadcrumb" className="mb-4">
+          <ol className="flex items-center truncate whitespace-pre text-xs text-ink-soft">
+            <li>
+              <Link
+                href="/"
+                className="font-semibold text-kmutt-orange-dark underline-offset-4 hover:underline"
+              >
+                หน้าหลัก
+              </Link>
+            </li>
+            <li aria-hidden="true">  /  </li>
+            <li aria-current="page">{room.name}</li>
+          </ol>
+        </nav>
 
-          {/* แถวหลัก (Title, Description, Badges & Action Buttons) */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <div className="flex flex-col gap-2 min-w-0">
-              <h1 className="text-2xl sm:text-[30px] font-bold text-[#18181b] leading-[1.4]">
-                {room.name}
+        <div
+          className={`relative flex flex-col gap-4 rounded-xl border-[1.5px] border-ink bg-white p-5 pt-6 shadow-[4px_4px_0_var(--tone)] sm:p-6 md:flex-row md:items-end md:justify-between ${look.card}`}
+        >
+          <Tape className={`h-5 w-16 ${look.tape}`} />
+
+          {/* Title, Description, Badges */}
+          <div className="flex min-w-0 items-start gap-4">
+            <span
+              aria-hidden="true"
+              className={`flex size-14 shrink-0 items-center justify-center rounded-xl border-[1.5px] text-3xl ${look.tile}`}
+            >
+              {room.emoji ?? DEFAULT_ROOM_EMOJI}
+            </span>
+            <div className="flex min-w-0 flex-col gap-2">
+              <h1 className="font-display text-2xl font-semibold leading-snug sm:text-3xl">
+                <span className={highlightClass}>{room.name}</span>
               </h1>
 
-              <p className="text-sm font-normal text-[#71717a] leading-[1.4] line-clamp-2 md:line-clamp-none">
+              <p className="line-clamp-2 text-sm text-ink-soft md:line-clamp-none">
                 {room.description}
               </p>
 
               <div className="flex flex-wrap items-center gap-2 pt-0.5">
-                <span className="rounded-full bg-[#f4f4f5] px-2 py-0.5 text-xs font-medium text-[#71717a] leading-[1.4]">
+                <span
+                  className={`rounded-full border px-2 py-0.5 text-xs font-medium ${
+                    room.isPrivate
+                      ? "border-edge-strong bg-mist text-mist-ink"
+                      : "border-butter-edge bg-butter text-ink"
+                  }`}
+                >
                   {room.isPrivate ? "ส่วนตัว" : "สาธารณะ"}
                 </span>
-                <span className="rounded-full bg-[#f4f4f5] px-2 py-0.5 text-xs font-medium text-[#71717a] leading-[1.4]">
+                <span className="rounded-full border border-edge-strong bg-cream px-2 py-0.5 text-xs font-medium text-ink-soft">
                   สมาชิก {formatCount(membership.memberCount)}
                 </span>
                 {postStats.totalPosts !== null && (
-                  <span className="rounded-full bg-[#f4f4f5] px-2 py-0.5 text-xs font-medium text-[#71717a] leading-[1.4]">
+                  <span className="rounded-full border border-edge-strong bg-cream px-2 py-0.5 text-xs font-medium text-ink-soft">
                     กระทู้ทั้งหมด {formatCount(postStats.totalPosts)}
                   </span>
                 )}
                 {postStats.postsToday !== null && (
-                  <span className="rounded-full bg-[#dcfce7] px-2 py-0.5 text-xs font-medium text-[#166534] leading-[1.4]">
+                  <span className="rounded-full border border-kmutt-yellow-dark/60 bg-highlight px-2 py-0.5 text-xs font-medium text-ink">
                     โพสต์วันนี้ {formatCount(postStats.postsToday)}
                   </span>
                 )}
               </div>
             </div>
+          </div>
 
-            <div className="flex items-center gap-2 shrink-0 pt-2 md:pt-0">
-              {membership.status === "joined" ? (
-                <button
-                  type="button"
-                  disabled={isMembershipPending}
-                  onClick={handleMembershipClick}
-                  className="rounded-lg border border-[#e4e4e7] bg-white px-4 py-[9px] text-sm font-semibold text-[#18181b] hover:bg-[#f4f4f5] active:scale-[0.98] disabled:opacity-60 transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2"
-                >
-                  เข้าร่วมแล้ว
-                </button>
-              ) : membership.status === "requested" ? (
-                <button
-                  type="button"
-                  disabled={isMembershipPending}
-                  onClick={handleMembershipClick}
-                  className="rounded-lg border border-[#e4e4e7] bg-[#f4f4f5] px-4 py-[9px] text-sm font-semibold text-[#71717a] hover:bg-[#e4e4e7] active:scale-[0.98] disabled:opacity-60 transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2"
-                >
-                  ส่งคำขอแล้ว
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  disabled={isMembershipPending}
-                  onClick={handleMembershipClick}
-                  className="rounded-lg bg-[#18181b] px-4 py-[9px] text-sm font-semibold text-white hover:bg-[#27272a] active:scale-[0.98] disabled:opacity-60 transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2"
-                >
-                  {room.isPrivate ? "ขอเข้าร่วม" : "เข้าร่วมห้อง"}
-                </button>
-              )}
+          <div className="flex shrink-0 items-center gap-2 pt-2 md:pt-0">
+            {membership.status === "joined" ? (
+              <button
+                type="button"
+                disabled={isMembershipPending}
+                onClick={handleMembershipClick}
+                className={`px-4 py-[9px] ${outlineButtonClass} ${disabledButtonClass}`}
+              >
+                เข้าร่วมแล้ว
+              </button>
+            ) : membership.status === "requested" ? (
+              <button
+                type="button"
+                disabled={isMembershipPending}
+                onClick={handleMembershipClick}
+                className={`rounded-lg border-[1.5px] border-dashed border-edge-strong bg-cream px-4 py-[9px] text-sm font-semibold text-ink-soft hover:bg-butter hover:text-ink motion-safe:transition-colors ${disabledButtonClass}`}
+              >
+                ส่งคำขอแล้ว
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={isMembershipPending}
+                onClick={handleMembershipClick}
+                className={`px-4 py-[9px] ${primaryButtonClass} ${disabledButtonClass}`}
+              >
+                {room.isPrivate ? "ขอเข้าร่วม" : "เข้าร่วมห้อง"}
+              </button>
+            )}
 
-              <div className="relative" ref={roomMenuRef}>
-                <button
-                  type="button"
-                  aria-label="ตัวเลือกห้อง"
-                  aria-haspopup="true"
-                  aria-expanded={isRoomMenuOpen}
-                  onClick={() => setIsRoomMenuOpen((prev) => !prev)}
-                  className={`rounded-lg border border-[#e4e4e7] px-4 py-[9px] text-sm font-semibold transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2 ${
-                    isRoomMenuOpen
-                      ? "bg-[#f4f4f5] text-[#18181b]"
-                      : "bg-white text-[#a1a1aa] hover:text-[#18181b] hover:bg-[#f4f4f5] active:scale-[0.98]"
-                  }`}
-                >
-                  •••
-                </button>
+            <div className="relative" ref={roomMenuRef}>
+              <button
+                type="button"
+                aria-label="ตัวเลือกห้อง"
+                aria-haspopup="true"
+                aria-expanded={isRoomMenuOpen}
+                onClick={() => setIsRoomMenuOpen((prev) => !prev)}
+                className={`px-4 py-[9px] ${outlineButtonClass} ${
+                  isRoomMenuOpen
+                    ? "translate-0.5 bg-butter shadow-none"
+                    : "text-ink-soft hover:text-ink"
+                }`}
+              >
+                •••
+              </button>
 
-                {isRoomMenuOpen && (
-                  <div
-                    role="menu"
-                    aria-label="เมนูตัวเลือกห้อง"
-                    className="absolute right-0 top-full mt-1.5 w-52 rounded-xl border border-[#e4e4e7] bg-white p-1.5 shadow-lg z-30 flex flex-col text-sm font-medium text-[#18181b]"
+              {isRoomMenuOpen && (
+                <div
+                  role="menu"
+                  aria-label="เมนูตัวเลือกห้อง"
+                  className="absolute right-0 top-full z-30 mt-1.5 flex w-52 flex-col rounded-xl border-[1.5px] border-ink bg-white p-1.5 text-sm font-medium text-ink shadow-sticker"
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={handleCopyRoomLink}
+                    className="w-full cursor-pointer rounded-lg px-3 py-2 text-left hover:bg-butter motion-safe:transition-colors"
                   >
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={handleCopyRoomLink}
-                      className="w-full text-left px-3 py-2 rounded-lg hover:bg-[#f4f4f5] transition-colors cursor-pointer"
-                    >
-                      คัดลอกลิงก์ห้อง
-                    </button>
+                    คัดลอกลิงก์ห้อง
+                  </button>
 
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={handleToggleMute}
-                      className="w-full text-left px-3 py-2 rounded-lg hover:bg-[#f4f4f5] transition-colors cursor-pointer"
-                    >
-                      {isMuted ? "เปิดแจ้งเตือนห้องนี้" : "ปิดแจ้งเตือนห้องนี้"}
-                    </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={handleToggleMute}
+                    className="w-full cursor-pointer rounded-lg px-3 py-2 text-left hover:bg-butter motion-safe:transition-colors"
+                  >
+                    {isMuted ? "เปิดแจ้งเตือนห้องนี้" : "ปิดแจ้งเตือนห้องนี้"}
+                  </button>
 
-                    {membership.status === "joined" && (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          setIsRoomMenuOpen(false);
-                          setIsLeaveModalOpen(true);
-                        }}
-                        className="w-full text-left px-3 py-2 rounded-lg hover:bg-[#f4f4f5] text-[#dc2626] transition-colors cursor-pointer"
-                      >
-                        ออกจากห้อง
-                      </button>
-                    )}
-
-                    <div className="my-1 border-t border-[#e4e4e7]" />
-
+                  {membership.status === "joined" && (
                     <button
                       type="button"
                       role="menuitem"
                       onClick={() => {
                         setIsRoomMenuOpen(false);
-                        setIsReportingRoom(true);
+                        setIsLeaveModalOpen(true);
                       }}
-                      className="w-full text-left px-3 py-2 rounded-lg hover:bg-[#f4f4f5] text-[#dc2626] transition-colors cursor-pointer"
+                      className="w-full cursor-pointer rounded-lg px-3 py-2 text-left text-red-700 hover:bg-red-50 motion-safe:transition-colors"
                     >
-                      รายงานห้อง
+                      ออกจากห้อง
                     </button>
-                  </div>
-                )}
-              </div>
+                  )}
+
+                  <div className="my-1 border-t-[1.5px] border-dashed border-edge" />
+
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setIsRoomMenuOpen(false);
+                      setIsReportingRoom(true);
+                    }}
+                    className="w-full cursor-pointer rounded-lg px-3 py-2 text-left text-red-700 hover:bg-red-50 motion-safe:transition-colors"
+                  >
+                    รายงานห้อง
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </section>
 
       {/* เนื้อหาหลัก (Body) */}
-      <main className="mx-auto w-full max-w-[1440px] px-4 sm:px-8 lg:px-12 xl:px-[120px] pt-6 pb-32 sm:pb-16 flex flex-col lg:flex-row items-start gap-6 lg:gap-8 flex-1">
+      <main className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col items-start gap-6 px-4 pb-32 pt-6 sm:px-8 sm:pb-16 lg:flex-row lg:gap-8 lg:px-12 xl:px-[120px]">
         {/* Accordion กติกาของห้องสำหรับหน้าจอ < 1024px */}
-        <details className="group lg:hidden w-full rounded-xl border border-[#e4e4e7] bg-white transition-colors overflow-hidden">
-          <summary className="min-h-[44px] px-4 py-3 flex items-center justify-between font-semibold text-sm text-[#18181b] cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2">
+        <details
+          className={`group relative w-full overflow-hidden lg:hidden ${indexCardClass}`}
+        >
+          <summary className="flex min-h-[44px] cursor-pointer select-none list-none items-center justify-between px-4 py-3 font-display text-base font-semibold text-ink [&::-webkit-details-marker]:hidden">
             <span>กติกาของห้อง</span>
             <svg
               width="16"
@@ -668,7 +705,7 @@ export default function RoomBoardFeed({
               viewBox="0 0 16 16"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
-              className="text-[#71717a] transition-transform duration-120 motion-reduce:transition-none group-open:rotate-90 shrink-0"
+              className="shrink-0 text-ink-soft transition-transform duration-120 motion-reduce:transition-none group-open:rotate-90"
               aria-hidden="true"
             >
               <path
@@ -681,7 +718,7 @@ export default function RoomBoardFeed({
             </svg>
           </summary>
           <div className="px-4 pb-4">
-            <ol className="space-y-2 text-sm font-normal text-[#18181b] leading-[1.4] border-t border-[#e4e4e7] pt-3">
+            <ol className="space-y-2 border-t-[1.5px] border-dashed border-edge pt-3 text-sm text-ink">
               {rulesList.map((rule, index) => (
                 <li key={index}>
                   {index + 1}. {rule}
@@ -694,15 +731,15 @@ export default function RoomBoardFeed({
         {/* ฟีดกระทู้ (Feed Column) */}
         <section
           aria-label="ฟีดกระทู้"
-          className="flex-1 min-w-0 flex flex-col gap-4 w-full"
+          className="flex w-full min-w-0 flex-1 flex-col gap-5"
         >
-          {/* กล่องตั้งกระทู้ (Composer / Option A Membership Gate) */}
+          {/* กล่องตั้งกระทู้ (Composer / Option A Membership Gate): กระดาษโน้ตสีเหลืองแบบหน้าหลัก */}
           {room.isLocked ? (
-            <div className="rounded-xl border border-[#e4e4e7] bg-white px-4 py-3.5 text-sm text-[#71717a] w-full">
+            <div className="w-full rounded-xl border-[1.5px] border-edge bg-white px-4 py-3.5 text-sm text-ink-soft">
               ห้องนี้ถูกล็อกชั่วคราว ไม่สามารถตั้งกระทู้ใหม่ได้
             </div>
           ) : membership.status !== "joined" ? (
-            <div className="rounded-xl border border-[#e4e4e7] bg-white px-4 py-3.5 text-sm text-[#71717a] w-full">
+            <div className="w-full rounded-xl border-[1.5px] border-edge bg-white px-4 py-3.5 text-sm text-ink-soft">
               {nonMemberComposerMessage}
             </div>
           ) : (
@@ -711,25 +748,30 @@ export default function RoomBoardFeed({
                 e.preventDefault();
                 void handlePost();
               }}
-              className="flex items-center gap-2 sm:gap-3 rounded-xl border border-[#e4e4e7] bg-white p-3 sm:p-4 w-full"
+              className="flex w-full items-center gap-2 rounded-lg border-[1.5px] border-ink bg-butter p-3 shadow-sticker-lg sm:gap-3 sm:p-4"
             >
-              <div
-                aria-hidden="true"
-                className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-full bg-[#d4d4d8]"
-              />
+              <span aria-hidden="true" className={`max-sm:hidden ${avatarClass}`}>
+                <Icon name="user" className="size-4.5" />
+              </span>
 
-              <input
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                disabled={isPosting}
-                placeholder="ตั้งกระทู้ในห้องนี้…"
-                className="flex-1 min-w-0 h-[38px] sm:h-[42px] rounded-lg border border-[#e4e4e7] bg-white px-3 sm:px-3.5 py-2 sm:py-2.5 text-sm text-[#18181b] placeholder:text-[#a1a1aa] focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2 leading-[1.4] disabled:opacity-60"
-              />
+              <div className="relative min-w-0 flex-1">
+                <Icon
+                  name="pencil"
+                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-kmutt-yellow-dark"
+                />
+                <input
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  disabled={isPosting}
+                  placeholder="ตั้งกระทู้ในห้องนี้…"
+                  className={`h-[38px] py-2 pl-9 pr-3 leading-[1.4] disabled:opacity-60 sm:h-[42px] sm:py-2.5 ${noteFieldClass}`}
+                />
+              </div>
 
               <button
                 type="submit"
                 disabled={!text.trim() || isPosting}
-                className="h-[38px] px-3 sm:px-4 py-[9px] rounded-lg bg-[#18181b] text-white text-xs sm:text-sm font-semibold hover:bg-[#27272a] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 cursor-pointer shrink-0 whitespace-nowrap focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2"
+                className={`h-[38px] shrink-0 whitespace-nowrap px-3 py-[9px] text-xs sm:px-4 sm:text-sm ${primaryButtonClass} ${disabledButtonClass}`}
               >
                 {isPosting ? "กำลังโพสต์..." : "ตั้งกระทู้"}
               </button>
@@ -738,14 +780,11 @@ export default function RoomBoardFeed({
 
           {/* แสดงโพสต์ หรือ Empty State */}
           {posts.length === 0 ? (
-            <div className="rounded-xl border border-[#e4e4e7] bg-white py-12 px-6 text-center flex flex-col items-center justify-center gap-3">
-              <p className="text-base font-medium text-[#18181b]">
-                ยังไม่มีกระทู้ในห้องนี้
-              </p>
-              <p className="text-sm text-[#71717a]">
-                มาเป็นคนแรกที่เปิดประเด็นในห้องนี้กันเถอะ
-              </p>
-            </div>
+            <EmptyNote
+              icon="message"
+              title="ยังไม่มีกระทู้ในห้องนี้"
+              description="มาเป็นคนแรกที่เปิดประเด็นในห้องนี้กันเถอะ"
+            />
           ) : (
             posts.map((post) => (
               <PostCard
@@ -787,13 +826,14 @@ export default function RoomBoardFeed({
         {/* กติกาห้อง (Right Rail สำหรับ Desktop >= 1024px) */}
         <aside
           aria-label="กติกาของห้อง"
-          className="hidden lg:flex flex-col gap-2 w-[280px] xl:w-[320px] shrink-0 rounded-xl border border-[#e4e4e7] bg-white p-5 leading-[1.4]"
+          className={`relative hidden w-[280px] shrink-0 flex-col gap-2 p-5 pt-6 xl:w-[320px] lg:flex ${indexCardClass}`}
         >
-          <h2 className="mb-1 text-base font-semibold text-[#18181b] leading-[1.4]">
+          <Tape />
+          <h2 className="mb-1 border-b-[1.5px] border-dashed border-edge pb-2 font-display text-lg font-semibold">
             กติกาของห้อง
           </h2>
 
-          <ol className="space-y-2 text-sm font-normal text-[#18181b] leading-[1.4] break-words">
+          <ol className="space-y-2 break-words text-sm text-ink">
             {rulesList.map((rule, index) => (
               <li key={index}>
                 {index + 1}. {rule}
@@ -806,7 +846,7 @@ export default function RoomBoardFeed({
       {/* Leave Room Modal */}
       {isLeaveModalOpen && (
         <div
-          className="fixed inset-0 z-50 bg-zinc-900/45 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-ink/45 flex items-center justify-center p-4"
           onClick={() => setIsLeaveModalOpen(false)}
         >
           <div
@@ -814,16 +854,16 @@ export default function RoomBoardFeed({
             aria-modal="true"
             aria-labelledby="leave-room-title"
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-sm rounded-2xl border border-[#e4e4e7] bg-white p-6 shadow-xl flex flex-col gap-4 text-[#18181b]"
+            className={`flex w-full max-w-sm flex-col gap-4 p-6 text-ink ${indexCardClass}`}
           >
             <div className="flex flex-col gap-1">
               <h3
                 id="leave-room-title"
-                className="text-lg font-bold text-[#18181b]"
+                className="font-display text-xl font-semibold"
               >
                 ออกจากห้องนี้ไหม?
               </h3>
-              <p className="text-sm text-[#71717a]">
+              <p className="text-sm text-ink-soft">
                 หากออกจากห้อง {room.name} คุณจะไม่ได้รับการแจ้งเตือนและการอัปเดตใหม่ๆ จากห้องนี้
               </p>
             </div>
@@ -831,14 +871,14 @@ export default function RoomBoardFeed({
               <button
                 type="button"
                 onClick={() => setIsLeaveModalOpen(false)}
-                className="rounded-lg border border-[#e4e4e7] bg-white px-4 py-2 text-sm font-semibold text-[#18181b] hover:bg-[#f4f4f5] transition-colors cursor-pointer"
+                className={`cursor-pointer px-4 py-2 ${outlineButtonClass}`}
               >
                 ยกเลิก
               </button>
               <button
                 type="button"
                 onClick={() => void handleConfirmLeave()}
-                className="rounded-lg bg-[#dc2626] px-4 py-2 text-sm font-semibold text-white hover:bg-[#b91c1c] transition-colors cursor-pointer"
+                className={`cursor-pointer px-4 py-2 ${dangerButtonClass}`}
               >
                 ออกจากห้อง
               </button>
@@ -860,7 +900,7 @@ export default function RoomBoardFeed({
         <div
           role="status"
           aria-live="polite"
-          className="fixed bottom-6 right-6 z-50 bg-[#18181b] text-white text-sm px-4 py-3 rounded-xl shadow-lg border border-zinc-800 flex items-center gap-2"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl border-[1.5px] border-ink bg-ink px-4 py-3 text-sm text-paper shadow-sticker"
         >
           <span>{toastMessage}</span>
         </div>

@@ -1,6 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
+import Icon from '@/component/Icon';
+import {
+  avatarClass,
+  disabledButtonClass,
+  indexCardClass,
+  inputClass,
+  primaryButtonClass,
+  secondaryButtonClass,
+} from '@/lib/styles';
 
 interface ReplyComposerProps {
   currentUserName: string;
@@ -41,8 +50,10 @@ export function ReplyComposer({
       >
         <div
           aria-hidden="true"
-          className="w-7 h-7 rounded-full bg-[#d4d4d8] shrink-0"
-        />
+          className={avatarClass.replace('size-9', 'size-7')}
+        >
+          <Icon name="user" className="size-3.5" />
+        </div>
         <input
           ref={inputRef}
           type="text"
@@ -50,13 +61,13 @@ export function ReplyComposer({
           autoFocus={autoFocus}
           onChange={(e) => setValue(e.target.value)}
           placeholder={placeholder ?? `ตอบกลับในชื่อ ${currentUserName}...`}
-          className="flex-1 min-w-[120px] h-9 rounded-lg border border-[#e4e4e7] bg-white px-3 text-xs sm:text-[13px] text-[#18181b] placeholder:text-[#a1a1aa] focus:outline-none focus:border-zinc-400"
+          className={`flex-1 min-w-[120px] h-9 px-3! py-0! ${inputClass} text-xs! sm:text-[13px]!`}
         />
         <div className="flex items-center gap-1.5 ml-auto shrink-0">
           <button
             type="submit"
             disabled={!value.trim()}
-            className="h-9 px-3.5 rounded-lg bg-[#18181b] text-white text-xs sm:text-[13px] font-medium hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+            className={`h-9 px-3.5 ${primaryButtonClass} ${disabledButtonClass} text-xs! sm:text-[13px]! cursor-pointer shrink-0 whitespace-nowrap`}
           >
             {submitLabel}
           </button>
@@ -64,7 +75,7 @@ export function ReplyComposer({
             <button
               type="button"
               onClick={onCancel}
-              className="h-9 px-2.5 rounded-lg text-xs sm:text-[13px] text-[#71717a] hover:text-[#18181b] hover:bg-zinc-100 transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+              className={`h-9 px-2.5 ${secondaryButtonClass} text-xs! sm:text-[13px]! cursor-pointer shrink-0 whitespace-nowrap`}
             >
               ยกเลิก
             </button>
@@ -77,12 +88,14 @@ export function ReplyComposer({
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white border border-[#e4e4e7] rounded-xl p-3 sm:p-4 flex items-center gap-2 sm:gap-3 w-full"
+      className={`${indexCardClass} p-3 sm:p-4 flex items-center gap-2 sm:gap-3 w-full`}
     >
       <div
         aria-hidden="true"
-        className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#d4d4d8] shrink-0"
-      />
+        className={avatarClass.replace('size-9', 'size-8 sm:size-9')}
+      >
+        <Icon name="user" className="size-4" />
+      </div>
       <input
         ref={inputRef}
         type="text"
@@ -90,12 +103,12 @@ export function ReplyComposer({
         autoFocus={autoFocus}
         onChange={(e) => setValue(e.target.value)}
         placeholder={placeholder ?? `ตอบกลับในชื่อ ${currentUserName}...`}
-        className="flex-1 min-w-0 h-[38px] sm:h-[42px] rounded-lg border border-[#e4e4e7] bg-white px-3 sm:px-3.5 text-sm text-[#18181b] placeholder:text-[#a1a1aa] focus:outline-none focus:border-zinc-400"
+        className={`flex-1 min-w-0 h-[38px] sm:h-[42px] py-0! ${inputClass}`}
       />
       <button
         type="submit"
         disabled={!value.trim()}
-        className="h-[38px] px-3 sm:px-4 rounded-lg bg-[#18181b] text-white text-xs sm:text-sm font-medium hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+        className={`h-[38px] px-3 sm:px-4 ${primaryButtonClass} ${disabledButtonClass} text-xs! sm:text-sm! cursor-pointer shrink-0 whitespace-nowrap`}
       >
         {submitLabel}
       </button>

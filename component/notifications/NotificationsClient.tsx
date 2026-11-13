@@ -8,12 +8,14 @@ import type {
 import {
   filterNotifications,
   groupNotifications,
-  markNotificationAsRead,
-  markAllNotificationsAsRead,
   countUnreadNotifications,
   TIME_REFRESH_INTERVAL_MS,
 } from '@/lib/notifications';
 import Header from '@/component/Header';
+import {
+  markNotificationsRead,
+  useReadNotificationIds,
+} from '@/component/useReadNotifications';
 import Icon from '@/component/Icon';
 import { currentUser, myRooms } from '@/lib/mock';
 import {
@@ -34,8 +36,17 @@ export function NotificationsClient({
   initialItems,
   serverTime,
 }: NotificationsClientProps) {
-  const [notifications, setNotifications] =
-    useState<NotificationItem[]>(initialItems);
+  // What's been read is kept in the browser (shared with the navbar bell).
+  const readIds = useReadNotificationIds();
+  const notifications = useMemo<NotificationItem[]>(
+    () =>
+      readIds
+        ? initialItems.map((item) =>
+            readIds.has(item.id) ? { ...item, isRead: true } : item
+          )
+        : initialItems,
+    [initialItems, readIds]
+  );
   const [activeCategory, setActiveCategory] =
     useState<NotificationCategory>('all');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -110,12 +121,12 @@ export function NotificationsClient({
   const handleItemClick = (id: string) => {
     const target = notifications.find((n) => n.id === id);
     if (target && !target.isRead) {
-      setNotifications((prev) => markNotificationAsRead(prev, id));
+      markNotificationsRead([id]);
     }
   };
 
   const handleMarkAllAsRead = () => {
-    setNotifications((prev) => markAllNotificationsAsRead(prev));
+    markNotificationsRead(notifications.map((n) => n.id));
     showToast('ทำเครื่องหมายว่าอ่านแล้วทั้งหมดเรียบร้อยแล้ว');
   };
 

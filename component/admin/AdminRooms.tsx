@@ -184,11 +184,11 @@ export default function AdminRooms({ rooms, summary }: Props) {
   }
 
   return (
-    <div className="min-h-full text-[#202124]">
+    <div className="min-h-full text-ink">
       <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="font-display text-[28px] font-bold leading-tight">ห้องแชท</h1>
-          <p className="mt-1 text-sm text-[#777780]">
+          <h1 className="font-display text-2xl font-bold leading-tight sm:text-[28px]">ห้องแชท</h1>
+          <p className="mt-1 text-sm text-ink-soft">
             {summary.total.toLocaleString("en-US")} ห้อง ·{" "}
             {summary.private.toLocaleString("en-US")} ห้องส่วนตัว
           </p>
@@ -196,7 +196,7 @@ export default function AdminRooms({ rooms, summary }: Props) {
 
         <div className="relative w-full sm:w-80">
           <svg
-            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9ca0aa]"
+            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -209,12 +209,12 @@ export default function AdminRooms({ rooms, summary }: Props) {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="ค้นหาห้อง..."
-            className="h-10 w-full rounded-lg border border-[#dedee3] bg-white pl-10 pr-3 text-sm outline-none focus:border-[#999] focus:ring-2 focus:ring-gray-100"
+            className="h-10 w-full rounded-lg border border-edge-strong bg-white pl-10 pr-3 text-sm outline-none focus:border-kmutt-orange focus:ring-3 focus:ring-kmutt-yellow/40"
           />
         </div>
       </div>
 
-      <div className="mb-6 flex flex-wrap gap-6 border-b border-[#e3e3e7]">
+      <div className="mb-6 flex flex-wrap gap-6 border-b border-edge">
         {tabs.map((item) => {
           const count =
             item.id === "all"
@@ -234,8 +234,8 @@ export default function AdminRooms({ rooms, summary }: Props) {
               }}
               className={`-mb-px border-b-2 pb-2 text-sm transition ${
                 tab === item.id
-                  ? "border-[#202124] font-semibold text-[#202124]"
-                  : "border-transparent text-[#777780] hover:text-[#202124]"
+                  ? "border-ink font-semibold text-ink"
+                  : "border-transparent text-ink-soft hover:text-ink"
               }`}
             >
               {item.label} ({count.toLocaleString("en-US")})
@@ -262,7 +262,7 @@ export default function AdminRooms({ rooms, summary }: Props) {
       {selected.length > 0 && (
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-white p-3 text-sm">
           <span>เลือกแล้ว {selected.length} ห้อง</span>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setSelected([])}
               className="rounded-md border px-3 py-1.5 hover:bg-butter"
@@ -280,9 +280,9 @@ export default function AdminRooms({ rooms, summary }: Props) {
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-[#dedee3] bg-white">
+      <div className="overflow-x-auto rounded-xl border border-edge-strong bg-white">
         <table className="w-full min-w-[850px] border-collapse text-left text-sm">
-          <thead className="bg-[#f4f4f5] text-[#777780]">
+          <thead className="bg-cream text-ink-soft">
             <tr className="h-10">
               <th className="w-14 px-4">
                 <input
@@ -307,7 +307,7 @@ export default function AdminRooms({ rooms, summary }: Props) {
             {filteredRooms.map((room) => (
               <tr
                 key={room.id}
-                className="h-[55px] border-t border-[#e3e3e7] hover:bg-[#fafafa]"
+                className="h-[55px] border-t border-edge hover:bg-cream"
               >
                 <td className="px-4">
                   <input
@@ -325,8 +325,8 @@ export default function AdminRooms({ rooms, summary }: Props) {
                   <span
                     className={`rounded-full px-2.5 py-1 text-xs ${
                       room.type === "private"
-                        ? "bg-[#fff3bf] text-[#856404]"
-                        : "bg-[#f1f1f2] text-[#333]"
+                        ? "bg-butter text-ink"
+                        : "bg-cream text-ink"
                     }`}
                   >
                     {room.type === "private" ? "ส่วนตัว" : "สาธารณะ"}
@@ -341,7 +341,7 @@ export default function AdminRooms({ rooms, summary }: Props) {
                   {formatNumber(room.posts)}
                 </td>
 
-                <td className="px-4 text-[#777780]">
+                <td className="px-4 text-ink-soft">
                   {formatDate(room.createdAt)}
                 </td>
 
@@ -349,10 +349,10 @@ export default function AdminRooms({ rooms, summary }: Props) {
                   <span
                     className={`rounded-full px-2.5 py-1 text-xs ${
                       room.status === "active"
-                        ? "bg-[#dcfce7] text-[#16a34a]"
+                        ? "bg-green-50 text-green-700"
                         : room.status === "archived"
-                          ? "bg-[#f1f1f2] text-[#777780]"
-                          : "bg-[#fee2e2] text-[#dc2626]"
+                          ? "bg-cream text-ink-soft"
+                          : "bg-red-50 text-red-700"
                     }`}
                   >
                     {room.status === "active"
@@ -368,14 +368,14 @@ export default function AdminRooms({ rooms, summary }: Props) {
                     <button
                       disabled={room.status === "archived"}
                       onClick={() => setEditing(room)}
-                      className="rounded-md border border-[#dedee3] px-2.5 py-1 text-xs hover:bg-butter disabled:cursor-not-allowed disabled:opacity-40"
+                      className="rounded-md border border-edge-strong px-2.5 py-1 text-xs hover:bg-butter disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       แก้ไข
                     </button>
                     <button
                       disabled={room.status === "archived"}
                       onClick={() => setConfirmArchive(room)}
-                      className="rounded-md border border-[#dedee3] px-2.5 py-1 text-xs hover:bg-butter disabled:cursor-not-allowed disabled:opacity-40"
+                      className="rounded-md border border-edge-strong px-2.5 py-1 text-xs hover:bg-butter disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       จัดเก็บ
                     </button>
@@ -387,14 +387,14 @@ export default function AdminRooms({ rooms, summary }: Props) {
             {filteredRooms.length === 0 && (
               <tr>
                 <td colSpan={8} className="px-4 py-16 text-center">
-                  <p className="font-medium text-[#555]">
+                  <p className="font-medium text-ink-soft">
                     {rooms.length === 0
                       ? "ยังไม่มีห้องแชท"
                       : search
                         ? "ไม่พบห้องที่ค้นหา"
                         : "ไม่มีห้องในหมวดหมู่นี้"}
                   </p>
-                  <p className="mt-1 text-sm text-[#999]">
+                  <p className="mt-1 text-sm text-ink-soft">
                     {rooms.length === 0
                       ? "เมื่อมีการสร้างห้อง ห้องจะแสดงที่นี่"
                       : "ลองเปลี่ยนคำค้นหาหรือตัวกรอง"}
@@ -408,7 +408,7 @@ export default function AdminRooms({ rooms, summary }: Props) {
 
       {editing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
             <h2 className="text-lg font-semibold">แก้ไขห้องแชท</h2>
 
             <label className="mt-5 block text-sm font-medium">
@@ -447,7 +447,7 @@ export default function AdminRooms({ rooms, summary }: Props) {
               <button
                 disabled={pending || !editing.name.trim()}
                 onClick={handleSave}
-                className="rounded-lg bg-[#202124] px-4 py-2 text-sm text-white disabled:opacity-50"
+                className="rounded-lg bg-ink px-4 py-2 text-sm text-white disabled:opacity-50"
               >
                 {pending ? "กำลังบันทึก..." : "บันทึก"}
               </button>
@@ -458,7 +458,7 @@ export default function AdminRooms({ rooms, summary }: Props) {
 
       {confirmArchive && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
+          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
             <h2 className="text-lg font-semibold">จัดเก็บห้องแชท?</h2>
             <p className="mt-2 text-sm text-ink-soft">
               ต้องการจัดเก็บห้อง &quot;{confirmArchive.name}&quot; ใช่หรือไม่?

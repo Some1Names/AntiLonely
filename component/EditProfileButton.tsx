@@ -23,7 +23,7 @@ async function fileToAvatarDataUrl(file: File): Promise<string> {
   if (!ctx) throw new Error("ย่อรูปไม่สำเร็จ");
 
   // พื้นขาวรองไว้ เผื่อรูป PNG ที่พื้นหลังโปร่งใส
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = "white";
   ctx.fillRect(0, 0, AVATAR_SIZE, AVATAR_SIZE);
   ctx.drawImage(bitmap, sx, sy, side, side, 0, 0, AVATAR_SIZE, AVATAR_SIZE);
   bitmap.close();
