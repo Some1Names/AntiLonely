@@ -29,7 +29,7 @@ type Props = {
   replyCount: number;
   onEditPost?: (newContent: string) => void;
   onDeletePost?: () => void;
-  onToggleReaction?: (emoji: string) => void | Promise<void>;
+  onToggleReaction?: (emoji: string) => boolean | void | Promise<boolean | void>;
   onReportPost?: (reason: ReportReason, details: string) => void | Promise<void>;
   onReportSubmitted?: (message?: string) => void;
 };
@@ -117,8 +117,7 @@ export default function PostCard({
 
   const handleToggleReaction = (emoji: string) => {
     if (onToggleReaction) {
-      void onToggleReaction(emoji);
-      return;
+      return onToggleReaction(emoji);
     }
     setReactions((prev) => toggleReaction(prev, emoji));
   };

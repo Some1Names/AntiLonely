@@ -19,7 +19,7 @@ const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 const now = Date.now();
 const startOfTodayMs = getStartOfBangkokDay(now).getTime();
-const elapsedTodayMs = Math.max(1000, now - startOfTodayMs);
+const elapsedTodayMs = Math.max(0, now - startOfTodayMs);
 const ago = (ms: number) => new Date(now - ms);
 const todayAt = (fraction: number) =>
   new Date(startOfTodayMs + Math.round(elapsedTodayMs * fraction));

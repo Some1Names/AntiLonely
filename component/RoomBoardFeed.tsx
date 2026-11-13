@@ -97,6 +97,7 @@ export default function RoomBoardFeed({
   });
   const [prevInitialPosts, setPrevInitialPosts] = useState(initialPosts);
   const [posts, setPosts] = useState<BoardPostSummary[]>(initialPosts);
+  const pendingReactionsRef = useRef<Set<string>>(new Set());
   if (initialPosts !== prevInitialPosts) {
     setPrevInitialPosts(initialPosts);
     setPosts(initialPosts);
@@ -309,15 +310,7 @@ export default function RoomBoardFeed({
     }
   }
 
-  async function handleTogglePostReaction(postId: string, emoji: string) {
-    const previousPosts = posts;
-
-    if (!currentUser) {
-      setPosts(previousPosts);
-      showToast("กรุณาเข้าสู่ระบบก่อนกดรีแอคชัน");
-      return;
-    }
-
+  function togglePostReactionLocal(postId: string, emoji: string) {
     setPosts((prev) =>
       prev.map((p) => {
         if (p.id !== postId) return p;
@@ -332,6 +325,24 @@ export default function RoomBoardFeed({
         };
       })
     );
+  }
+
+  async function handleTogglePostReaction(
+    postId: string,
+    emoji: string
+  ): Promise<boolean> {
+    if (!currentUser) {
+      showToast("กรุณาเข้าสู่ระบบก่อนกดรีแอคชัน");
+      return false;
+    }
+
+    const reactionKey = `${postId}:${emoji.trim()}`;
+    if (pendingReactionsRef.current.has(reactionKey)) {
+      return true;
+    }
+
+    pendingReactionsRef.current.add(reactionKey);
+    togglePostReactionLocal(postId, emoji);
 
     try {
       const result = await toggleRoomPostReaction({
@@ -340,18 +351,22 @@ export default function RoomBoardFeed({
         emoji,
       });
       if (!result.ok) {
-        setPosts(previousPosts);
+        togglePostReactionLocal(postId, emoji);
         showToast(result.error);
-        return;
+        return false;
       }
       setPosts((prev) =>
         prev.map((p) =>
           p.id === postId ? { ...p, reactions: result.data.reactions } : p
         )
       );
+      return true;
     } catch {
-      setPosts(previousPosts);
+      togglePostReactionLocal(postId, emoji);
       showToast("ไม่สามารถอัปเดตรีแอคชันได้ กรุณาลองใหม่อีกครั้ง");
+      return false;
+    } finally {
+      pendingReactionsRef.current.delete(reactionKey);
     }
   }
 
