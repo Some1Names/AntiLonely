@@ -14,6 +14,7 @@ import {
   parseRoomRules,
   resolveAuthorAlias,
   resolveRoomLookupTarget,
+  resolveRoomPostCountStats,
   validatePostContent,
 } from './room-board.ts';
 
@@ -164,6 +165,7 @@ describe('room-board domain & DB mapping', () => {
         createdAt: new Date('2026-11-12T12:00:00.000Z'),
         memberCount: 5,
         postsToday: 3,
+        totalPosts: 12,
       },
       nowMs
     );
@@ -173,6 +175,7 @@ describe('room-board domain & DB mapping', () => {
     assert.equal(room.isNew, true);
     assert.equal(room.members, 5);
     assert.equal(room.postsToday, 3);
+    assert.equal(room.totalPosts, 12);
     assert.deepEqual(room.rulesList, ['แปะชื่อเพลง', 'สุภาพต่อกัน']);
 
     assert.deepEqual(mapDbMembershipToBoardState(5, 'active'), {
@@ -209,6 +212,33 @@ describe('room-board domain & DB mapping', () => {
     assert.deepEqual(post.reactions, [
       { emoji: '🫂', count: 1, reactedByMe: true },
     ]);
+  });
+
+  it('resolves hybrid dual room post count stats (total always when known + today badge when >0)', () => {
+    assert.deepEqual(
+      resolveRoomPostCountStats({ postsToday: 4, totalPosts: 19 }),
+      { totalPosts: 19, postsToday: 4 }
+    );
+    assert.deepEqual(
+      resolveRoomPostCountStats({ postsToday: 0, totalPosts: 19 }),
+      { totalPosts: 19, postsToday: null }
+    );
+    assert.deepEqual(
+      resolveRoomPostCountStats({ postsToday: 0, totalPosts: 0 }),
+      { totalPosts: 0, postsToday: null }
+    );
+    assert.deepEqual(resolveRoomPostCountStats({ postsToday: 5 }), {
+      totalPosts: null,
+      postsToday: 5,
+    });
+    assert.deepEqual(resolveRoomPostCountStats({ postsToday: 0 }), {
+      totalPosts: null,
+      postsToday: 0,
+    });
+    assert.deepEqual(
+      resolveRoomPostCountStats({ postsToday: -3, totalPosts: -5 }),
+      { totalPosts: 0, postsToday: null }
+    );
   });
 
   it('computes start of current day in Asia/Bangkok timezone (UTC+7)', () => {

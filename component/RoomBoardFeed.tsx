@@ -13,7 +13,7 @@ import {
   TIME_REFRESH_INTERVAL_MS,
   toggleReaction,
 } from "@/lib/post-thread";
-import { DEFAULT_ROOM_RULES } from "@/lib/room-board";
+import { DEFAULT_ROOM_RULES, resolveRoomPostCountStats } from "@/lib/room-board";
 import {
   createRoomPost,
   deleteRoomPost,
@@ -104,6 +104,7 @@ export default function RoomBoardFeed({
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const canonicalRoomSegment = room.slug ?? room.id;
+  const postStats = resolveRoomPostCountStats(room);
 
   const rulesList =
     room.rulesList && room.rulesList.length > 0
@@ -537,9 +538,16 @@ export default function RoomBoardFeed({
                 <span className="rounded-full bg-[#f4f4f5] px-2 py-0.5 text-xs font-medium text-[#71717a] leading-[1.4]">
                   สมาชิก {formatCount(membership.memberCount)}
                 </span>
-                <span className="rounded-full bg-[#dcfce7] px-2 py-0.5 text-xs font-medium text-[#166534] leading-[1.4]">
-                  โพสต์วันนี้ {room.postsToday}
-                </span>
+                {postStats.totalPosts !== null && (
+                  <span className="rounded-full bg-[#f4f4f5] px-2 py-0.5 text-xs font-medium text-[#71717a] leading-[1.4]">
+                    กระทู้ทั้งหมด {formatCount(postStats.totalPosts)}
+                  </span>
+                )}
+                {postStats.postsToday !== null && (
+                  <span className="rounded-full bg-[#dcfce7] px-2 py-0.5 text-xs font-medium text-[#166534] leading-[1.4]">
+                    โพสต์วันนี้ {formatCount(postStats.postsToday)}
+                  </span>
+                )}
               </div>
             </div>
 

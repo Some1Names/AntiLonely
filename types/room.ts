@@ -5,6 +5,7 @@ export type Room = {
   description: string;
   members: number;
   postsToday: number;
+  totalPosts?: number;
   isPrivate: boolean;
   isNew: boolean;
   emoji?: string;

@@ -4,6 +4,7 @@ import JoinButton from "@/component/JoinButton";
 import Tape from "@/component/Tape";
 import { formatCount } from "@/lib/format";
 import { defaultRoomEmoji, type Room } from "@/lib/mock";
+import { resolveRoomPostCountStats } from "@/lib/room-board";
 import { roomLook } from "@/lib/styles";
 
 // An index card taped into the notebook, with an ink outline and a shadow in
@@ -72,8 +73,16 @@ export function RoomTags({ room }: { room: Room }) {
   );
 }
 
-// Members and today's posts, with icons.
+// Members and today's (or total) posts, with icons.
 export function RoomStats({ room }: { room: Room }) {
+  const postStats = resolveRoomPostCountStats(room);
+  const postsLabel =
+    postStats.totalPosts !== null && postStats.postsToday !== null
+      ? `ทั้งหมด ${formatCount(postStats.totalPosts)} · วันนี้ ${formatCount(postStats.postsToday)} กระทู้`
+      : postStats.totalPosts !== null
+        ? `ทั้งหมด ${formatCount(postStats.totalPosts)} กระทู้`
+        : `วันนี้ ${formatCount(postStats.postsToday ?? 0)} กระทู้`;
+
   return (
     <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-soft">
       <span className="flex items-center gap-1">
@@ -82,7 +91,7 @@ export function RoomStats({ room }: { room: Room }) {
       </span>
       <span className="flex items-center gap-1">
         <Icon name="message" className="size-3.5" />
-        วันนี้ {room.postsToday} กระทู้
+        {postsLabel}
       </span>
     </p>
   );

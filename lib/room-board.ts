@@ -205,12 +205,33 @@ export interface DbRoomRow {
   createdAt: Date;
   memberCount: number;
   postsToday: number;
+  totalPosts: number;
+}
+
+export type RoomPostCountStats = {
+  totalPosts: number | null;
+  postsToday: number | null;
+};
+
+/** Returns total posts (when known) and today's post count when active (> 0) or when totalPosts is unknown. */
+export function resolveRoomPostCountStats(room: {
+  postsToday: number;
+  totalPosts?: number;
+}): RoomPostCountStats {
+  const today = Math.max(0, room.postsToday);
+  if (room.totalPosts === undefined) {
+    return { totalPosts: null, postsToday: today };
+  }
+  return {
+    totalPosts: Math.max(0, room.totalPosts),
+    postsToday: today > 0 ? today : null,
+  };
 }
 
 export function mapDbRoomToBoardRoom(
   room: DbRoomRow,
   nowMs: number = Date.now()
-): Room & { slug: string; rulesList: string[]; isLocked: boolean } {
+): Room & { slug: string; totalPosts: number; rulesList: string[]; isLocked: boolean } {
   const ageMs = Math.max(0, nowMs - room.createdAt.getTime());
   const isNew = ageMs <= NEW_ROOM_WINDOW_DAYS * DAY_MS;
 
@@ -221,6 +242,7 @@ export function mapDbRoomToBoardRoom(
     description: room.description,
     members: Math.max(0, room.memberCount),
     postsToday: Math.max(0, room.postsToday),
+    totalPosts: Math.max(0, room.totalPosts),
     isPrivate: Boolean(room.passwordHash),
     isNew,
     emoji: DEFAULT_ROOM_EMOJI,

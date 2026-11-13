@@ -132,6 +132,9 @@ export async function getRoomBoardData(
             members: {
               where: { status: 'active' },
             },
+            messages: {
+              where: { parentId: null, status: 'visible' },
+            },
           },
         },
       },
@@ -246,6 +249,7 @@ export async function getRoomBoardData(
       createdAt: roomRecord.createdAt,
       memberCount: roomRecord._count.members,
       postsToday: postsTodayCount,
+      totalPosts: roomRecord._count.messages,
     },
     nowMs
   );
