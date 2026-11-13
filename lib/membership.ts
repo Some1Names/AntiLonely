@@ -78,3 +78,13 @@ export function joinedRooms(
     });
   return [...kept, ...added];
 }
+
+// Where a user's memberships are saved in the browser until there's a backend.
+export function membershipStorageKey(userId: string) {
+  return `antilonely:membership:${userId}`;
+}
+
+// How many rooms are joined (requests still waiting don't count).
+export function joinedCount(membership: Membership): number {
+  return Object.values(membership).filter((s) => s === "joined").length;
+}

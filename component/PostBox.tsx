@@ -1,3 +1,6 @@
+"use client";
+
+import { authClient } from "@/lib/auth-client";
 import Icon from "@/component/Icon";
 import Tape from "@/component/Tape";
 import type { MyRoom } from "@/lib/mock";
@@ -17,6 +20,11 @@ export default function PostBox({
   username: string;
   rooms: MyRoom[];
 }) {
+  // Show the signed-in user's own name; `username` is the fallback while the
+  // session loads or when nobody is signed in.
+  const { data: session } = authClient.useSession();
+  const displayName = session?.user.name || username;
+
   return (
     <section className="relative -rotate-[0.4deg] rounded-lg border-[1.5px] border-ink bg-butter p-6 shadow-sticker-lg sm:p-7">
       <Tape />
@@ -25,7 +33,7 @@ export default function PostBox({
         className="absolute right-5 top-5 size-8 rotate-12 fill-current text-kmutt-orange"
       />
       <h1 className="pr-10 font-display text-2xl font-semibold sm:text-3xl">
-        ยินดีต้อนรับน้า, <span className={highlightClass}>{username}</span> 👋
+        ยินดีต้อนรับน้า, <span className={highlightClass}>{displayName}</span> 👋
       </h1>
       <p className="mt-2 text-sm text-ink-soft sm:text-base">
         วันนี้เป็นยังไงบ้าง? อยากถาม อยากเล่า หรืออยากระบายก็ได้นะ

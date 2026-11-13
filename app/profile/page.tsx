@@ -6,6 +6,7 @@ import EditProfileButton from "@/component/EditProfileButton";
 import EmptyNote from "@/component/EmptyNote";
 import Header from "@/component/Header";
 import Icon from "@/component/Icon";
+import { useJoinedCount } from "@/component/useJoinedCount";
 import PostCard from "@/component/PostCard";
 import Tape from "@/component/Tape";
 import { currentUser, myRooms } from "@/lib/mock";
@@ -42,6 +43,7 @@ export default function ProfilePage() {
   const { data: session, isPending, refetch } = authClient.useSession();
 
   const user = session?.user;
+  const joinedRoomCount = useJoinedCount(user?.id);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -52,9 +54,9 @@ export default function ProfilePage() {
       />
 
       <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-6 sm:py-8">
-        {/* โน้ตสีเทาแบบป้าย "ส่วนตัว" */}
-        <div className="flex items-start gap-2 rounded-lg border-[1.5px] border-dashed border-kmutt-grey/50 bg-mist px-4 py-3 text-sm text-mist-ink">
-          <Icon name="lock" className="mt-0.5 size-4" />
+        {/* โน้ตสีพีชบอกว่าหน้านี้ส่วนตัว */}
+        <div className="flex items-start gap-2 rounded-lg border-[1.5px] border-dashed border-peach-edge bg-peach px-4 py-3 text-sm text-ink">
+          <Icon name="lock" className="mt-0.5 size-4 text-kmutt-orange-dark" />
           <p>
             <b>หน้านี้เห็นได้แค่คุณคนเดียว</b> คนอื่นจะเห็นแค่ชื่อเล่นของคุณในกระทู้
             แต่เปิดดูรวมทุกโพสต์ของคุณไม่ได้
@@ -96,7 +98,7 @@ export default function ProfilePage() {
                 </span>
                 <span className="flex items-center gap-1">
                   <Icon name="users" className="size-4 text-ink-soft" />
-                  เข้าร่วม <b>0</b> ห้อง
+                  เข้าร่วม <b>{joinedRoomCount}</b> ห้อง
                 </span>
               </p>
             </div>
