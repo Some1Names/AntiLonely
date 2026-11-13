@@ -207,7 +207,7 @@ export default function AdminReports({ reports }: AdminReportsProps) {
       {/* Header */}
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-bold text-ink">รายงาน</h1>
+          <h1 className="text-2xl font-bold text-ink sm:text-3xl">รายงาน</h1>
           <p className="mt-1 text-sm text-ink-soft">
             {statusCounts.pending} รายการรอดำเนินการ · ล่าสุด{" "}
             {reports.length > 0
@@ -292,12 +292,12 @@ export default function AdminReports({ reports }: AdminReportsProps) {
             เลือกแล้ว {selected.length} รายการ
           </span>
 
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <button
               type="button"
               disabled={busy}
               onClick={() => handleDismiss(selected)}
-              className="text-sm text-white hover:text-gray-300 disabled:opacity-50"
+              className="text-sm text-white hover:text-highlight disabled:opacity-50"
             >
               ยกเลิก
             </button>
@@ -452,7 +452,7 @@ export default function AdminReports({ reports }: AdminReportsProps) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="report-detail-title"
-            className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl"
+            className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between">

@@ -113,7 +113,9 @@ export default function RoomList({
       </div>
       {shown.length > 0 ? (
         <>
-          <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          {/* From md the sidebar sits beside the list, which leaves too little
+              room for two cards until lg. */}
+          <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2">
             {shown.map((room) => (
               <ViewTransition
                 key={room.id}

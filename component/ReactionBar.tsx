@@ -25,10 +25,19 @@ import {
 import { computePopoverPosition, type PopoverResult } from '@/lib/popover-position';
 import { useIsMobile } from '@/component/useIsMobile';
 import { useActiveReactionPicker } from '@/lib/reaction-picker-store';
+import { stickerToggleClass } from '@/lib/styles';
 
 export { REACTION_SIZES, type ReactionSize };
 
 const emptySubscribe = () => () => {};
+
+// The shared sticker toggle without its own text size: pillClasses and
+// triggerClasses set the size per variant.
+const chipClass = stickerToggleClass.replace(' text-sm', '');
+
+// Focus ring for the picker's cells: the global outline is kept, the cell
+// itself turns highlighter yellow.
+const pickerCellFocusClass = 'focus-visible:bg-highlight';
 
 export interface ReactionBarProps {
   reactions: ReactionItem[];
@@ -483,11 +492,7 @@ export function ReactionBar({
               : 'คลิกเพื่อกดรีแอคชัน'
           }
 
-            className={`inline-flex items-center justify-center rounded-full border transition-all duration-150 cursor-pointer select-none active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2 relative after:absolute after:inset-y-[-6px] after:inset-x-0 after:content-[''] ${pillClasses} ${
-            item.reactedByMe
-              ? 'border-[#18181b] bg-[#f4f4f5] text-[#18181b] font-medium'
-              : 'border-[#e4e4e7] bg-white text-[#18181b] hover:bg-[#f4f4f5]'
-          }`}
+            className={`inline-flex items-center justify-center inline-flex items-center justify-center cursor-pointer select-none text-ink relative after:absolute after:inset-y-[-6px] after:inset-x-0 after:content-[''] ${chipClass} ${pillClasses}`}
         >
           <span
             className="inline-flex items-center justify-center leading-none select-none shrink-0"
@@ -495,7 +500,7 @@ export function ReactionBar({
           >
             {item.emoji}
           </span>
-          <span className="text-[#a1a1aa] font-normal select-none leading-none">·</span>
+          <span className="text-ink-soft font-normal select-none leading-none">·</span>
           <span className="tabular-nums font-medium leading-none">{item.count}</span>
         </button>
       ))}
@@ -514,10 +519,10 @@ export function ReactionBar({
           aria-haspopup="true"
           aria-expanded={isOpen}
           aria-label="เพิ่มรีแอคชัน"
-          className={`inline-flex items-center justify-center rounded-full border transition-all duration-150 cursor-pointer select-none focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2 relative after:absolute after:inset-y-[-6px] after:inset-x-0 after:content-[''] ${triggerClasses} ${
+          className={`inline-flex items-center justify-center inline-flex items-center justify-center cursor-pointer select-none relative after:absolute after:inset-y-[-6px] after:inset-x-0 after:content-[''] ${chipClass} ${triggerClasses} ${
             isOpen
-              ? 'border-[#18181b] bg-[#f4f4f5] text-[#18181b]'
-              : 'border-[#e4e4e7] bg-white text-[#71717a] hover:bg-[#f4f4f5] hover:text-[#18181b] active:scale-[0.98]'
+              ? 'translate-0.5 bg-kmutt-yellow text-ink shadow-none hover:bg-kmutt-yellow'
+              : 'text-ink-soft hover:text-ink'
           }`}
         >
           <svg
@@ -546,7 +551,7 @@ export function ReactionBar({
             />
           </svg>
           <span
-            className={`font-sans font-medium leading-none text-[#71717a] select-none ${
+            className={`font-sans font-medium leading-none select-none ${
               size === 'md' ? 'text-[13px]' : 'text-[11px]'
             }`}
           >
@@ -560,7 +565,7 @@ export function ReactionBar({
             <div className="fixed inset-0 z-50">
               {/* Backdrop */}
               <div
-                className="fixed inset-0 bg-black/40 reaction-backdrop-anim touch-none"
+                className="fixed inset-0 bg-ink/40 reaction-backdrop-anim touch-none"
                 onClick={handleClose}
                 aria-hidden="true"
               />
@@ -572,7 +577,7 @@ export function ReactionBar({
                 aria-modal="true"
                 aria-labelledby={`${id}-sheet-title`}
                 onKeyDown={handleSheetKeyDown}
-                className={`fixed left-0 right-0 bottom-0 z-50 max-h-[80vh] max-h-[80dvh] bg-white rounded-t-2xl border-t border-[#e4e4e7] shadow-[0_-4px_24px_rgba(0,0,0,0.12)] px-4 pt-1 pb-4 pb-[max(16px,env(safe-area-inset-bottom,0px))] flex flex-col select-none overflow-hidden ${
+                className={`fixed left-0 right-0 bottom-0 z-50 max-h-[80vh] max-h-[80dvh] bg-paper rounded-t-2xl border-[1.5px] border-b-0 border-ink shadow-[0_-4px_0_var(--color-edge-strong)] px-4 pt-1 pb-4 pb-[max(16px,env(safe-area-inset-bottom,0px))] flex flex-col select-none overflow-hidden ${
                   isDragging || dragTranslateY > 0 ? '' : 'reaction-sheet-anim'
                 }`}
                 style={{
@@ -589,7 +594,7 @@ export function ReactionBar({
                   onPointerCancel={handleDragEnd}
                   aria-hidden="true"
                 >
-                  <div className="w-10 h-1 bg-[#d4d4d8] rounded-full" />
+                  <div className="w-10 h-1 bg-edge-strong rounded-full" />
                 </div>
 
                 {/* Sheet Header (Title and Close Button vertically centered, exactly 44x44 touch target) */}
@@ -602,7 +607,7 @@ export function ReactionBar({
                 >
                   <h2
                     id={`${id}-sheet-title`}
-                    className="text-sm font-semibold text-[#18181b] leading-normal select-none"
+                    className="text-sm font-semibold text-ink leading-normal select-none"
                   >
                     เลือกความรู้สึก
                   </h2>
@@ -611,7 +616,7 @@ export function ReactionBar({
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={handleClose}
                     aria-label="ปิด"
-                    className="w-11 h-11 -mr-1 flex items-center justify-center rounded-full text-[#71717a] hover:text-[#18181b] hover:bg-[#f4f4f5] transition-colors cursor-pointer select-none focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2"
+                    className="w-11 h-11 -mr-1 flex items-center justify-center rounded-full text-ink-soft hover:text-ink hover:bg-butter transition-colors cursor-pointer select-none"
                   >
                     <svg
                       width="18"
@@ -649,16 +654,16 @@ export function ReactionBar({
                           aria-pressed={isSelected}
                           aria-label={`${label} (${emoji})`}
                           onClick={() => handleSelectFromPicker(emoji)}
-                          className={`min-h-[76px] py-2 w-full flex flex-col items-center justify-center gap-1 rounded-xl transition-all active:scale-[0.97] cursor-pointer select-none focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2 ${
+                          className={`min-h-[76px] py-2 w-full flex flex-col items-center justify-center gap-1 rounded-xl border-[1.5px] transition-all active:scale-[0.97] cursor-pointer select-none ${pickerCellFocusClass} ${
                             isSelected
-                              ? 'bg-[#f4f4f5] border border-[#18181b]'
-                              : 'bg-white border border-[#e4e4e7] hover:bg-[#f4f4f5]'
+                              ? 'bg-kmutt-yellow border-ink'
+                              : 'bg-white border-edge-strong hover:bg-butter'
                           }`}
                         >
                           <span className="text-[32px] leading-none select-none shrink-0">
                             {emoji}
                           </span>
-                          <span className="text-xs font-medium text-[#71717a] leading-5 min-h-[20px] flex items-center justify-center text-center whitespace-nowrap max-w-full px-1">
+                          <span className="text-xs font-medium text-ink-soft leading-5 min-h-[20px] flex items-center justify-center text-center whitespace-nowrap max-w-full px-1">
                             {label}
                           </span>
                         </button>
@@ -670,7 +675,7 @@ export function ReactionBar({
                         type="button"
                         onClick={() => setShowAllPickerEmojis(true)}
                         aria-label="ดูอิโมจิเพิ่มเติม"
-                        className="min-h-[76px] py-2 w-full flex flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-[#d4d4d8] bg-white text-[#71717a] hover:bg-[#f4f4f5] hover:text-[#18181b] hover:border-[#a1a1aa] transition-all active:scale-[0.97] cursor-pointer select-none focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2"
+                        className="min-h-[76px] py-2 w-full flex flex-col items-center justify-center gap-1 rounded-xl border-[1.5px] border-dashed border-edge-strong bg-white text-ink-soft hover:bg-butter hover:text-ink hover:border-ink transition-all active:scale-[0.97] cursor-pointer select-none focus-visible:bg-highlight"
                       >
                         <svg
                           width="22"
@@ -688,7 +693,7 @@ export function ReactionBar({
                             strokeLinejoin="round"
                           />
                         </svg>
-                        <span className="text-xs font-medium text-[#71717a] leading-5 min-h-[20px] flex items-center justify-center text-center whitespace-nowrap px-1">
+                        <span className="text-xs font-medium text-ink-soft leading-5 min-h-[20px] flex items-center justify-center text-center whitespace-nowrap px-1">
                           เพิ่มเติม
                         </span>
                       </button>
@@ -697,7 +702,7 @@ export function ReactionBar({
                         type="button"
                         onClick={() => setShowAllPickerEmojis(false)}
                         aria-label="ย่ออิโมจิ"
-                        className="min-h-[76px] py-2 w-full flex flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-[#d4d4d8] bg-white text-[#71717a] hover:bg-[#f4f4f5] hover:text-[#18181b] hover:border-[#a1a1aa] transition-all active:scale-[0.97] cursor-pointer select-none focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2"
+                        className="min-h-[76px] py-2 w-full flex flex-col items-center justify-center gap-1 rounded-xl border-[1.5px] border-dashed border-edge-strong bg-white text-ink-soft hover:bg-butter hover:text-ink hover:border-ink transition-all active:scale-[0.97] cursor-pointer select-none focus-visible:bg-highlight"
                       >
                         <svg
                           width="22"
@@ -715,7 +720,7 @@ export function ReactionBar({
                             strokeLinejoin="round"
                           />
                         </svg>
-                        <span className="text-xs font-medium text-[#71717a] leading-5 min-h-[20px] flex items-center justify-center text-center whitespace-nowrap px-1">
+                        <span className="text-xs font-medium text-ink-soft leading-5 min-h-[20px] flex items-center justify-center text-center whitespace-nowrap px-1">
                           ย่อกลับ
                         </span>
                       </button>
@@ -735,7 +740,7 @@ export function ReactionBar({
               role="menu"
               aria-label="เลือกอีโมจิรีแอคชัน"
               onKeyDown={handlePopoverKeyDown}
-              className="reaction-popover-anim fixed z-50 flex items-center flex-nowrap w-max gap-1.5 sm:gap-2 rounded-xl border border-[#e4e4e7] bg-white px-2.5 py-1.5 shadow-[0_4px_16px_rgba(0,0,0,0.08)] max-w-[calc(100vw-24px)] overflow-x-auto whitespace-nowrap"
+              className="reaction-popover-anim fixed z-50 flex items-center flex-nowrap w-max gap-1.5 sm:gap-2 rounded-xl border-[1.5px] border-ink bg-paper px-2.5 py-1.5 shadow-sticker-lg max-w-[calc(100vw-24px)] overflow-x-auto whitespace-nowrap"
               style={{
                 top: `${position.top}px`,
                 left: `${position.left}px`,
@@ -756,14 +761,14 @@ export function ReactionBar({
                     aria-label={getEmojiLabel(emoji)}
                     tabIndex={focusedIndex === index ? 0 : -1}
                     onClick={() => handleSelectFromPicker(emoji)}
-                    className={`flex items-center justify-center rounded-full transition-transform hover:scale-115 active:scale-95 cursor-pointer select-none leading-none shrink-0 focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2 ${popoverButtonClasses} ${
+                    className={`flex items-center justify-center rounded-full transition-transform hover:scale-115 active:scale-95 cursor-pointer select-none leading-none shrink-0 ${pickerCellFocusClass} ${popoverButtonClasses} ${
                       isCoarsePointer
                         ? "relative after:absolute after:inset-[-4px] after:content-['']"
                         : ''
                     } ${
                       isSelected
-                        ? 'bg-[#f4f4f5] ring-1 ring-[#18181b]'
-                        : 'hover:bg-[#f4f4f5]'
+                        ? 'bg-kmutt-yellow ring-[1.5px] ring-ink'
+                        : 'hover:bg-butter'
                     }`}
                   >
                     <span className="leading-none select-none">
@@ -779,7 +784,7 @@ export function ReactionBar({
                   onClick={() => setShowAllPickerEmojis(true)}
                   aria-label="ดูอิโมจิเพิ่มเติม"
                   title="ดูอิโมจิเพิ่มเติม"
-                  className={`flex items-center justify-center rounded-full border border-[#e4e4e7] bg-white text-[#71717a] hover:bg-[#f4f4f5] hover:text-[#18181b] active:scale-95 transition-all cursor-pointer select-none focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2 shrink-0 ml-0.5 ${popoverActionClasses}`}
+                  className={`flex items-center justify-center rounded-full border-[1.5px] border-dashed border-edge-strong bg-white text-ink-soft hover:bg-butter hover:text-ink hover:border-ink focus-visible:bg-highlight active:scale-95 transition-all cursor-pointer select-none shrink-0 ml-0.5 ${popoverActionClasses}`}
                 >
                   <svg
                     width={popoverActionIconSize}
@@ -815,14 +820,14 @@ export function ReactionBar({
                         aria-label={getEmojiLabel(emoji)}
                         tabIndex={focusedIndex === index ? 0 : -1}
                         onClick={() => handleSelectFromPicker(emoji)}
-                        className={`flex items-center justify-center rounded-full transition-transform hover:scale-115 active:scale-95 cursor-pointer select-none leading-none shrink-0 focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2 ${popoverButtonClasses} ${
+                        className={`flex items-center justify-center rounded-full transition-transform hover:scale-115 active:scale-95 cursor-pointer select-none leading-none shrink-0 ${pickerCellFocusClass} ${popoverButtonClasses} ${
                           isCoarsePointer
                             ? "relative after:absolute after:inset-[-4px] after:content-['']"
                             : ''
                         } ${
                           isSelected
-                            ? 'bg-[#f4f4f5] ring-1 ring-[#18181b]'
-                            : 'hover:bg-[#f4f4f5]'
+                            ? 'bg-kmutt-yellow ring-[1.5px] ring-ink'
+                            : 'hover:bg-butter'
                         }`}
                       >
                         <span className="leading-none select-none">
@@ -836,7 +841,7 @@ export function ReactionBar({
                     onClick={() => setShowAllPickerEmojis(false)}
                     aria-label="ย่ออิโมจิ"
                     title="ย่ออิโมจิ"
-                    className={`flex items-center justify-center rounded-full border border-[#e4e4e7] bg-white text-[#71717a] hover:bg-[#f4f4f5] hover:text-[#18181b] active:scale-95 transition-all cursor-pointer select-none focus-visible:outline-2 focus-visible:outline-[#18181b] focus-visible:outline-offset-2 shrink-0 ml-0.5 ${popoverActionClasses}`}
+                    className={`flex items-center justify-center rounded-full border-[1.5px] border-dashed border-edge-strong bg-white text-ink-soft hover:bg-butter hover:text-ink hover:border-ink focus-visible:bg-highlight active:scale-95 transition-all cursor-pointer select-none shrink-0 ml-0.5 ${popoverActionClasses}`}
                   >
                     <svg
                       width={popoverActionIconSize}

@@ -25,6 +25,7 @@ import { PostCard } from './PostCard';
 import { ReplyComposer } from './ReplyComposer';
 import { CommentItem } from './CommentItem';
 import { ReportModal } from './ReportModal';
+import { indexCardClass, outlineButtonClass } from '@/lib/styles';
 
 interface PostThreadClientProps {
   initialThread: PostThread;
@@ -250,7 +251,7 @@ export function PostThreadClient({
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#fafafa] text-[#18181b] font-sans">
+    <div className="min-h-screen flex flex-col font-sans">
       <Header
         notifications={mockCurrentUser.notifications}
         rooms={myRooms}
@@ -261,7 +262,7 @@ export function PostThreadClient({
         <div>
           <Link
             href={`/rooms/${thread.boardSlug}`}
-            className="inline-flex items-center gap-1.5 text-sm text-[#71717a] hover:text-[#18181b] transition-colors"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-soft hover:text-kmutt-orange-dark hover:underline"
           >
             <span aria-hidden="true">←</span>
             <span>กลับไปใน{thread.boardName}</span>
@@ -290,7 +291,7 @@ export function PostThreadClient({
 
         {/* Comments Header & Sort Dropdown */}
         <div className="flex items-center justify-between gap-4 pt-1">
-          <h2 className="text-base font-semibold text-[#18181b]">
+          <h2 className="font-display text-lg font-semibold">
             {totalComments} ความคิดเห็น
           </h2>
 
@@ -300,7 +301,7 @@ export function PostThreadClient({
               onClick={() => setIsSortMenuOpen((prev) => !prev)}
               aria-haspopup="menu"
               aria-expanded={isSortMenuOpen}
-              className="h-8 px-3 rounded-lg border border-[#e4e4e7] bg-white text-xs sm:text-[13px] font-medium text-[#18181b] hover:bg-zinc-100 transition-colors inline-flex items-center gap-2 cursor-pointer select-none"
+              className={`h-8 px-3 ${outlineButtonClass} text-xs! sm:text-[13px]! inline-flex items-center gap-2 cursor-pointer select-none`}
             >
               <span>{sortOrder === 'oldest' ? 'เก่าสุดก่อน' : 'ใหม่สุดก่อน'}</span>
               <svg
@@ -310,7 +311,7 @@ export function PostThreadClient({
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
                 aria-hidden="true"
-                className={`text-[#71717a] transition-transform duration-200 ${
+                className={`text-ink-soft motion-safe:transition-transform motion-safe:duration-200 ${
                   isSortMenuOpen ? 'rotate-180' : ''
                 }`}
               >
@@ -328,7 +329,7 @@ export function PostThreadClient({
               <div
                 role="menu"
                 aria-label="ตัวเลือกการจัดเรียงความคิดเห็น"
-                className="absolute right-0 top-[calc(100%+4px)] z-20 w-[140px] rounded-[10px] border border-[#e4e4e7] bg-white p-1 shadow-[0_4px_16px_rgba(0,0,0,0.08)] flex flex-col"
+                className="absolute right-0 top-[calc(100%+4px)] z-20 w-[140px] rounded-[10px] border-[1.5px] border-ink bg-white p-1 shadow-sticker flex flex-col"
               >
                 {SORT_OPTIONS.map((option) => {
                   const isSelected = sortOrder === option.value;
@@ -341,10 +342,10 @@ export function PostThreadClient({
                         setSortOrder(option.value);
                         setIsSortMenuOpen(false);
                       }}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs sm:text-[13px] transition-colors cursor-pointer flex items-center justify-between ${
+                      className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs sm:text-[13px] cursor-pointer flex items-center justify-between hover:bg-butter ${
                         isSelected
-                          ? 'bg-zinc-100 font-semibold text-[#18181b]'
-                          : 'text-[#71717a] hover:bg-zinc-50 hover:text-[#18181b]'
+                          ? 'bg-butter font-semibold text-ink'
+                          : 'text-ink-soft hover:text-ink'
                       }`}
                     >
                       <span>{option.label}</span>
@@ -354,7 +355,7 @@ export function PostThreadClient({
                           height="12"
                           viewBox="0 0 20 20"
                           fill="currentColor"
-                          className="text-[#18181b] shrink-0"
+                          className="text-ink shrink-0"
                           aria-hidden="true"
                         >
                           <path
@@ -375,10 +376,10 @@ export function PostThreadClient({
         {/* Replies List Card */}
         <section
           aria-label="รายการความคิดเห็น"
-          className="bg-white border border-[#e4e4e7] rounded-xl px-4 sm:px-6 py-2 divide-y divide-[#e4e4e7]"
+          className={`${indexCardClass} px-4 sm:px-6 py-2 divide-y divide-dashed divide-edge`}
         >
           {sortedComments.length === 0 ? (
-            <p className="py-8 text-center text-sm text-[#71717a]">
+            <p className="py-8 text-center text-sm text-ink-soft">
               ยังไม่มีความคิดเห็น · มาเป็นคนแรกที่พูดคุยในกระทู้นี้กัน
             </p>
           ) : (
@@ -430,7 +431,7 @@ export function PostThreadClient({
         <div
           role="status"
           aria-live="polite"
-          className="fixed bottom-6 right-6 z-50 bg-[#18181b] text-white text-sm px-4 py-3 rounded-xl shadow-lg border border-zinc-800 flex items-center gap-2"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-lg border-[1.5px] border-ink bg-butter px-4 py-3 text-sm font-medium shadow-sticker-lg motion-safe:animate-sheet-drop"
         >
           <span>{toastMessage}</span>
         </div>

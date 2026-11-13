@@ -226,7 +226,7 @@ export default function AdminUsersClient({ initialUsers }: Props) {
       {/* หัวหน้า + ค้นหา */}
       <div className="flex flex-wrap items-start justify-between gap-6">
         <div>
-          <h1 className="font-display text-[28px] font-bold leading-tight tracking-tight">
+          <h1 className="font-display text-2xl font-bold leading-tight tracking-tight sm:text-[28px]">
             ผู้ใช้
           </h1>
 
@@ -236,7 +236,7 @@ export default function AdminUsersClient({ initialUsers }: Props) {
           </p>
         </div>
 
-        <div className="relative w-80 max-w-full">
+        <div className="relative w-full sm:w-80">
           <svg
             className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft/70"
             viewBox="0 0 16 16"
@@ -263,7 +263,7 @@ export default function AdminUsersClient({ initialUsers }: Props) {
 
       {/* ข้อมูลออนไลน์ */}
       <div className="mt-5 flex items-center gap-2 text-[13px] text-ink-soft">
-        <span className="h-2 w-2 rounded-full bg-gray-400" />
+        <span className="h-2 w-2 rounded-full bg-kmutt-grey" />
         ยังไม่มีข้อมูลเวลาใช้งานล่าสุด
       </div>
 
@@ -297,7 +297,7 @@ export default function AdminUsersClient({ initialUsers }: Props) {
 
       {/* แถบดำเมื่อมีการเลือก */}
       {selected.size > 0 && (
-        <div className="mt-5 flex items-center justify-between rounded-xl bg-ink px-4 py-3.5 text-white">
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-ink px-4 py-3.5 text-white">
           <span className="text-[13px] font-semibold">
             เลือกแล้ว {selected.size} รายการ
           </span>
@@ -372,7 +372,7 @@ export default function AdminUsersClient({ initialUsers }: Props) {
 
                 <td className="px-2 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="h-6 w-6 shrink-0 rounded-full bg-gray-200" />
+                    <div className="h-6 w-6 shrink-0 rounded-full bg-edge" />
                     <span>{u.name}</span>
                   </div>
                 </td>
