@@ -17,6 +17,7 @@ import {
   toggleReaction,
 } from "@/lib/post-thread";
 import {
+  canMemberReactInRoom,
   DEFAULT_ROOM_EMOJI,
   DEFAULT_ROOM_RULES,
   resolveRoomPostCountStats,
@@ -333,6 +334,15 @@ export default function RoomBoardFeed({
   ): Promise<boolean> {
     if (!currentUser) {
       showToast("กรุณาเข้าสู่ระบบก่อนกดรีแอคชัน");
+      return false;
+    }
+
+    const reactPermission = canMemberReactInRoom({
+      isPrivate: Boolean(room.isPrivate),
+      memberStatus: membership.status === "joined" ? "active" : null,
+    });
+    if (!reactPermission.ok) {
+      showToast(reactPermission.error);
       return false;
     }
 
