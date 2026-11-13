@@ -22,9 +22,9 @@ async function AdminGuard({ children }: { children: React.ReactNode }) {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen bg-cream text-ink">
+    <div className="flex min-h-screen flex-col bg-cream text-ink lg:flex-row">
       <AdminSidebar />
-      <main className="min-w-0 flex-1 p-10">
+      <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-10">
         <Suspense
           fallback={<div className="text-sm text-ink-soft">กำลังตรวจสอบสิทธิ์...</div>}
         >

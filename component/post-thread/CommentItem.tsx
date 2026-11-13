@@ -5,6 +5,14 @@ import type { ThreadComment, ThreadReply, ThreadBranch } from '@/types/post-thre
 import { formatRelativeTimeThai, groupRepliesIntoBranches } from '@/lib/post-thread';
 import { ReactionBar } from './ReactionBar';
 import { ReplyComposer } from './ReplyComposer';
+import Icon from '@/component/Icon';
+import {
+  avatarClass,
+  disabledButtonClass,
+  inputClass,
+  outlineButtonClass,
+  primaryButtonClass,
+} from '@/lib/styles';
 
 interface CommentItemProps {
   comment: ThreadComment;
@@ -131,7 +139,7 @@ export function CommentItem({
           }
           aria-label="ตัวเลือกเพิ่มเติม"
           aria-expanded={isMenuOpen}
-          className="px-2 py-0.5 rounded-md text-xs text-[#71717a] hover:text-[#18181b] hover:bg-zinc-100 transition-colors cursor-pointer select-none leading-none tracking-wider relative flex items-center justify-center min-w-[28px] min-h-[28px] after:absolute after:w-[44px] after:h-[44px] after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
+          className="px-2 py-0.5 rounded-md text-xs text-ink-soft hover:text-ink hover:bg-butter cursor-pointer select-none leading-none tracking-wider relative flex items-center justify-center min-w-[28px] min-h-[28px] after:absolute after:w-[44px] after:h-[44px] after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
         >
           •••
         </button>
@@ -140,7 +148,7 @@ export function CommentItem({
           <div
             role="menu"
             aria-label="ตัวเลือกความคิดเห็น"
-            className="absolute right-0 top-[calc(100%+4px)] z-20 w-[168px] rounded-[10px] border border-[#e4e4e7] bg-white p-1.5 shadow-[0_4px_16px_rgba(0,0,0,0.08)] flex flex-col"
+            className="absolute right-0 top-[calc(100%+4px)] z-20 w-[168px] rounded-[10px] border-[1.5px] border-ink bg-white p-1.5 shadow-sticker flex flex-col"
           >
             {isOwner ? (
               <>
@@ -148,7 +156,7 @@ export function CommentItem({
                   type="button"
                   role="menuitem"
                   onClick={() => handleStartEdit(itemId, currentContent)}
-                  className="w-full text-left px-2.5 py-2 rounded-md text-xs sm:text-sm text-[#18181b] hover:bg-zinc-100 transition-colors cursor-pointer"
+                  className="w-full text-left px-2.5 py-2 rounded-md text-xs sm:text-sm hover:bg-butter cursor-pointer"
                 >
                   แก้ไขความคิดเห็น
                 </button>
@@ -159,7 +167,7 @@ export function CommentItem({
                     setOpenMenuId(null);
                     onDeleteComment(itemId);
                   }}
-                  className="w-full text-left px-2.5 py-2 rounded-md text-xs sm:text-sm text-[#dc2626] hover:bg-red-50 transition-colors cursor-pointer"
+                  className="w-full text-left px-2.5 py-2 rounded-md text-xs sm:text-sm text-red-700 hover:bg-red-50 cursor-pointer"
                 >
                   ลบความคิดเห็น
                 </button>
@@ -172,7 +180,7 @@ export function CommentItem({
                   setOpenMenuId(null);
                   onReportComment(itemId);
                 }}
-                className="w-full text-left px-2.5 py-2 rounded-md text-xs sm:text-sm text-[#dc2626] hover:bg-red-50 transition-colors cursor-pointer"
+                className="w-full text-left px-2.5 py-2 rounded-md text-xs sm:text-sm text-red-700 hover:bg-red-50 cursor-pointer"
               >
                 รายงานความคิดเห็น
               </button>
@@ -199,23 +207,20 @@ export function CommentItem({
         }}
         autoFocus
         aria-label="แก้ไขความคิดเห็น"
-        className="w-full h-9 rounded-lg border border-[#e4e4e7] bg-white px-3 text-sm text-[#18181b] focus:outline-none focus:border-zinc-400"
+        className={`h-9 py-0! ${inputClass}`}
       />
       <div className="flex items-center gap-2">
         <button
           type="submit"
           disabled={editDraft.trim().length === 0}
-          className={`h-8 px-3 rounded-lg text-xs font-medium transition-colors select-none ${editDraft.trim().length > 0
-            ? 'bg-[#18181b] text-white hover:bg-zinc-800 cursor-pointer'
-            : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
-            }`}
+          className={`h-8 px-3 ${primaryButtonClass} ${disabledButtonClass} text-xs! select-none cursor-pointer`}
         >
           บันทึก
         </button>
         <button
           type="button"
           onClick={handleCancelEdit}
-          className="h-8 px-3 rounded-lg border border-[#e4e4e7] bg-white text-xs text-[#71717a] hover:text-[#18181b] hover:bg-zinc-100 transition-colors cursor-pointer select-none"
+          className={`h-8 px-3 ${outlineButtonClass} text-xs! cursor-pointer select-none`}
         >
           ยกเลิก
         </button>
@@ -231,30 +236,32 @@ export function CommentItem({
         <div className="relative flex flex-col items-center self-stretch shrink-0">
           <div
             aria-hidden="true"
-            className="w-8 h-8 rounded-full bg-[#d4d4d8] shrink-0 mt-0.5 z-10"
-          />
+            className={`${avatarClass.replace('size-9', 'size-8')} mt-0.5 z-10`}
+          >
+            <Icon name="user" className="size-4" />
+          </div>
           {(comment.replies.length > 0 || isReplying) && (
             <div
               aria-hidden="true"
-              className="w-0.5 grow bg-[#e4e4e7] mt-1 -mb-3.5 pointer-events-none"
+              className="w-0.5 grow bg-edge-strong mt-1 -mb-3.5 pointer-events-none"
             />
           )}
         </div>
         <div className="flex-1 min-w-0 space-y-1.5 pb-1">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center flex-wrap gap-2">
-              <span className="text-sm font-semibold text-[#18181b]">
+              <span className="text-sm font-semibold">
                 {comment.author.name}
               </span>
               {comment.isPostAuthor && (
-                <span className="inline-flex items-center rounded-full bg-[#18181b] px-2.5 py-0.5 text-[11px] font-medium text-white">
+                <span className="inline-flex items-center rounded-full border border-ink bg-butter px-2.5 py-0.5 text-[11px] font-medium text-ink">
                   เจ้าของกระทู้
                 </span>
               )}
               <time
                 dateTime={comment.createdAt}
                 suppressHydrationWarning
-                className="text-xs text-[#71717a]"
+                className="text-xs text-ink-soft"
               >
                 {formatRelativeTimeThai(comment.createdAt, referenceTime)}
                 {comment.isEdited ? ' (แก้ไขแล้ว)' : ''}
@@ -267,7 +274,7 @@ export function CommentItem({
           {editingId === comment.id ? (
             renderEditForm(comment.id, comment.content)
           ) : (
-            <p className="text-sm text-[#18181b] leading-relaxed whitespace-pre-wrap break-words">
+            <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
               {comment.content}
             </p>
           )}
@@ -292,7 +299,7 @@ export function CommentItem({
                   comment.id
                 )
               }
-              className="text-xs font-medium text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer select-none px-1 relative after:absolute after:inset-y-[-14px] after:inset-x-0 after:content-['']"
+              className="text-xs font-medium text-ink-soft hover:text-kmutt-orange-dark cursor-pointer select-none px-1 relative after:absolute after:inset-y-[-14px] after:inset-x-0 after:content-['']"
             >
               ตอบกลับ
             </button>
@@ -347,7 +354,7 @@ export function CommentItem({
             {isChild && !isLastItem && (
               <div
                 aria-hidden="true"
-                className="absolute -left-6 top-0 -bottom-1 w-0.5 bg-[#e4e4e7] pointer-events-none"
+                className="absolute -left-6 top-0 -bottom-1 w-0.5 bg-edge-strong pointer-events-none"
               />
             )}
 
@@ -356,10 +363,10 @@ export function CommentItem({
               aria-hidden="true"
               className={
                 isFirstChild
-                  ? 'absolute -left-6 -top-5 w-6 h-[46px] border-b-2 border-l-2 border-[#e4e4e7] rounded-bl-xl pointer-events-none'
+                  ? 'absolute -left-6 -top-5 w-6 h-[46px] border-b-2 border-l-2 border-edge-strong rounded-bl-xl pointer-events-none'
                   : isFirstLevel1
-                  ? 'absolute -left-6 -top-2 w-6 h-[34px] border-b-2 border-l-2 border-[#e4e4e7] rounded-bl-xl pointer-events-none'
-                  : 'absolute -left-6 top-0 w-6 h-[26px] border-b-2 border-l-2 border-[#e4e4e7] rounded-bl-xl pointer-events-none'
+                  ? 'absolute -left-6 -top-2 w-6 h-[34px] border-b-2 border-l-2 border-edge-strong rounded-bl-xl pointer-events-none'
+                  : 'absolute -left-6 top-0 w-6 h-[26px] border-b-2 border-l-2 border-edge-strong rounded-bl-xl pointer-events-none'
               }
             />
 
@@ -367,13 +374,15 @@ export function CommentItem({
             <div className="relative flex flex-col items-center self-stretch shrink-0">
               <div
                 aria-hidden="true"
-                className="w-7 h-7 rounded-full bg-[#d4d4d8] shrink-0 mt-0.5 z-10"
-              />
+                className={`${avatarClass.replace('size-9', 'size-7')} mt-0.5 z-10`}
+              >
+                <Icon name="user" className="size-3.5" />
+              </div>
               {/* If this reply has children, run vertical line down to sub-branch with overlap */}
               {hasSubChildren && (
                 <div
                   aria-hidden="true"
-                  className="w-0.5 grow bg-[#e4e4e7] mt-1 -mb-3.5 pointer-events-none"
+                  className="w-0.5 grow bg-edge-strong mt-1 -mb-3.5 pointer-events-none"
                 />
               )}
             </div>
@@ -381,27 +390,27 @@ export function CommentItem({
             <div className="flex-1 min-w-0 space-y-1.5">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center flex-wrap gap-2">
-                  <span className="text-sm font-semibold text-[#18181b]">
+                  <span className="text-sm font-semibold">
                     {reply.author.name}
                   </span>
                   {reply.replyTo &&
                     reply.replyTo.name !== reply.author.name && (
-                      <span className="inline-flex items-center gap-1 text-sm text-[#71717a]">
+                      <span className="inline-flex items-center gap-1 text-sm text-ink-soft">
                         <span>ตอบกลับ</span>
-                        <span className="font-medium text-[#18181b]">
+                        <span className="font-medium text-ink">
                           @{reply.replyTo.name}
                         </span>
                       </span>
                     )}
                   {reply.isPostAuthor && (
-                    <span className="inline-flex items-center rounded-full bg-[#18181b] px-2.5 py-0.5 text-[11px] font-medium text-white">
+                    <span className="inline-flex items-center rounded-full border border-ink bg-butter px-2.5 py-0.5 text-[11px] font-medium text-ink">
                       เจ้าของกระทู้
                     </span>
                   )}
                   <time
                     dateTime={reply.createdAt}
                     suppressHydrationWarning
-                    className="text-xs text-[#71717a]"
+                    className="text-xs text-ink-soft"
                   >
                     {formatRelativeTimeThai(reply.createdAt, referenceTime)}
                     {reply.isEdited ? ' (แก้ไขแล้ว)' : ''}
@@ -414,7 +423,7 @@ export function CommentItem({
               {editingId === reply.id ? (
                 renderEditForm(reply.id, reply.content)
               ) : (
-                <p className="text-sm text-[#18181b] leading-relaxed whitespace-pre-wrap break-words">
+                <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
                   {reply.content}
                 </p>
               )}
@@ -442,7 +451,7 @@ export function CommentItem({
                       reply.id
                     )
                   }
-                  className="text-xs md:text-sm font-medium text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer select-none px-1 relative after:absolute after:inset-y-[-14px] after:inset-x-0 after:content-['']"
+                  className="text-xs md:text-sm font-medium text-ink-soft hover:text-kmutt-orange-dark cursor-pointer select-none px-1 relative after:absolute after:inset-y-[-14px] after:inset-x-0 after:content-['']"
                 >
                   ตอบกลับ
                 </button>
@@ -467,7 +476,7 @@ export function CommentItem({
                   {!isLastLevel1 && (
                     <div
                       aria-hidden="true"
-                      className={`absolute -left-6 ${isFirstLevel1 ? '-top-2' : 'top-0'} -bottom-1 w-0.5 bg-[#e4e4e7] pointer-events-none`}
+                      className={`absolute -left-6 ${isFirstLevel1 ? '-top-2' : 'top-0'} -bottom-1 w-0.5 bg-edge-strong pointer-events-none`}
                     />
                   )}
 
@@ -505,8 +514,8 @@ export function CommentItem({
                             aria-hidden="true"
                             className={
                               branch.children.length === 0
-                                ? 'absolute -left-6 -top-5 w-6 h-[46px] border-b-2 border-l-2 border-[#e4e4e7] rounded-bl-xl pointer-events-none'
-                                : 'absolute -left-6 top-0 w-6 h-[26px] border-b-2 border-l-2 border-[#e4e4e7] rounded-bl-xl pointer-events-none'
+                                ? 'absolute -left-6 -top-5 w-6 h-[46px] border-b-2 border-l-2 border-edge-strong rounded-bl-xl pointer-events-none'
+                                : 'absolute -left-6 top-0 w-6 h-[26px] border-b-2 border-l-2 border-edge-strong rounded-bl-xl pointer-events-none'
                             }
                           />
                           <ReplyComposer
@@ -534,7 +543,7 @@ export function CommentItem({
                 <button
                   type="button"
                   onClick={() => onExpandReplies(comment.id)}
-                  className="text-[13px] font-medium text-[#18181b] hover:underline cursor-pointer select-none"
+                  className="text-[13px] font-medium text-kmutt-orange-dark hover:underline cursor-pointer select-none"
                 >
                   ดูอีก {hiddenCount} ความคิดเห็น
                 </button>
@@ -547,8 +556,8 @@ export function CommentItem({
                   aria-hidden="true"
                   className={
                     branches.length === 0
-                      ? 'absolute -left-6 -top-2 w-6 h-[34px] border-b-2 border-l-2 border-[#e4e4e7] rounded-bl-xl pointer-events-none'
-                      : 'absolute -left-6 top-0 w-6 h-[26px] border-b-2 border-l-2 border-[#e4e4e7] rounded-bl-xl pointer-events-none'
+                      ? 'absolute -left-6 -top-2 w-6 h-[34px] border-b-2 border-l-2 border-edge-strong rounded-bl-xl pointer-events-none'
+                      : 'absolute -left-6 top-0 w-6 h-[26px] border-b-2 border-l-2 border-edge-strong rounded-bl-xl pointer-events-none'
                   }
                 />
                 <ReplyComposer

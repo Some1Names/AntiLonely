@@ -4,6 +4,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import type { PostThread } from '@/types/post-thread';
 import { formatRelativeTimeThai } from '@/lib/post-thread';
 import { ReactionBar } from './ReactionBar';
+import Icon from '@/component/Icon';
+import Tape from '@/component/Tape';
+import {
+  avatarClass,
+  indexCardClass,
+  outlineButtonClass,
+} from '@/lib/styles';
 
 interface PostCardProps {
   thread: PostThread;
@@ -59,19 +66,19 @@ export function PostCard({
   }, [isMenuOpen]);
 
   return (
-    <article className="relative bg-white border border-[#e4e4e7] rounded-xl p-5 sm:p-6">
+    <article className={`relative ${indexCardClass} p-5 pt-6 sm:p-6 sm:pt-7`}>
+      <Tape className="left-8 h-6 w-20 -rotate-3 bg-kmutt-yellow/70" />
       {/* Author Header & Overflow Menu */}
       <div ref={headerRef} className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
-          <div
-            aria-hidden="true"
-            className="w-10 h-10 rounded-full bg-[#d4d4d8] shrink-0"
-          />
+          <div aria-hidden="true" className={avatarClass}>
+            <Icon name="user" className="size-4" />
+          </div>
           <div className="min-w-0">
-            <div className="text-[15px] font-semibold text-[#18181b] truncate">
+            <div className="text-[15px] font-semibold truncate">
               {thread.author.name}
             </div>
-            <div className="text-[13px] text-[#71717a] truncate">
+            <div className="text-[13px] text-ink-soft truncate">
               ใน{thread.boardName} ·{' '}
               <time dateTime={thread.createdAt} suppressHydrationWarning>
                 {formatRelativeTimeThai(thread.createdAt, referenceTime)}
@@ -86,7 +93,7 @@ export function PostCard({
             onClick={() => setIsMenuOpen((prev) => !prev)}
             aria-label="ตัวเลือกเพิ่มเติม"
             aria-expanded={isMenuOpen}
-            className="px-2 py-1 rounded-md text-[#71717a] hover:text-[#18181b] hover:bg-zinc-100 transition-colors cursor-pointer select-none leading-none tracking-wider relative flex items-center justify-center min-w-[28px] min-h-[28px] after:absolute after:w-[44px] after:h-[44px] after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
+            className="px-2 py-1 rounded-md text-ink-soft hover:text-ink hover:bg-butter cursor-pointer select-none leading-none tracking-wider relative flex items-center justify-center min-w-[28px] min-h-[28px] after:absolute after:w-[44px] after:h-[44px] after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
           >
             •••
           </button>
@@ -95,7 +102,7 @@ export function PostCard({
             <div
               role="menu"
               aria-label="ตัวเลือกกระทู้"
-              className="absolute right-0 top-[calc(100%+6px)] z-20 w-[180px] rounded-[10px] border border-[#e4e4e7] bg-white p-1.5 shadow-[0_4px_16px_rgba(0,0,0,0.08)] flex flex-col"
+              className="absolute right-0 top-[calc(100%+6px)] z-20 w-[180px] rounded-[10px] border-[1.5px] border-ink bg-white p-1.5 shadow-sticker flex flex-col"
             >
               <button
                 type="button"
@@ -104,7 +111,7 @@ export function PostCard({
                   setIsMenuOpen(false);
                   onCopyLinkClick();
                 }}
-                className="w-full text-left px-2.5 py-2 rounded-md text-sm text-[#18181b] hover:bg-zinc-100 transition-colors cursor-pointer"
+                className="w-full text-left px-2.5 py-2 rounded-md text-sm hover:bg-butter cursor-pointer"
               >
                 คัดลอกลิงก์
               </button>
@@ -115,7 +122,7 @@ export function PostCard({
                   setIsMenuOpen(false);
                   onToggleMuteClick();
                 }}
-                className="w-full text-left px-2.5 py-2 rounded-md text-sm text-[#18181b] hover:bg-zinc-100 transition-colors cursor-pointer"
+                className="w-full text-left px-2.5 py-2 rounded-md text-sm hover:bg-butter cursor-pointer"
               >
                 {isMuted ? 'เปิดแจ้งเตือนกระทู้นี้' : 'ปิดแจ้งเตือนกระทู้นี้'}
               </button>
@@ -126,7 +133,7 @@ export function PostCard({
                   setIsMenuOpen(false);
                   onReportClick();
                 }}
-                className="w-full text-left px-2.5 py-2 rounded-md text-sm text-[#dc2626] hover:bg-red-50 transition-colors cursor-pointer"
+                className="w-full text-left px-2.5 py-2 rounded-md text-sm text-red-700 hover:bg-red-50 cursor-pointer"
               >
                 รายงานกระทู้
               </button>
@@ -136,7 +143,7 @@ export function PostCard({
       </div>
 
       {/* Post Body */}
-      <div className="my-4 text-base text-[#18181b] leading-relaxed whitespace-pre-wrap break-words">
+      <div className="my-4 text-base leading-relaxed whitespace-pre-wrap break-words">
         {thread.content}
       </div>
 
@@ -154,14 +161,14 @@ export function PostCard({
           <button
             type="button"
             onClick={onReplyClick}
-            className="h-8 px-3 rounded-full border border-[#e4e4e7] bg-white text-[13px] font-medium text-[#18181b] hover:bg-zinc-100 transition-colors cursor-pointer select-none relative after:absolute after:inset-y-[-6px] after:inset-x-0 after:content-['']"
+            className={`h-8 px-3 ${outlineButtonClass} rounded-full! text-[13px]! cursor-pointer select-none relative after:absolute after:inset-y-[-6px] after:inset-x-0 after:content-['']`}
           >
             ตอบกลับ
           </button>
           <button
             type="button"
             onClick={onShareClick}
-            className="h-8 px-3 rounded-full border border-[#e4e4e7] bg-white text-[13px] font-medium text-[#18181b] hover:bg-zinc-100 transition-colors cursor-pointer select-none relative after:absolute after:inset-y-[-6px] after:inset-x-0 after:content-['']"
+            className={`h-8 px-3 ${outlineButtonClass} rounded-full! text-[13px]! cursor-pointer select-none relative after:absolute after:inset-y-[-6px] after:inset-x-0 after:content-['']`}
           >
             แชร์
           </button>

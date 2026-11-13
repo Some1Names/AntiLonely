@@ -2,6 +2,15 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { ReportReason, ReportTargetType } from '@/types/post-thread';
+import Icon from '@/component/Icon';
+import Paper from '@/component/Paper';
+import {
+  choiceClass,
+  inputClass,
+  primaryButtonClass,
+  radioClass,
+  secondaryButtonClass,
+} from '@/lib/styles';
 
 interface ReportModalProps {
   isOpen: boolean;
@@ -136,7 +145,7 @@ export function ReportModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-zinc-900/45 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex overflow-y-auto bg-ink/40 p-4 backdrop-blur-sm"
       onClick={handleClose}
     >
       <div
@@ -145,12 +154,13 @@ export function ReportModal({
         aria-modal="true"
         aria-labelledby="report-modal-title"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[440px] rounded-xl bg-white border border-[#e4e4e7] p-6 shadow-xl"
+        className="relative m-auto w-full max-w-[440px] motion-safe:animate-sheet-drop"
       >
+        <Paper>
         <div className="flex items-center justify-between gap-2">
           <h2
             id="report-modal-title"
-            className="text-base sm:text-[17px] font-semibold text-[#18181b]"
+            className="pr-10 font-display text-2xl font-semibold"
           >
             {modalTitle}
           </h2>
@@ -158,13 +168,13 @@ export function ReportModal({
             type="button"
             onClick={handleClose}
             aria-label="ปิดหน้าต่างรายงาน"
-            className="w-7 h-7 rounded-md flex items-center justify-center text-[#71717a] hover:text-[#18181b] hover:bg-zinc-100 transition-colors cursor-pointer"
+            className="absolute right-3 top-3 z-10 flex size-9 items-center justify-center rounded-full text-ink-soft hover:bg-butter hover:text-ink cursor-pointer"
           >
-            ✕
+            <Icon name="x" className="size-5" />
           </button>
         </div>
 
-        <p className="text-[13px] text-[#71717a] mt-1.5 mb-3.5">
+        <p className="text-sm text-ink-soft mt-1.5 mb-4">
           {modalDescription}
         </p>
 
@@ -173,11 +183,7 @@ export function ReportModal({
             {REPORT_REASON_OPTIONS.map((option) => (
               <label
                 key={option.value}
-                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg border text-sm cursor-pointer transition-colors ${
-                  selectedReason === option.value
-                    ? 'border-[#18181b] bg-zinc-50 text-[#18181b] font-medium'
-                    : 'border-[#e4e4e7] bg-white text-[#18181b] hover:bg-zinc-50'
-                }`}
+                className={`${choiceClass} items-center`}
               >
                 <input
                   type="radio"
@@ -185,7 +191,7 @@ export function ReportModal({
                   value={option.value}
                   checked={selectedReason === option.value}
                   onChange={() => setSelectedReason(option.value)}
-                  className="accent-[#18181b]"
+                  className={radioClass}
                 />
                 <span>{option.label}</span>
               </label>
@@ -198,7 +204,7 @@ export function ReportModal({
               value={details}
               onChange={(e) => setDetails(e.target.value)}
               placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)..."
-              className="w-full rounded-lg border border-[#e4e4e7] bg-white p-3 text-sm text-[#18181b] placeholder:text-[#a1a1aa] focus:outline-none focus:border-zinc-400 resize-none"
+              className={`resize-none ${inputClass}`}
             />
           </div>
 
@@ -206,18 +212,19 @@ export function ReportModal({
             <button
               type="button"
               onClick={handleClose}
-              className="h-9 px-4 rounded-lg border border-[#e4e4e7] bg-white text-sm text-[#18181b] hover:bg-zinc-100 transition-colors cursor-pointer"
+              className={`h-9 px-4 ${secondaryButtonClass} cursor-pointer`}
             >
               ยกเลิก
             </button>
             <button
               type="submit"
-              className="h-9 px-4 rounded-lg bg-[#dc2626] text-white text-sm font-medium hover:bg-red-700 transition-colors cursor-pointer"
+              className={`h-9 px-4 ${primaryButtonClass} cursor-pointer`}
             >
               ส่งรายงาน
             </button>
           </div>
         </form>
+        </Paper>
       </div>
     </div>
   );

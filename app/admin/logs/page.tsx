@@ -152,11 +152,11 @@ export default function AdminLogsPage() {
       {/* หัวหน้า + ค้นหา */}
       <div className="flex flex-wrap items-start justify-between gap-6">
         <div>
-          <h1 className="font-display text-[28px] font-bold leading-tight tracking-tight">บันทึกกิจกรรม</h1>
+          <h1 className="font-display text-2xl font-bold leading-tight tracking-tight sm:text-[28px]">บันทึกกิจกรรม</h1>
           <p className="mt-1 text-sm text-ink-soft">บันทึกกิจกรรมของระบบและผู้ดูแล</p>
         </div>
 
-        <div className="relative w-80 max-w-full">
+        <div className="relative w-full sm:w-80">
           <svg
             className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft/70"
             viewBox="0 0 16 16"
@@ -281,7 +281,7 @@ export default function AdminLogsPage() {
         </p>
 
         {totalPages > 1 && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setPage(currentPage - 1)}
               disabled={currentPage === 1}
