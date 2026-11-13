@@ -20,6 +20,8 @@ async function AdminGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+export const instant = false;
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen bg-cream text-ink">
