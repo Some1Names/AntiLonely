@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import CreateButton from "@/component/CreateButton";
 import Icon from "@/component/Icon";
 import RandomRoomButton from "@/component/RandomRoom";
 import { useRoomMembership } from "@/component/RoomMembership";
-import { defaultRoomEmoji, type MyRoom } from "@/lib/mock";
+import { defaultRoomEmoji } from "@/lib/mock";
 import { indexCardClass, outlineButtonClass } from "@/lib/styles";
 
 // Room icons sit on pastel paper squares. Private rooms are always blue grey
@@ -13,15 +12,9 @@ import { indexCardClass, outlineButtonClass } from "@/lib/styles";
 const tileColors = ["border-butter-edge bg-butter", "border-peach-edge bg-peach"];
 
 // An index card down the side: the rooms you've joined, which change as you
-// join and leave, then ways to find more. `rooms` is the starting list the
-// create modal offers.
-export default function Sidebar({
-  rooms,
-  alias,
-}: {
-  rooms: MyRoom[];
-  alias: string;
-}) {
+// join and leave, then a way to find more. Creating a room lives in the header
+// and the welcome note.
+export default function Sidebar() {
   const { joinedRooms } = useRoomMembership();
 
   return (
@@ -73,20 +66,6 @@ export default function Sidebar({
           ยังไม่ได้เข้าห้องไหนเลย ลองสุ่มดูไหม
         </p>
       )}
-      <CreateButton
-        rooms={rooms}
-        alias={alias}
-        tab="room"
-        className="group flex items-center gap-3 rounded-lg px-2 py-1.5 text-left text-sm text-ink-soft hover:bg-butter/70 hover:text-ink"
-      >
-        <span
-          aria-hidden="true"
-          className="flex size-8 shrink-0 items-center justify-center rounded-lg border-[1.5px] border-dashed border-edge-strong group-hover:border-ink-soft"
-        >
-          <Icon name="plus" className="size-4" />
-        </span>
-        สร้างห้องใหม่
-      </CreateButton>
       <RandomRoomButton
         className={`group mt-2 flex items-center justify-center gap-2 px-3 py-2 ${outlineButtonClass}`}
       >

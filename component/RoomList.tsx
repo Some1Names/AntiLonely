@@ -20,6 +20,8 @@ const filters = [
   { id: "private", label: "ส่วนตัว", icon: "lock" },
 ] as const;
 
+const maxRoomsBeforeMore = 6;
+
 type FilterId = (typeof filters)[number]["id"];
 
 function matchesFilter(room: Room, filter: FilterId) {
@@ -125,16 +127,19 @@ export default function RoomList({
               </ViewTransition>
             ))}
           </ul>
-          <button
-            type="button"
-            className="group flex items-center gap-1.5 self-center rounded-full px-4 py-2 text-sm font-semibold text-kmutt-orange-dark hover:bg-peach/70"
-          >
-            ดูห้องเพิ่ม
-            <Icon
-              name="chevron-down"
-              className="size-4 group-hover:translate-y-0.5 motion-safe:transition-transform"
-            />
-          </button>
+          {/* Nothing more to load when the list is short. */}
+          {shown.length > maxRoomsBeforeMore && (
+            <button
+              type="button"
+              className="group flex items-center gap-1.5 self-center rounded-full px-4 py-2 text-sm font-semibold text-kmutt-orange-dark hover:bg-peach/70"
+            >
+              ดูห้องเพิ่ม
+              <Icon
+                name="chevron-down"
+                className="size-4 group-hover:translate-y-0.5 motion-safe:transition-transform"
+              />
+            </button>
+          )}
         </>
       ) : (
         <EmptyRooms query={search} onReset={reset} />

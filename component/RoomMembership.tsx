@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, use, useState } from "react";
+import { createContext, use, useEffect, useState } from "react";
+import { authClient } from "@/lib/auth-client";
 import LeaveRoomModal from "@/component/LeaveRoomModal";
 import {
   joinedRooms as listJoinedRooms,
@@ -8,6 +9,7 @@ import {
   leaveRoom,
   membershipFrom,
   membershipStatus,
+  membershipStorageKey,
   type Membership,
   type MembershipStatus,
 } from "@/lib/membership";
@@ -52,6 +54,40 @@ export default function RoomMembership({
 }) {
   const [membership, setMembership] = useState(() => membershipFrom(myRooms));
   const [leaving, setLeaving] = useState<Room | null>(null);
+  const userId = authClient.useSession().data?.user.id;
+  const storageKey = userId ? membershipStorageKey(userId) : null;
+  // Which user's saved membership is already loaded, so we don't save the
+  // starting mock list over it before it has been read.
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+
+  // Once we know who is signed in, pick up what they joined last time.
+  useEffect(() => {
+    if (!storageKey) return;
+    let cancelled = false;
+    // Deferred so the state update isn't synchronous inside the effect.
+    queueMicrotask(() => {
+      if (cancelled) return;
+      try {
+        const saved = localStorage.getItem(storageKey);
+        if (saved) setMembership(JSON.parse(saved) as Membership);
+      } catch {
+        // Storage blocked or corrupt: keep the starting list.
+      }
+      setLoadedKey(storageKey);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (!storageKey || loadedKey !== storageKey) return;
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(membership));
+    } catch {
+      // Not saved; membership still works for this visit.
+    }
+  }, [membership, storageKey, loadedKey]);
 
   const value: RoomMembershipValue = {
     rooms,

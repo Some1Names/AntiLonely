@@ -2,6 +2,7 @@ import Link from "next/link";
 import AccountMenu from "@/component/AccountMenu";
 import CreateButton from "@/component/CreateButton";
 import Icon from "@/component/Icon";
+import NotificationBadge from "@/component/NotificationBadge";
 import { currentUser, myRooms, type MyRoom } from "@/lib/mock";
 import { primaryButtonClass } from "@/lib/styles";
 
@@ -47,11 +48,7 @@ export default function Header({
           >
             <Icon name="bell" className="size-4" />
             <span className="sr-only sm:not-sr-only">โนติ</span>
-            {notifications > 0 && (
-              <span className="rounded-full bg-kmutt-orange-dark px-1.5 text-xs leading-5 text-white">
-                {notifications}
-              </span>
-            )}
+            <NotificationBadge initial={notifications} />
           </Link>
           <AccountMenu />
         </div>
