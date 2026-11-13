@@ -24,6 +24,20 @@ type Props = {
   onReportSubmitted?: (message?: string) => void;
 };
 
+// One shared empty list, so a post without reactions gets the same array on
+// every render instead of a new one that looks like a change.
+const noReactions: NonNullable<Props["reactions"]> = [];
+
+function toReactionItems(
+  reactions: NonNullable<Props["reactions"]>
+): ReactionItem[] {
+  return reactions.map((r) => ({
+    emoji: r.emoji,
+    count: r.count,
+    reactedByMe: Boolean(r.reactedByMe),
+  }));
+}
+
 export default function PostCard({
   id,
   roomId,
@@ -34,29 +48,23 @@ export default function PostCard({
   content,
   isOwner = false,
   isEdited = false,
-  reactions: initialReactions = [],
+  reactions: initialReactions = noReactions,
   replyCount,
   onEditPost,
   onDeletePost,
   onReportSubmitted,
 }: Props) {
   const [reactions, setReactions] = useState<ReactionItem[]>(() =>
-    initialReactions.map((r) => ({
-      emoji: r.emoji,
-      count: r.count,
-      reactedByMe: Boolean(r.reactedByMe),
-    }))
+    toReactionItems(initialReactions)
   );
 
-  useEffect(() => {
-    setReactions(
-      initialReactions.map((r) => ({
-        emoji: r.emoji,
-        count: r.count,
-        reactedByMe: Boolean(r.reactedByMe),
-      }))
-    );
-  }, [initialReactions]);
+  // When the parent sends a new list, start again from it. Done while
+  // rendering (not in an effect) so there's no extra render with stale data.
+  const [seenReactions, setSeenReactions] = useState(initialReactions);
+  if (seenReactions !== initialReactions) {
+    setSeenReactions(initialReactions);
+    setReactions(toReactionItems(initialReactions));
+  }
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isReporting, setIsReporting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
