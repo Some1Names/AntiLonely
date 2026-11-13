@@ -9,6 +9,7 @@ import {
   aggregateReactions,
   canMemberEditPostInRoom,
   canMemberPostInRoom,
+  canMemberReactInRoom,
   DEFAULT_ROOM_EMOJI,
   getStartOfBangkokDay,
   isUuid,
@@ -38,7 +39,12 @@ export interface RoomBoardViewer {
 }
 
 export interface RoomBoardData {
-  room: Room & { slug: string; rulesList: string[]; isLocked: boolean };
+  room: Room & {
+    slug: string;
+    totalPosts: number;
+    rulesList: string[];
+    isLocked: boolean;
+  };
   membership: RoomBoardMembershipState;
   initialPosts: BoardPostSummary[];
   currentUser: RoomBoardViewer | null;
@@ -586,7 +592,7 @@ export async function toggleRoomPostReaction(input: {
         },
         select: {
           id: true,
-          room: { select: { slug: true, status: true } },
+          room: { select: { slug: true, status: true, passwordHash: true } },
         },
       }),
       prisma.roomMember.findUnique({
@@ -604,8 +610,12 @@ export async function toggleRoomPostReaction(input: {
       return { ok: false, error: 'ไม่พบกระทู้ที่ต้องการรีแอคชัน' };
     }
 
-    if (member?.status === 'muted' || member?.status === 'banned') {
-      return { ok: false, error: 'คุณไม่มีสิทธิ์ทำรายการในห้องนี้' };
+    const reactPermission = canMemberReactInRoom({
+      isPrivate: Boolean(post.room.passwordHash),
+      memberStatus: member?.status,
+    });
+    if (!reactPermission.ok) {
+      return reactPermission;
     }
 
     const updatedReactions = await prisma.$transaction(async (tx) => {

@@ -1,31 +1,23 @@
 import { createHash, randomInt } from 'node:crypto';
+import {
+  isUuidString,
+  isValidRoomSlug,
+  RESERVED_ROOM_SLUGS,
+  ROOM_SLUG_COLLISION_SUFFIX_LENGTH,
+  ROOM_SLUG_FALLBACK_CODE_LENGTH,
+  ROOM_SLUG_MAX_BASE_LENGTH,
+} from './room-slug-validation.ts';
 
-export const ROOM_SLUG_MAX_BASE_LENGTH = 48;
-export const ROOM_SLUG_FALLBACK_CODE_LENGTH = 6;
-export const ROOM_SLUG_COLLISION_SUFFIX_LENGTH = 4;
-
-export const RESERVED_ROOM_SLUGS: ReadonlySet<string> = new Set([
-  'new',
-  'edit',
-  'admin',
-  'api',
-  'login',
-  'logout',
-  'signup',
-  'register',
-  'auth',
-  'rooms',
-  'posts',
-  'notifications',
-  'profile',
-  'settings',
-]);
+export {
+  isUuidString,
+  isValidRoomSlug,
+  RESERVED_ROOM_SLUGS,
+  ROOM_SLUG_COLLISION_SUFFIX_LENGTH,
+  ROOM_SLUG_FALLBACK_CODE_LENGTH,
+  ROOM_SLUG_MAX_BASE_LENGTH,
+};
 
 const ALPHANUMERIC_CHARS = '0123456789abcdefghijklmnopqrstuvwxyz';
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const VALID_SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const ROOM_SLUG_MAX_LENGTH = 80;
 
 function deterministicCode(seedKey: string, length: number): string {
   return createHash('sha256')
@@ -40,21 +32,6 @@ function randomCode(length: number): string {
     out += ALPHANUMERIC_CHARS[randomInt(0, ALPHANUMERIC_CHARS.length)];
   }
   return out;
-}
-
-/** Returns true if value is a canonical RFC 4122 / Postgres UUID string. */
-export function isUuidString(value: string): boolean {
-  return UUID_REGEX.test(value.trim());
-}
-
-/** Validates that a room slug consists only of lowercase [a-z0-9] tokens separated by single hyphens. */
-export function isValidRoomSlug(value: string): boolean {
-  return (
-    value.length >= 1 &&
-    value.length <= ROOM_SLUG_MAX_LENGTH &&
-    VALID_SLUG_REGEX.test(value) &&
-    !isUuidString(value)
-  );
 }
 
 /**

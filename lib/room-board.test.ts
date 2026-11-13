@@ -4,6 +4,7 @@ import {
   aggregateReactions,
   canMemberEditPostInRoom,
   canMemberPostInRoom,
+  canMemberReactInRoom,
   DEFAULT_ROOM_RULES,
   getStartOfBangkokDay,
   isUuid,
@@ -273,6 +274,37 @@ describe('room-board domain & DB mapping', () => {
     assert.deepEqual(
       canMemberEditPostInRoom({ isLocked: true, memberStatus: 'active' }),
       { ok: false, error: 'ห้องนี้ถูกล็อกชั่วคราว ไม่สามารถแก้ไขกระทู้ได้' }
+    );
+  });
+
+  it('blocks muted, banned, and private-room non-members from reacting', () => {
+    assert.deepEqual(
+      canMemberReactInRoom({ isPrivate: false, memberStatus: null }),
+      { ok: true }
+    );
+    assert.deepEqual(
+      canMemberReactInRoom({ isPrivate: false, memberStatus: 'active' }),
+      { ok: true }
+    );
+    assert.deepEqual(
+      canMemberReactInRoom({ isPrivate: true, memberStatus: 'active' }),
+      { ok: true }
+    );
+    assert.equal(
+      canMemberReactInRoom({ isPrivate: true, memberStatus: null }).ok,
+      false
+    );
+    assert.equal(
+      canMemberReactInRoom({ isPrivate: true, memberStatus: 'left' }).ok,
+      false
+    );
+    assert.equal(
+      canMemberReactInRoom({ isPrivate: false, memberStatus: 'muted' }).ok,
+      false
+    );
+    assert.equal(
+      canMemberReactInRoom({ isPrivate: false, memberStatus: 'banned' }).ok,
+      false
     );
   });
 });

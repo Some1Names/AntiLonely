@@ -5,7 +5,7 @@ import type {
   RoomBoardMembershipState,
 } from '@/types/post-thread';
 import { DAY_MS, formatRelativeTimeThai } from './post-thread.ts';
-import { isUuidString, isValidRoomSlug } from './room-slug.ts';
+import { isUuidString, isValidRoomSlug } from './room-slug-validation.ts';
 
 export const DEFAULT_ROOM_EMOJI = '💬';
 
@@ -100,6 +100,26 @@ export function canMemberPostInRoom(input: {
     return {
       ok: false,
       error: 'คุณถูกระงับสิทธิ์การใช้งานในห้องนี้',
+    };
+  }
+  return { ok: true };
+}
+
+/** Validates whether a user may toggle post reactions in a public or private room. */
+export function canMemberReactInRoom(input: {
+  isPrivate: boolean;
+  memberStatus: DbMemberStatus | null | undefined;
+}): { ok: true } | { ok: false; error: string } {
+  if (input.memberStatus === 'muted' || input.memberStatus === 'banned') {
+    return {
+      ok: false,
+      error: 'คุณไม่มีสิทธิ์ทำรายการในห้องนี้',
+    };
+  }
+  if (input.isPrivate && input.memberStatus !== 'active') {
+    return {
+      ok: false,
+      error: 'เฉพาะสมาชิกของห้องส่วนตัวเท่านั้นที่สามารถกดรีแอคชันได้',
     };
   }
   return { ok: true };
