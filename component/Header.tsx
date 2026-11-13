@@ -2,19 +2,20 @@ import Link from "next/link";
 import AccountMenu from "@/component/AccountMenu";
 import CreateButton from "@/component/CreateButton";
 import Icon from "@/component/Icon";
-import type { MyRoom } from "@/lib/mock";
+import NotificationBadge from "@/component/NotificationBadge";
+import { currentUser, myRooms, type MyRoom } from "@/lib/mock";
 import { primaryButtonClass } from "@/lib/styles";
 
 // A strip of paper along the top with a stitched (dashed) edge. On phones
 // "สร้าง" and "โนติ" collapse to their icons so everything fits on one line.
 export default function Header({
   notifications,
-  rooms,
-  alias,
+  rooms = myRooms,
+  alias = currentUser.alias,
 }: {
   notifications: number;
-  rooms: MyRoom[];
-  alias: string;
+  rooms?: MyRoom[];
+  alias?: string;
 }) {
   return (
     <header className="border-b-2 border-dashed border-edge-strong bg-paper">
@@ -47,11 +48,7 @@ export default function Header({
           >
             <Icon name="bell" className="size-4" />
             <span className="sr-only sm:not-sr-only">โนติ</span>
-            {notifications > 0 && (
-              <span className="rounded-full bg-kmutt-orange-dark px-1.5 text-xs leading-5 text-white">
-                {notifications}
-              </span>
-            )}
+            <NotificationBadge initial={notifications} />
           </Link>
           <AccountMenu />
         </div>

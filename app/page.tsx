@@ -17,7 +17,7 @@ export default function Home() {
           alias={currentUser.alias}
         />
         <div className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-6 md:grid-cols-[200px_1fr] lg:grid-cols-[1fr_3fr]">
-          <Sidebar rooms={myRooms} alias={currentUser.alias} />
+          <Sidebar />
           <HomeMain rooms={rooms}>
             <PostBox username={currentUser.name} rooms={myRooms} />
           </HomeMain>

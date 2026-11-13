@@ -60,7 +60,7 @@ function UserChart({
           y1="48"
           x2="390"
           y2="48"
-          stroke="#e5e7eb"
+          stroke="var(--color-edge-strong)"
           strokeWidth="1"
         />
 
@@ -68,7 +68,7 @@ function UserChart({
           <polyline
             points={points}
             fill="none"
-            stroke="#19191d"
+            stroke="var(--color-ink)"
             strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -114,7 +114,7 @@ function PostsChart({
               title={`${labels[index]}: ${value} โพสต์`}
             >
               <div
-                className="w-full max-w-[20px] rounded-t-[4px] bg-[#19191d]"
+                className="w-full max-w-[20px] rounded-t-[4px] bg-ink"
                 style={{ height: `${height}px` }}
               />
             </div>
@@ -212,7 +212,7 @@ export default function AdminDashboard({
     <div className="w-full">
       {/* Header */}
       <header className="mb-6">
-        <h1 className="font-display text-[28px] font-bold leading-tight text-[#19191d]">
+        <h1 className="font-display text-2xl font-bold sm:text-[28px] leading-tight text-ink">
           แดชบอร์ด
         </h1>
         <p className="mt-1 text-sm text-ink-soft">
@@ -233,7 +233,7 @@ export default function AdminDashboard({
 
             <p
               className={`mt-3 text-[30px] font-bold leading-none ${
-                card.danger ? "text-[#ef4444]" : "text-[#19191d]"
+                card.danger ? "text-red-700" : "text-ink"
               }`}
             >
               {formatNumber(card.value)}
@@ -241,7 +241,7 @@ export default function AdminDashboard({
 
             <p
               className={`mt-3 text-xs ${
-                card.danger ? "text-[#ef4444]" : "text-ink-soft"
+                card.danger ? "text-red-700" : "text-ink-soft"
               }`}
             >
               {card.description}
@@ -253,7 +253,7 @@ export default function AdminDashboard({
       {/* Charts */}
       <section className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-2">
         <div className="min-w-0 rounded-[12px] border border-edge-strong bg-white px-6 py-6">
-          <h2 className="text-base font-bold text-[#19191d]">
+          <h2 className="text-base font-bold text-ink">
             การเติบโตของผู้ใช้
           </h2>
           <p className="text-xs text-ink-soft">
@@ -264,7 +264,7 @@ export default function AdminDashboard({
         </div>
 
         <div className="min-w-0 rounded-[12px] border border-edge-strong bg-white px-6 py-6">
-          <h2 className="text-base font-bold text-[#19191d]">
+          <h2 className="text-base font-bold text-ink">
             โพสต์ต่อวัน
           </h2>
           <p className="text-xs text-ink-soft">
@@ -277,7 +277,7 @@ export default function AdminDashboard({
 
       {/* Recent Activities */}
       <section className="mt-6 rounded-[12px] border border-edge-strong bg-white px-6 py-6">
-        <h2 className="mb-4 text-base font-bold text-[#19191d]">
+        <h2 className="mb-4 text-base font-bold text-ink">
           กิจกรรมล่าสุด
         </h2>
 
@@ -294,7 +294,7 @@ export default function AdminDashboard({
               >
                 <ActivityIcon type={activity.type} />
 
-                <p className="min-w-0 flex-1 truncate text-sm text-[#303036]">
+                <p className="min-w-0 flex-1 truncate text-sm text-ink">
                   {activity.text}
                 </p>
 

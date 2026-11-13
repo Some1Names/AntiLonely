@@ -71,8 +71,8 @@ export const rooms: Room[] = [
     id: "songs",
     name: "บริจาคเพลง",
     description:
-      "ขอเพลงเศร้า ๆ จนพี่ในห้องนอกเปลี่ยนเพลงเถอะเศร้าจนจะตายอีกรอบแล้ว",
-    members: 640,
+      "ขอเพลงเศร้า ๆ จนผีในห้องบอกเปลี่ยนเพลงเถอะ เศร้าจนจะตายอีกรอบแล้ว",
+    members: 482,
     postsToday: 31,
     isPrivate: false,
     isNew: true,

@@ -235,6 +235,7 @@ model Room {
   creator  User?        @relation(fields: [creatorId], references: [id], onDelete: SetNull)
   members  RoomMember[]
   messages Message[]
+  reports  Report[]
 
   @@index([creatorId])
   @@map("rooms")
@@ -307,13 +308,16 @@ model Report {
   // Nullable so the report survives if the reporter's account is deleted.
   reporterId String?      @map("reporter_id") @db.Uuid
   messageId  String       @map("message_id") @db.Uuid
+  roomId     String       @map("room_id") @db.Uuid
 
   reporter User?   @relation(fields: [reporterId], references: [id], onDelete: SetNull)
   message  Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  room     Room    @relation(fields: [roomId], references: [id], onDelete: Cascade)
 
   // A user can report the same message only once.
   @@unique([reporterId, messageId])
   @@index([messageId])
+  @@index([roomId])
   @@index([status, createdAt])
   @@map("reports")
 }
