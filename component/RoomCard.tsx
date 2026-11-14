@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Icon from "@/component/Icon";
 import JoinButton from "@/component/JoinButton";
+import LinkPending from "@/component/LinkPending";
 import Tape from "@/component/Tape";
 import { formatCount } from "@/lib/format";
 import { DEFAULT_ROOM_EMOJI } from "@/lib/room-board";
@@ -36,6 +37,8 @@ export default function RoomCard({ room }: { room: Room }) {
                 className="outline-none after:absolute after:inset-0 after:rounded-xl"
               >
                 {room.name}
+                {/* On the card's corner while the room page loads. */}
+                <LinkPending className="-right-2.5 -top-2.5" />
               </Link>
             </h3>
             <RoomTags room={room} />

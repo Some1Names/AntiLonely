@@ -1,4 +1,5 @@
 import Link from "next/link";
+import LinkPending from "@/component/LinkPending";
 import Icon from "@/component/Icon";
 import Paper from "@/component/Paper";
 import { highlightClass } from "@/lib/styles";
@@ -50,8 +51,10 @@ export function AuthLink({
   children: React.ReactNode;
 }) {
   return inModal ? (
-    <Link href={href} replace className={className}>
+    <Link href={href} replace className={`relative ${className}`}>
       {children}
+      {/* The next form may take a moment to load the first time. */}
+      <LinkPending className="-right-7 top-1/2 -translate-y-1/2" />
     </Link>
   ) : (
     <a href={href} className={className}>

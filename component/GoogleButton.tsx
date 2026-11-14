@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Spinner from "@/component/Spinner";
 import { authClient } from "@/lib/auth-client";
 import { outlineButtonClass } from "@/lib/styles";
 
@@ -38,7 +39,7 @@ export default function GoogleButton({ label }: { label: string }) {
         disabled={pending}
         className={`flex items-center justify-center gap-2 py-2.5 ${outlineButtonClass} disabled:cursor-wait disabled:opacity-60 disabled:shadow-none disabled:active:translate-0`}
       >
-        <GoogleLogo />
+        {pending ? <Spinner /> : <GoogleLogo />}
         {pending ? "กำลังไปที่ Google…" : label}
       </button>
       {error && (

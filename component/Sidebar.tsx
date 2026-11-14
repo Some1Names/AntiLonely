@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Icon from "@/component/Icon";
+import LinkPending from "@/component/LinkPending";
 import RandomRoomButton from "@/component/RandomRoom";
 import { useRoomMembership } from "@/component/RoomMembership";
 import { DEFAULT_ROOM_EMOJI } from "@/lib/room-board";
@@ -34,7 +35,7 @@ export default function Sidebar() {
             <li key={room.id}>
               <Link
                 href={`/rooms/${room.slug ?? room.id}`}
-                className="group flex w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-butter/70"
+                className="group relative flex w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-butter/70"
               >
                 <span
                   aria-hidden="true"
@@ -57,6 +58,7 @@ export default function Sidebar() {
                     ส่วนตัว
                   </span>
                 ) : null}
+                <LinkPending className="right-1 top-1/2 -translate-y-1/2" />
               </Link>
             </li>
           ))}

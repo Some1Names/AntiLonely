@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState, useTransition } from "react";
 import AuthCard, { AuthLink } from "@/component/AuthCard";
+import Spinner from "@/component/Spinner";
 import GoogleButton from "@/component/GoogleButton";
 import PasswordInput from "@/component/PasswordInput";
 import { authClient } from "@/lib/auth-client";
@@ -17,6 +18,10 @@ import {
 export default function LoginForm({ inModal = false }: { inModal?: boolean }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
+  // Signed in: the modal stays busy until the home page has taken over, so
+  // the button doesn't come back to life in between.
+  const [navigating, startNavigation] = useTransition();
+  const busy = pending || navigating;
   const [error, setError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -45,6 +50,7 @@ export default function LoginForm({ inModal = false }: { inModal?: boolean }) {
         className="flex flex-col gap-4"
         onSubmit={async (event) => {
           event.preventDefault();
+          if (busy) return;
           const formElement = event.currentTarget;
           const form = new FormData(formElement);
           setPending(true);
@@ -63,8 +69,10 @@ export default function LoginForm({ inModal = false }: { inModal?: boolean }) {
           formElement.reset();
           setPending(false);
           // Going to / closes the modal; refresh lets server components see the session.
-          router.push("/");
-          router.refresh();
+          startNavigation(() => {
+            router.push("/");
+            router.refresh();
+          });
         }}
       >
         <div className="flex flex-col gap-1">
@@ -108,10 +116,11 @@ export default function LoginForm({ inModal = false }: { inModal?: boolean }) {
         )}
         <button
           type="submit"
-          disabled={pending}
-          className={`py-2.5 ${primaryButtonClass} ${disabledButtonClass}`}
+          disabled={busy}
+          className={`flex items-center justify-center gap-2 py-2.5 ${primaryButtonClass} ${disabledButtonClass}`}
         >
-          {pending ? "กำลังเข้าสู่ระบบ…" : "เข้าสู่ระบบ"}
+          {busy && <Spinner />}
+          {busy ? "กำลังเข้าสู่ระบบ…" : "เข้าสู่ระบบ"}
         </button>
       </form>
       <GoogleButton label="เข้าสู่ระบบด้วย Google" />

@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 import AuthCard, { AuthLink } from "@/component/AuthCard";
+import Spinner from "@/component/Spinner";
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-errors";
 import { RESET_LINK_LIFETIME_SECONDS } from "@/lib/email";
@@ -74,6 +75,7 @@ export default function ForgotPasswordForm({ inModal = false }: { inModal?: bool
         className="flex flex-col gap-4"
         onSubmit={async (event) => {
           event.preventDefault();
+          if (pending) return;
           const email = String(new FormData(event.currentTarget).get("email")).trim();
           setPending(true);
           setError(null);
@@ -112,8 +114,9 @@ export default function ForgotPasswordForm({ inModal = false }: { inModal?: bool
         <button
           type="submit"
           disabled={pending}
-          className={`py-2.5 ${primaryButtonClass} ${disabledButtonClass}`}
+          className={`flex items-center justify-center gap-2 py-2.5 ${primaryButtonClass} ${disabledButtonClass}`}
         >
+          {pending && <Spinner />}
           {pending ? "กำลังส่ง…" : "ส่งลิงก์ให้หน่อย"}
         </button>
       </form>

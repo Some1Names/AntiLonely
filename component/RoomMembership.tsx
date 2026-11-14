@@ -28,6 +28,8 @@ type RoomMembershipValue = {
   // "ห้องของฉัน" as it stands now.
   joinedRooms: MyRoom[];
   isJoined: (roomId: string) => boolean;
+  // A join or leave for this room is still being saved.
+  isSaving: (roomId: string) => boolean;
   join: (room: Room) => void;
   // Opens the leave modal; the room is only left once it's confirmed.
   askToLeave: (room: Room) => void;
@@ -90,6 +92,12 @@ export default function RoomMembership({
         ? joinRoom(current, { id: room.id, isPrivate: false })
         : leaveRoom(current, room.id),
   );
+  // Rooms with a save on its way. It clears itself once the save and the
+  // refreshed page are in, like the membership above.
+  const [saving, markSaving] = useOptimistic(
+    [] as string[],
+    (ids: string[], roomId: string) => [...ids, roomId],
+  );
   const [, startTransition] = useTransition();
   const [leaving, setLeaving] = useState<Room | null>(null);
   // Why the last join or leave didn't go through.
@@ -105,8 +113,12 @@ export default function RoomMembership({
       askToSignIn();
       return;
     }
+    // One save per room at a time: a second press, or the leave sheet's
+    // button pressed twice while it closes, is ignored.
+    if (saving.includes(room.id)) return;
     setProblem(null);
     startTransition(async () => {
+      markSaving(room.id);
       // A private room is going to be refused, so don't show it as joined.
       if (action === "leave" || !room.isPrivate) showChange({ room, action });
       try {
@@ -123,6 +135,7 @@ export default function RoomMembership({
     membership,
     joinedRooms: listJoinedRooms(myRooms, rooms, membership),
     isJoined: (roomId) => membershipStatus(membership, roomId) === "joined",
+    isSaving: (roomId) => saving.includes(roomId),
     join: (room) => change(room, "join"),
     askToLeave: setLeaving,
     signedIn,
