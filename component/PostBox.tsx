@@ -2,8 +2,9 @@
 
 import { authClient } from "@/lib/auth-client";
 import Icon from "@/component/Icon";
+import { useJoinedRooms } from "@/component/RoomMembership";
 import Tape from "@/component/Tape";
-import type { MyRoom } from "@/lib/mock";
+import type { MyRoom } from "@/types/room";
 import {
   fieldFrameClass,
   highlightClass,
@@ -14,16 +15,19 @@ import {
 // A sticky note taped to the page, outlined like a sticker, with a doodle in
 // the corner.
 export default function PostBox({
-  username,
+  name,
   rooms,
 }: {
-  username: string;
+  // The signed-in person's nickname; null when nobody is signed in.
+  name: string | null;
   rooms: MyRoom[];
 }) {
-  // Show the signed-in user's own name; `username` is the fallback while the
-  // session loads or when nobody is signed in.
+  // The session knows about a name change (edit profile) before the page is
+  // loaded again.
   const { data: session } = authClient.useSession();
-  const displayName = session?.user.name || username;
+  const displayName = session?.user.name || name;
+  // Follows what you join and leave on this page.
+  const joinedRooms = useJoinedRooms(rooms);
 
   return (
     <section className="relative -rotate-[0.4deg] rounded-lg border-[1.5px] border-ink bg-butter p-6 shadow-sticker-lg sm:p-7">
@@ -33,7 +37,13 @@ export default function PostBox({
         className="absolute right-5 top-5 size-8 rotate-12 fill-current text-kmutt-orange"
       />
       <h1 className="pr-10 font-display text-2xl font-semibold sm:text-3xl">
-        ยินดีต้อนรับน้า, <span className={highlightClass}>{displayName}</span> 👋
+        ยินดีต้อนรับน้า
+        {displayName && (
+          <>
+            , <span className={highlightClass}>{displayName}</span>
+          </>
+        )}{" "}
+        👋
       </h1>
       <p className="mt-2 text-sm text-ink-soft sm:text-base">
         วันนี้เป็นยังไงบ้าง? อยากถาม อยากเล่า หรืออยากระบายก็ได้นะ
@@ -54,9 +64,11 @@ export default function PostBox({
         </div>
         <select
           aria-label="เลือกห้อง"
+          disabled={joinedRooms.length === 0}
           className={`px-3 py-2.5 sm:w-auto ${fieldFrameClass}`}
         >
-          {rooms.map((room) => (
+          {joinedRooms.length === 0 && <option>ยังไม่ได้เข้าห้องไหน</option>}
+          {joinedRooms.map((room) => (
             <option key={room.id} value={room.id}>
               {room.name}
             </option>

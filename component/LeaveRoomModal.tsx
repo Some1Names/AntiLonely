@@ -3,7 +3,8 @@
 import Icon from "@/component/Icon";
 import Modal from "@/component/Modal";
 import Sheet from "@/component/Sheet";
-import { defaultRoomEmoji, type Room } from "@/lib/mock";
+import { DEFAULT_ROOM_EMOJI } from "@/lib/room-board";
+import type { Room } from "@/types/room";
 import {
   outlineButtonClass,
   roomLook,
@@ -32,7 +33,7 @@ export default function LeaveRoomModal({
             aria-hidden="true"
             className={`flex size-10 shrink-0 items-center justify-center rounded-lg border-[1.5px] text-xl ${tile}`}
           >
-            {room.emoji ?? defaultRoomEmoji}
+            {room.emoji ?? DEFAULT_ROOM_EMOJI}
           </span>
           <p className="min-w-0 truncate font-display text-lg font-semibold">
             {room.name}

@@ -1,4 +1,4 @@
-import type { MyRoom, Room } from "@/lib/mock";
+import type { MyRoom, Room } from "@/types/room";
 
 // Where you stand with each room: joined, or waiting on a request to join a
 // private one. Rooms you have nothing to do with are left out. Keys keep the

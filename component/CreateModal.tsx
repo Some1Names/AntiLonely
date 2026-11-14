@@ -4,7 +4,7 @@ import { useState } from "react";
 import Icon, { type IconName } from "@/component/Icon";
 import Modal from "@/component/Modal";
 import Sheet from "@/component/Sheet";
-import type { MyRoom } from "@/lib/mock";
+import type { MyRoom } from "@/types/room";
 import {
   choiceClass,
   disabledButtonClass,
@@ -96,7 +96,8 @@ function PostForm({
 }) {
   const [text, setText] = useState("");
   const [image, setImage] = useState<string | null>(null);
-  const canPost = text.trim().length > 0;
+  const hasRooms = rooms.length > 0;
+  const canPost = hasRooms && text.trim().length > 0;
 
   return (
     <form
@@ -110,14 +111,19 @@ function PostForm({
         <label htmlFor="post-room" className={labelClass}>
           ห้อง
         </label>
-        <select id="post-room" name="room" className={inputClass}>
+        <select id="post-room" name="room" disabled={!hasRooms} className={inputClass}>
+          {!hasRooms && <option>ยังไม่ได้เข้าห้องไหน</option>}
           {rooms.map((room) => (
             <option key={room.id} value={room.id}>
               {room.name}
             </option>
           ))}
         </select>
-        <p className={hintClass}>เลือกได้เฉพาะห้องที่เข้าร่วมแล้วนะ</p>
+        <p className={hintClass}>
+          {hasRooms
+            ? "เลือกได้เฉพาะห้องที่เข้าร่วมแล้วนะ"
+            : "เข้าร่วมสักห้องก่อน แล้วค่อยมาตั้งกระทู้นะ"}
+        </p>
       </div>
 
       <div className="flex flex-col gap-1">
@@ -155,10 +161,12 @@ function PostForm({
             onChange={(event) => setImage(event.target.files?.[0]?.name ?? null)}
           />
         </label>
-        <span className="flex items-center gap-2 rounded-full border-[1.5px] border-butter-edge bg-butter px-3 py-1 text-sm">
-          <span aria-hidden="true" className="size-2 rounded-full bg-green-600" />
-          โพสต์ในชื่อ <span className="font-semibold">{alias}</span>
-        </span>
+        {alias && (
+          <span className="flex items-center gap-2 rounded-full border-[1.5px] border-butter-edge bg-butter px-3 py-1 text-sm">
+            <span aria-hidden="true" className="size-2 rounded-full bg-green-600" />
+            โพสต์ในชื่อ <span className="font-semibold">{alias}</span>
+          </span>
+        )}
       </div>
 
       <div className="flex justify-end gap-2">

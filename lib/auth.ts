@@ -4,6 +4,12 @@ import { APIError } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { username } from "better-auth/plugins";
 import { randomBytes } from "node:crypto";
+import {
+  googleOnlyAccountEmail,
+  RESET_LINK_LIFETIME_SECONDS,
+  resetPasswordEmail,
+  sendEmail,
+} from "./email";
 import { prisma } from "./prisma";
 
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
@@ -28,6 +34,30 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: "postgresql" }),
   emailAndPassword: {
     enabled: true,
+    // ลืมรหัสผ่าน: Better Auth makes a one-time token and calls this with a
+    // link to /api/auth/reset-password/<token>, which checks the token and
+    // sends the person on to our /reset-password page. The request endpoint
+    // answers the same whether or not the email has an account, so failures
+    // here are logged, never thrown (a 500 would give that away).
+    sendResetPassword: async ({ user, url }) => {
+      try {
+        const hasPassword = await prisma.account.findFirst({
+          where: { userId: user.id, providerId: "credential" },
+          select: { id: true },
+        });
+        // Accounts made with Google have no password. Resetting would quietly
+        // add one, so tell them to use Google instead and send no link.
+        const message = hasPassword
+          ? resetPasswordEmail(user.email, url)
+          : googleOnlyAccountEmail(user.email, new URL("/login", url).href);
+        await sendEmail(message);
+      } catch (error) {
+        console.error("[auth] Could not send the password reset email", error);
+      }
+    },
+    resetPasswordTokenExpiresIn: RESET_LINK_LIFETIME_SECONDS,
+    // A reset is often because someone else got in: sign out everywhere.
+    revokeSessionsOnPasswordReset: true,
   },
   // Google sign-in is only switched on when its credentials are in .env, so
   // the app still runs for anyone who hasn't set them up.

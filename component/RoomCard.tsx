@@ -3,7 +3,8 @@ import Icon from "@/component/Icon";
 import JoinButton from "@/component/JoinButton";
 import Tape from "@/component/Tape";
 import { formatCount } from "@/lib/format";
-import { defaultRoomEmoji, type Room } from "@/lib/mock";
+import { DEFAULT_ROOM_EMOJI } from "@/lib/room-board";
+import type { Room } from "@/types/room";
 import { resolveRoomPostCountStats } from "@/lib/room-board";
 import { roomLook } from "@/lib/styles";
 
@@ -22,7 +23,7 @@ export default function RoomCard({ room }: { room: Room }) {
           aria-hidden="true"
           className={`flex size-11 shrink-0 items-center justify-center rounded-lg border-[1.5px] text-xl group-hover:-rotate-6 motion-safe:transition-transform ${tile}`}
         >
-          {room.emoji ?? defaultRoomEmoji}
+          {room.emoji ?? DEFAULT_ROOM_EMOJI}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
@@ -31,7 +32,7 @@ export default function RoomCard({ room }: { room: Room }) {
                   room; the join button sits above it and stays separate. The
                   card draws the focus ring for it. */}
               <Link
-                href={`/rooms/${room.id}`}
+                href={`/rooms/${room.slug ?? room.id}`}
                 className="outline-none after:absolute after:inset-0 after:rounded-xl"
               >
                 {room.name}

@@ -10,7 +10,7 @@ import {
 import EmptyRooms from "@/component/EmptyRooms";
 import Icon from "@/component/Icon";
 import RoomCard from "@/component/RoomCard";
-import type { Room } from "@/lib/mock";
+import type { Room } from "@/types/room";
 import { roomMatchesQuery } from "@/lib/search";
 import { highlightClass, stickerToggleClass } from "@/lib/styles";
 

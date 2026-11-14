@@ -1,7 +1,7 @@
 // Class strings shared across components. The look is a scrapbook: white
 // paper and stickers with an ink outline and a hard shadow (see design.md).
 
-import type { Room } from "@/lib/mock";
+import type { Room } from "@/types/room";
 
 // A text field's frame without padding, for fields that place an icon inside.
 export const fieldFrameClass =

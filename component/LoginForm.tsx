@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import AuthCard, { AuthLink } from "@/component/AuthCard";
 import GoogleButton from "@/component/GoogleButton";
 import PasswordInput from "@/component/PasswordInput";
@@ -18,6 +18,18 @@ export default function LoginForm({ inModal = false }: { inModal?: boolean }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Next hides this form on close instead of unmounting it. Without this the
+  // next open would still show the last error and the typed password.
+  useLayoutEffect(() => {
+    const form = formRef.current;
+    return () => {
+      form?.reset();
+      setError(null);
+      setPending(false);
+    };
+  }, []);
 
   return (
     <AuthCard
@@ -26,6 +38,10 @@ export default function LoginForm({ inModal = false }: { inModal?: boolean }) {
       subtitle="เข้าสู่ระบบแล้วไปคุยกันต่อเลย"
     >
       <form
+        ref={formRef}
+        // If this is submitted before the page's script has loaded, the
+        // browser sends it itself: post keeps the password out of the URL.
+        method="post"
         className="flex flex-col gap-4"
         onSubmit={async (event) => {
           event.preventDefault();
@@ -70,12 +86,13 @@ export default function LoginForm({ inModal = false }: { inModal?: boolean }) {
             <label htmlFor="login-password" className="text-sm font-semibold">
               รหัสผ่าน
             </label>
-            <button
-              type="button"
+            <AuthLink
+              href="/forgot-password"
+              inModal={inModal}
               className="py-1 text-xs text-ink-soft hover:text-kmutt-orange-dark"
             >
               ลืมรหัสผ่าน?
-            </button>
+            </AuthLink>
           </div>
           <PasswordInput
             id="login-password"

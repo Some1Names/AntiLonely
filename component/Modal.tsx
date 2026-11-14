@@ -7,10 +7,16 @@ import Icon from "@/component/Icon";
 const focusable =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-// Set while an auth modal is being hidden. A modal shown in the same update is
-// a switch between login and signup, which morphs (see the ViewTransition
-// below), so it skips the drop-in.
-let hidingModal = false;
+// The modal being hidden right now, if any, and how it was shown. A different
+// modal shown in the same update is a switch between login and signup, which
+// morphs (see the ViewTransition below), so it skips the drop-in. The same
+// modal showing again is only React's development double-run of effects, so
+// it goes back to how it was.
+let hidingModal: { backdrop: HTMLElement; shownAs: string | undefined } | null =
+  null;
+
+// The longest the close animation is waited for.
+const LIFT_TIMEOUT_MS = 400;
 
 // ×, Escape and clicking outside lift the sheet out first, then go back.
 // The browser's own Back closes it instantly; that can't be delayed.
@@ -19,7 +25,10 @@ function closeWithLift(backdrop: HTMLElement | null, back: () => void) {
   backdrop.dataset.modal = "leave";
   // With reduced motion there's nothing to wait for, so this goes back at once.
   const lift = backdrop.getAnimations({ subtree: true }).map((a) => a.finished);
-  Promise.allSettled(lift).then(() => back());
+  // Animations don't advance while the page isn't being painted (a background
+  // tab), so don't let closing depend on them alone.
+  const timeout = new Promise((resolve) => setTimeout(resolve, LIFT_TIMEOUT_MS));
+  Promise.race([Promise.allSettled(lift), timeout]).then(() => back());
 }
 
 // The wide sheet has tabs that change its height, so it sits a fixed
@@ -57,12 +66,16 @@ export default function Modal({
   useLayoutEffect(() => {
     const backdrop = backdropRef.current;
     if (!backdrop) return;
-    backdrop.dataset.modal = hidingModal ? "switch" : "open";
+    if (hidingModal?.backdrop === backdrop) {
+      backdrop.dataset.modal = hidingModal.shownAs;
+    } else {
+      backdrop.dataset.modal = hidingModal ? "switch" : "open";
+    }
     return () => {
+      hidingModal = { backdrop, shownAs: backdrop.dataset.modal };
       backdrop.dataset.modal = "hidden";
-      hidingModal = true;
       queueMicrotask(() => {
-        hidingModal = false;
+        hidingModal = null;
       });
     };
   }, []);
@@ -76,7 +89,11 @@ export default function Modal({
 
     const previousFocus = document.activeElement as HTMLElement | null;
     document.body.style.overflow = "hidden";
-    (dialog.querySelector<HTMLElement>("input, select, textarea") ?? dialog).focus();
+    (
+      dialog.querySelector<HTMLElement>(
+        "input:not([disabled]), select:not([disabled]), textarea:not([disabled])",
+      ) ?? dialog
+    ).focus();
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
@@ -87,7 +104,12 @@ export default function Modal({
       }
       if (event.key !== "Tab" || !dialog) return;
 
-      const items = [...dialog.querySelectorAll<HTMLElement>(focusable)];
+      // Skip anything hidden, such as the signup form while its rules view
+      // is showing: it can't take focus, so it can't be the first or last.
+      const items = [...dialog.querySelectorAll<HTMLElement>(focusable)].filter(
+        (item) => item.getClientRects().length > 0,
+      );
+      if (items.length === 0) return;
       const first = items[0];
       const last = items[items.length - 1];
       const outside = !dialog.contains(document.activeElement);
