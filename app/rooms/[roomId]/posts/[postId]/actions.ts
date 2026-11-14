@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
+import { toggleMessageReaction } from '@/lib/reaction-service';
 import {
   formatReportReason,
   getViewerUser,
@@ -17,7 +18,6 @@ import {
   validateCommentContent,
 } from '@/lib/post-thread-mapper';
 import {
-  aggregateReactions,
   canMemberEditPostInRoom,
   canMemberReactInRoom,
   DEFAULT_ROOM_EMOJI,
@@ -694,98 +694,20 @@ export async function toggleThreadReaction(input: {
   emoji: string;
 }): Promise<ActionResult<{ messageId: string; reactions: ReactionItem[] }>> {
   return runSafeMutation(async () => {
-    const viewer = await getViewerUser();
-    if (!viewer) {
-      return { ok: false, error: 'กรุณาเข้าสู่ระบบก่อนกดรีแอคชัน' };
-    }
-
-    const emoji = input.emoji.trim();
-    if (!emoji || emoji.length > 32) {
-      return { ok: false, error: 'อีโมจิไม่ถูกต้อง' };
-    }
-
-    const roomId = normalizeUuid(input.roomId);
-    const postId = normalizeUuid(input.postId);
-    const messageId = normalizeUuid(input.messageId);
-    if (!roomId || !postId || !messageId) {
-      return { ok: false, error: 'ไม่พบข้อความที่ต้องการกดรีแอคชัน' };
-    }
-
-    const context = await loadMutationContext({
-      roomId,
-      postId,
-      viewerId: viewer.id,
+    const result = await toggleMessageReaction({
+      roomId: input.roomId,
+      postId: input.postId,
+      messageId: input.messageId,
+      emoji: input.emoji,
     });
-    if (!context) {
-      return { ok: false, error: 'ไม่พบข้อความที่ต้องการกดรีแอคชัน' };
+    if (!result.ok) {
+      return { ok: false, error: result.error };
     }
-
-    const reactPermission = canMemberReactInRoom({
-      isPrivate: Boolean(context.room.passwordHash),
-      memberStatus: context.memberStatus,
-    });
-    if (!reactPermission.ok) {
-      return reactPermission;
-    }
-
-    const visibleMessages = await prisma.message.findMany({
-      where: {
-        roomId: context.room.id,
-        parentId: { not: null },
-        status: 'visible',
-      },
-      select: {
-        id: true,
-        parentId: true,
-        status: true,
-      },
-    });
-
-    if (!isMessageInPostSubtree(context.rootPost.id, messageId, visibleMessages)) {
-      return { ok: false, error: 'ไม่พบข้อความที่ต้องการกดรีแอคชัน' };
-    }
-
-    const updatedReactions = await prisma.$transaction(async (tx) => {
-      const existing = await tx.reaction.findUnique({
-        where: {
-          messageId_userId_emojiType: {
-            messageId,
-            userId: viewer.id,
-            emojiType: emoji,
-          },
-        },
-        select: { id: true },
-      });
-
-      if (existing) {
-        await tx.reaction.delete({ where: { id: existing.id } });
-      } else {
-        await tx.reaction.create({
-          data: {
-            messageId,
-            userId: viewer.id,
-            emojiType: emoji,
-          },
-        });
-      }
-
-      return tx.reaction.findMany({
-        where: { messageId },
-        orderBy: { createdAt: 'asc' },
-        select: {
-          emojiType: true,
-          userId: true,
-        },
-      });
-    });
-
-    revalidateThreadPaths(context.room.id, context.room.slug, context.rootPost.id);
-
     return {
       ok: true,
       data: {
-        messageId,
-        reactions: aggregateReactions(updatedReactions, viewer.id),
+        messageId: result.data.messageId,
+        reactions: result.data.reactions,
       },
     };
   }, 'ไม่สามารถอัปเดตรีแอคชันได้ กรุณาลองใหม่อีกครั้ง');

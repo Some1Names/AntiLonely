@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import Link from "next/link";
 import EmptyNote from "@/component/EmptyNote";
 import Header from "@/component/Header";
@@ -10,12 +17,15 @@ import PostCard from "@/component/PostCard";
 import { ReportModal } from "@/component/post-thread/ReportModal";
 import { formatCount } from "@/lib/format";
 import {
+  applyReactionActiveState,
+  createReactionMutationTracker,
   deleteBoardPost,
   editBoardPost,
   formatRelativeTimeThai,
   TIME_REFRESH_INTERVAL_MS,
-  toggleReaction,
+  type ReactionMutationTracker,
 } from "@/lib/post-thread";
+import { syncReactionMutation } from "@/lib/reaction-client";
 import {
   canMemberReactInRoom,
   DEFAULT_ROOM_EMOJI,
@@ -25,7 +35,6 @@ import {
   createRoomPost,
   deleteRoomPost,
   reportRoomTarget,
-  toggleRoomPostReaction,
   updateRoomMembership,
   updateRoomPost,
   type RoomBoardViewer,
@@ -44,6 +53,7 @@ import {
 import type { MyRoom, Room } from "@/types/room";
 import type {
   BoardPostSummary,
+  ReactionItem,
   ReportReason,
   RoomBoardMembershipState,
 } from "@/types/post-thread";
@@ -80,6 +90,80 @@ function createOptimisticPost(
   };
 }
 
+type BoardPostRowProps = {
+  post: BoardPostSummary;
+  roomId: string;
+  referenceTime: number;
+  currentUserId: string | null;
+  onEditPost: (postId: string, newContent: string) => void;
+  onDeletePost: (postId: string) => void;
+  onToggleReaction: (postId: string, emoji: string) => Promise<boolean>;
+  onReportPost: (
+    postId: string,
+    reason: ReportReason,
+    details: string
+  ) => Promise<void>;
+  onReportSubmitted: (message?: string) => void;
+};
+
+const BoardPostRow = memo(function BoardPostRow({
+  post,
+  roomId,
+  referenceTime,
+  currentUserId,
+  onEditPost,
+  onDeletePost,
+  onToggleReaction,
+  onReportPost,
+  onReportSubmitted,
+}: BoardPostRowProps) {
+  const handleEdit = useCallback(
+    (newContent: string) => {
+      onEditPost(post.id, newContent);
+    },
+    [onEditPost, post.id]
+  );
+
+  const handleDelete = useCallback(() => {
+    onDeletePost(post.id);
+  }, [onDeletePost, post.id]);
+
+  const handleToggleReaction = useCallback(
+    (emoji: string) => onToggleReaction(post.id, emoji),
+    [onToggleReaction, post.id]
+  );
+
+  const handleReportPost = useCallback(
+    (reason: ReportReason, details: string) =>
+      onReportPost(post.id, reason, details),
+    [onReportPost, post.id]
+  );
+
+  const time = post.createdAt
+    ? formatRelativeTimeThai(post.createdAt, referenceTime)
+    : post.timeLabel;
+
+  return (
+    <PostCard
+      id={post.id}
+      roomId={roomId}
+      author={post.author}
+      time={time}
+      createdAt={post.createdAt}
+      content={post.content}
+      isOwner={Boolean(currentUserId && post.authorId === currentUserId)}
+      isEdited={post.isEdited}
+      reactions={post.reactions}
+      replyCount={post.replyCount}
+      onEditPost={handleEdit}
+      onDeletePost={handleDelete}
+      onToggleReaction={handleToggleReaction}
+      onReportPost={handleReportPost}
+      onReportSubmitted={onReportSubmitted}
+    />
+  );
+});
+
 export default function RoomBoardFeed({
   room,
   initialPosts,
@@ -97,7 +181,17 @@ export default function RoomBoardFeed({
   });
   const [prevInitialPosts, setPrevInitialPosts] = useState(initialPosts);
   const [posts, setPosts] = useState<BoardPostSummary[]>(initialPosts);
-  const pendingReactionsRef = useRef<Set<string>>(new Set());
+  const reactionTrackerRef = useRef<ReactionMutationTracker | null>(null);
+  const postsRef = useRef(posts);
+  useLayoutEffect(() => {
+    postsRef.current = posts;
+  }, [posts]);
+  const getReactionTracker = useCallback((): ReactionMutationTracker => {
+    if (!reactionTrackerRef.current) {
+      reactionTrackerRef.current = createReactionMutationTracker();
+    }
+    return reactionTrackerRef.current;
+  }, []);
   if (initialPosts !== prevInitialPosts) {
     setPrevInitialPosts(initialPosts);
     setPosts(initialPosts);
@@ -183,7 +277,7 @@ export default function RoomBoardFeed({
     };
   }, []);
 
-  const showToast = (message: string) => {
+  const showToast = useCallback((message: string) => {
     if (toastTimeoutRef.current) {
       clearTimeout(toastTimeoutRef.current);
     }
@@ -192,7 +286,7 @@ export default function RoomBoardFeed({
       setToastMessage(null);
       toastTimeoutRef.current = null;
     }, 3000);
-  };
+  }, []);
 
   async function handlePost() {
     if (isPosting) return;
@@ -251,132 +345,143 @@ export default function RoomBoardFeed({
     }
   }
 
-  async function handleEditPost(postId: string, newContent: string) {
-    if (!currentUser) {
-      showToast("กรุณาเข้าสู่ระบบก่อนแก้ไขกระทู้");
-      return;
-    }
-
-    const previousPosts = posts;
-    setPosts((prev) =>
-      editBoardPost(prev, postId, newContent, currentUser.id)
-    );
-
-    try {
-      const result = await updateRoomPost({
-        roomId: room.id,
-        postId,
-        content: newContent,
-      });
-      if (!result.ok) {
-        setPosts(previousPosts);
-        showToast(result.error);
+  const handleEditPost = useCallback(
+    async (postId: string, newContent: string) => {
+      if (!currentUser) {
+        showToast("กรุณาเข้าสู่ระบบก่อนแก้ไขกระทู้");
         return;
       }
+
+      const previousPosts = postsRef.current;
       setPosts((prev) =>
-        prev.map((p) => (p.id === postId ? result.data : p))
+        editBoardPost(prev, postId, newContent, currentUser.id)
       );
-      showToast("แก้ไขกระทู้เรียบร้อยแล้ว");
-    } catch {
-      setPosts(previousPosts);
-      showToast("ไม่สามารถแก้ไขกระทู้ได้ กรุณาลองใหม่อีกครั้ง");
-    }
-  }
 
-  async function handleDeletePost(postId: string) {
-    if (!currentUser) {
-      showToast("กรุณาเข้าสู่ระบบก่อนลบกระทู้");
-      return;
-    }
-
-    const previousPosts = posts;
-    setPosts((prev) => deleteBoardPost(prev, postId, currentUser.id));
-
-    try {
-      const result = await deleteRoomPost({
-        roomId: room.id,
-        postId,
-      });
-      if (!result.ok) {
+      try {
+        const result = await updateRoomPost({
+          roomId: room.id,
+          postId,
+          content: newContent,
+        });
+        if (!result.ok) {
+          setPosts(previousPosts);
+          showToast(result.error);
+          return;
+        }
+        setPosts((prev) =>
+          prev.map((p) => (p.id === postId ? result.data : p))
+        );
+        showToast("แก้ไขกระทู้เรียบร้อยแล้ว");
+      } catch {
         setPosts(previousPosts);
-        showToast(result.error);
+        showToast("ไม่สามารถแก้ไขกระทู้ได้ กรุณาลองใหม่อีกครั้ง");
+      }
+    },
+    [currentUser, room.id, showToast]
+  );
+
+  const handleDeletePost = useCallback(
+    async (postId: string) => {
+      if (!currentUser) {
+        showToast("กรุณาเข้าสู่ระบบก่อนลบกระทู้");
         return;
       }
-      showToast("ลบกระทู้เรียบร้อยแล้ว");
-    } catch {
-      setPosts(previousPosts);
-      showToast("ไม่สามารถลบกระทู้ได้ กรุณาลองใหม่อีกครั้ง");
-    }
-  }
 
-  function togglePostReactionLocal(postId: string, emoji: string) {
-    setPosts((prev) =>
-      prev.map((p) => {
-        if (p.id !== postId) return p;
-        const normalized = p.reactions.map((r) => ({
-          emoji: r.emoji,
-          count: r.count,
-          reactedByMe: Boolean(r.reactedByMe),
-        }));
-        return {
-          ...p,
-          reactions: toggleReaction(normalized, emoji),
-        };
-      })
-    );
-  }
+      const previousPosts = postsRef.current;
+      setPosts((prev) => deleteBoardPost(prev, postId, currentUser.id));
 
-  async function handleTogglePostReaction(
-    postId: string,
-    emoji: string
-  ): Promise<boolean> {
-    if (!currentUser) {
-      showToast("กรุณาเข้าสู่ระบบก่อนกดรีแอคชัน");
-      return false;
-    }
+      try {
+        const result = await deleteRoomPost({
+          roomId: room.id,
+          postId,
+        });
+        if (!result.ok) {
+          setPosts(previousPosts);
+          showToast(result.error);
+          return;
+        }
+        showToast("ลบกระทู้เรียบร้อยแล้ว");
+      } catch {
+        setPosts(previousPosts);
+        showToast("ไม่สามารถลบกระทู้ได้ กรุณาลองใหม่อีกครั้ง");
+      }
+    },
+    [currentUser, room.id, showToast]
+  );
 
-    const reactPermission = canMemberReactInRoom({
-      isPrivate: Boolean(room.isPrivate),
-      memberStatus: membership.status === "joined" ? "active" : null,
-    });
-    if (!reactPermission.ok) {
-      showToast(reactPermission.error);
-      return false;
-    }
+  const updatePostReactions = useCallback(
+    (
+      postId: string,
+      updater: (current: readonly ReactionItem[]) => ReactionItem[]
+    ) => {
+      setPosts((prev) =>
+        prev.map((p) => {
+          if (p.id !== postId) return p;
+          const normalized = p.reactions.map((r) => ({
+            emoji: r.emoji,
+            count: r.count,
+            reactedByMe: Boolean(r.reactedByMe),
+          }));
+          return {
+            ...p,
+            reactions: updater(normalized),
+          };
+        })
+      );
+    },
+    []
+  );
 
-    const reactionKey = `${postId}:${emoji.trim()}`;
-    if (pendingReactionsRef.current.has(reactionKey)) {
-      return true;
-    }
-
-    pendingReactionsRef.current.add(reactionKey);
-    togglePostReactionLocal(postId, emoji);
-
-    try {
-      const result = await toggleRoomPostReaction({
-        roomId: room.id,
-        postId,
-        emoji,
-      });
-      if (!result.ok) {
-        togglePostReactionLocal(postId, emoji);
-        showToast(result.error);
+  const handleTogglePostReaction = useCallback(
+    async (postId: string, emoji: string): Promise<boolean> => {
+      if (!currentUser) {
+        showToast("กรุณาเข้าสู่ระบบก่อนกดรีแอคชัน");
         return false;
       }
-      setPosts((prev) =>
-        prev.map((p) =>
-          p.id === postId ? { ...p, reactions: result.data.reactions } : p
-        )
-      );
-      return true;
-    } catch {
-      togglePostReactionLocal(postId, emoji);
-      showToast("ไม่สามารถอัปเดตรีแอคชันได้ กรุณาลองใหม่อีกครั้ง");
-      return false;
-    } finally {
-      pendingReactionsRef.current.delete(reactionKey);
-    }
-  }
+
+      const reactPermission = canMemberReactInRoom({
+        isPrivate: Boolean(room.isPrivate),
+        memberStatus: membership.status === "joined" ? "active" : null,
+      });
+      if (!reactPermission.ok) {
+        showToast(reactPermission.error);
+        return false;
+      }
+
+      const currentPost = postsRef.current.find((p) => p.id === postId);
+      const currentReactions = (currentPost?.reactions ?? []).map((r) => ({
+        emoji: r.emoji,
+        count: r.count,
+        reactedByMe: Boolean(r.reactedByMe),
+      }));
+
+      return syncReactionMutation({
+        tracker: getReactionTracker(),
+        roomId: room.id,
+        messageId: postId,
+        emoji,
+        currentReactions,
+        applyOptimisticActive: (desiredActive) => {
+          updatePostReactions(postId, (current) =>
+            applyReactionActiveState(current, emoji, desiredActive)
+          );
+        },
+        applyResolvedReactions: (updater) => {
+          updatePostReactions(postId, updater);
+        },
+        onError: showToast,
+      });
+    },
+    [
+      currentUser,
+      getReactionTracker,
+      membership.status,
+      room.id,
+      room.isPrivate,
+      showToast,
+      updatePostReactions,
+    ]
+  );
 
   async function handleMembershipClick() {
     if (isMembershipPending) return;
@@ -483,27 +588,33 @@ export default function RoomBoardFeed({
     );
   }
 
-  async function handleReportPostSubmit(
-    postId: string,
-    reason: ReportReason,
-    details: string
-  ) {
-    try {
-      const result = await reportRoomTarget({
-        roomId: room.id,
-        postId,
-        reason,
-        details,
-      });
-      if (!result.ok) {
-        showToast(result.error);
-        return;
+  const handleReportPostSubmit = useCallback(
+    async (postId: string, reason: ReportReason, details: string) => {
+      try {
+        const result = await reportRoomTarget({
+          roomId: room.id,
+          postId,
+          reason,
+          details,
+        });
+        if (!result.ok) {
+          showToast(result.error);
+          return;
+        }
+        showToast("ส่งรายงานกระทู้ให้ทีมงานตรวจสอบเรียบร้อยแล้ว");
+      } catch {
+        showToast("ไม่สามารถส่งรายงานได้ กรุณาลองใหม่อีกครั้ง");
       }
-      showToast("ส่งรายงานกระทู้ให้ทีมงานตรวจสอบเรียบร้อยแล้ว");
-    } catch {
-      showToast("ไม่สามารถส่งรายงานได้ กรุณาลองใหม่อีกครั้ง");
-    }
-  }
+    },
+    [room.id, showToast]
+  );
+
+  const handleReportSubmittedToast = useCallback(
+    (msg?: string) => {
+      showToast(msg ?? "ส่งรายงานกระทู้ให้ทีมงานตรวจสอบเรียบร้อยแล้ว");
+    },
+    [showToast]
+  );
 
   async function handleReportRoomSubmit(
     reason: ReportReason,
@@ -800,37 +911,17 @@ export default function RoomBoardFeed({
             />
           ) : (
             posts.map((post) => (
-              <PostCard
+              <BoardPostRow
                 key={post.id}
-                id={post.id}
+                post={post}
                 roomId={canonicalRoomSegment}
-                author={post.author}
-                time={
-                  post.createdAt
-                    ? formatRelativeTimeThai(post.createdAt, referenceTime)
-                    : post.timeLabel
-                }
-                createdAt={post.createdAt}
-                content={post.content}
-                isOwner={Boolean(currentUser && post.authorId === currentUser.id)}
-                isEdited={post.isEdited}
-                reactions={post.reactions}
-                replyCount={post.replyCount}
-                onEditPost={(newContent) =>
-                  void handleEditPost(post.id, newContent)
-                }
-                onDeletePost={() => void handleDeletePost(post.id)}
-                onToggleReaction={(emoji) =>
-                  handleTogglePostReaction(post.id, emoji)
-                }
-                onReportPost={(reason, details) =>
-                  handleReportPostSubmit(post.id, reason, details)
-                }
-                onReportSubmitted={(msg) =>
-                  showToast(
-                    msg ?? "ส่งรายงานกระทู้ให้ทีมงานตรวจสอบเรียบร้อยแล้ว"
-                  )
-                }
+                referenceTime={referenceTime}
+                currentUserId={currentUser?.id ?? null}
+                onEditPost={handleEditPost}
+                onDeletePost={handleDeletePost}
+                onToggleReaction={handleTogglePostReaction}
+                onReportPost={handleReportPostSubmit}
+                onReportSubmitted={handleReportSubmittedToast}
               />
             ))
           )}

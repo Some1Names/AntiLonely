@@ -1,6 +1,13 @@
 'use client';
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import Link from 'next/link';
 import type {
   CommentSortOrder,
@@ -13,13 +20,15 @@ import type { MyRoom } from '@/types/room';
 import {
   addNestedReply,
   addTopLevelComment,
+  applyReactionActiveState,
   countTotalComments,
+  createReactionMutationTracker,
   editCommentOrReply,
   sortComments,
-  toggleCommentReaction,
-  togglePostReaction,
   TIME_REFRESH_INTERVAL_MS,
+  type ReactionMutationTracker,
 } from '@/lib/post-thread';
+import { syncReactionMutation } from '@/lib/reaction-client';
 import {
   collectClientSubtreeIds,
   deleteCommentSubtreeOptimistic,
@@ -30,7 +39,6 @@ import {
   createThreadReply,
   deleteThreadMessage,
   reportThreadTarget,
-  toggleThreadReaction,
   updateThreadMessage,
 } from '@/app/rooms/[roomId]/posts/[postId]/actions';
 import Header from '@/component/Header';
@@ -73,11 +81,11 @@ const SORT_OPTIONS: { value: CommentSortOrder; label: string }[] = [
 function replaceMessageReactionsInComments(
   comments: PostThread['comments'],
   targetId: string,
-  reactions: ReactionItem[]
+  updater: (current: readonly ReactionItem[]) => ReactionItem[]
 ): PostThread['comments'] {
   return comments.map((comment) => {
     if (comment.id === targetId) {
-      return { ...comment, reactions };
+      return { ...comment, reactions: updater(comment.reactions) };
     }
     if (!comment.replies.some((reply) => reply.id === targetId)) {
       return comment;
@@ -85,10 +93,28 @@ function replaceMessageReactionsInComments(
     return {
       ...comment,
       replies: comment.replies.map((reply) =>
-        reply.id === targetId ? { ...reply, reactions } : reply
+        reply.id === targetId
+          ? { ...reply, reactions: updater(reply.reactions) }
+          : reply
       ),
     };
   });
+}
+
+function findMessageReactionsInComments(
+  comments: PostThread['comments'],
+  targetId: string
+): ReactionItem[] {
+  for (const comment of comments) {
+    if (comment.id === targetId) {
+      return comment.reactions;
+    }
+    const matchedReply = comment.replies.find((reply) => reply.id === targetId);
+    if (matchedReply) {
+      return matchedReply.reactions;
+    }
+  }
+  return [];
 }
 
 function getDisabledCommentNotice(input: {
@@ -160,7 +186,21 @@ export function PostThreadClient({
   const mainReplyInputRef = useRef<HTMLInputElement | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sortMenuRef = useRef<HTMLDivElement | null>(null);
-  const pendingReactionsRef = useRef<Set<string>>(new Set());
+  const reactionTrackerRef = useRef<ReactionMutationTracker | null>(null);
+  const threadRef = useRef(thread);
+  const replyingToRef = useRef(replyingTo);
+
+  useLayoutEffect(() => {
+    threadRef.current = thread;
+    replyingToRef.current = replyingTo;
+  }, [thread, replyingTo]);
+
+  const getReactionTracker = useCallback((): ReactionMutationTracker => {
+    if (!reactionTrackerRef.current) {
+      reactionTrackerRef.current = createReactionMutationTracker();
+    }
+    return reactionTrackerRef.current;
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -242,7 +282,7 @@ export function PostThreadClient({
     [currentUser, room.isLocked, memberStatus]
   );
 
-  const showToast = (message: string) => {
+  const showToast = useCallback((message: string) => {
     if (toastTimeoutRef.current) {
       clearTimeout(toastTimeoutRef.current);
     }
@@ -251,9 +291,9 @@ export function PostThreadClient({
       setToastMessage(null);
       toastTimeoutRef.current = null;
     }, 3000);
-  };
+  }, []);
 
-  const ensureReactAllowed = (): boolean => {
+  const ensureReactAllowed = useCallback((): boolean => {
     if (!currentUser) {
       showToast('กรุณาเข้าสู่ระบบก่อนกดรีแอคชัน');
       return false;
@@ -271,101 +311,88 @@ export function PostThreadClient({
       return false;
     }
     return true;
-  };
+  }, [canReact, currentUser, memberStatus, room.isPrivate, showToast]);
 
-  const handleTogglePostReaction = async (emoji: string): Promise<boolean> => {
-    if (!ensureReactAllowed()) {
-      return false;
-    }
-
-    const reactionKey = `${thread.id}:${emoji.trim()}`;
-    if (pendingReactionsRef.current.has(reactionKey)) {
-      return true;
-    }
-
-    pendingReactionsRef.current.add(reactionKey);
-    setThread((prev) => togglePostReaction(prev, emoji));
-
-    try {
-      const result = await toggleThreadReaction({
-        roomId: room.id,
-        postId: thread.id,
-        messageId: thread.id,
-        emoji,
-      });
-      if (!result.ok) {
-        setThread((prev) => togglePostReaction(prev, emoji));
-        showToast(result.error);
+  const handleTogglePostReaction = useCallback(
+    async (emoji: string): Promise<boolean> => {
+      if (!ensureReactAllowed()) {
         return false;
       }
-      setThread((prev) => ({
-        ...prev,
-        reactions: result.data.reactions,
-      }));
-      return true;
-    } catch {
-      setThread((prev) => togglePostReaction(prev, emoji));
-      showToast('ไม่สามารถอัปเดตรีแอคชันได้ กรุณาลองใหม่อีกครั้ง');
-      return false;
-    } finally {
-      pendingReactionsRef.current.delete(reactionKey);
-    }
-  };
 
-  const handleToggleCommentReaction = async (
-    targetId: string,
-    emoji: string
-  ): Promise<boolean> => {
-    if (!ensureReactAllowed()) {
-      return false;
-    }
+      const targetId = thread.id;
+      return syncReactionMutation({
+        tracker: getReactionTracker(),
+        roomId: room.id,
+        postId: targetId,
+        messageId: targetId,
+        emoji,
+        currentReactions: threadRef.current.reactions,
+        applyOptimisticActive: (desiredActive) => {
+          setThread((prev) => ({
+            ...prev,
+            reactions: applyReactionActiveState(
+              prev.reactions,
+              emoji,
+              desiredActive
+            ),
+          }));
+        },
+        applyResolvedReactions: (updater) => {
+          setThread((prev) => ({
+            ...prev,
+            reactions: updater(prev.reactions),
+          }));
+        },
+        onError: showToast,
+      });
+    },
+    [ensureReactAllowed, getReactionTracker, room.id, showToast, thread.id]
+  );
 
-    const reactionKey = `${targetId}:${emoji.trim()}`;
-    if (pendingReactionsRef.current.has(reactionKey)) {
-      return true;
-    }
+  const handleToggleCommentReaction = useCallback(
+    async (targetId: string, emoji: string): Promise<boolean> => {
+      if (!ensureReactAllowed()) {
+        return false;
+      }
 
-    pendingReactionsRef.current.add(reactionKey);
-    setThread((prev) => ({
-      ...prev,
-      comments: toggleCommentReaction(prev.comments, targetId, emoji),
-    }));
+      const currentReactions = findMessageReactionsInComments(
+        threadRef.current.comments,
+        targetId
+      );
 
-    try {
-      const result = await toggleThreadReaction({
+      return syncReactionMutation({
+        tracker: getReactionTracker(),
         roomId: room.id,
         postId: thread.id,
         messageId: targetId,
         emoji,
+        currentReactions,
+        applyOptimisticActive: (desiredActive) => {
+          setThread((prev) => ({
+            ...prev,
+            comments: replaceMessageReactionsInComments(
+              prev.comments,
+              targetId,
+              (current) =>
+                applyReactionActiveState(current, emoji, desiredActive)
+            ),
+          }));
+        },
+        applyResolvedReactions: (updater) => {
+          setThread((prev) => ({
+            ...prev,
+            comments: replaceMessageReactionsInComments(
+              prev.comments,
+              targetId,
+              updater
+            ),
+          }));
+        },
+        onError: showToast,
       });
-      if (!result.ok) {
-        setThread((prev) => ({
-          ...prev,
-          comments: toggleCommentReaction(prev.comments, targetId, emoji),
-        }));
-        showToast(result.error);
-        return false;
-      }
-      setThread((prev) => ({
-        ...prev,
-        comments: replaceMessageReactionsInComments(
-          prev.comments,
-          targetId,
-          result.data.reactions
-        ),
-      }));
-      return true;
-    } catch {
-      setThread((prev) => ({
-        ...prev,
-        comments: toggleCommentReaction(prev.comments, targetId, emoji),
-      }));
-      showToast('ไม่สามารถอัปเดตรีแอคชันได้ กรุณาลองใหม่อีกครั้ง');
-      return false;
-    } finally {
-      pendingReactionsRef.current.delete(reactionKey);
-    }
-  };
+    },
+    [ensureReactAllowed, getReactionTracker, room.id, showToast, thread.id]
+  );
 
   const handleAddTopLevelComment = async (content: string) => {
     if (!currentUser || !canComment) {
@@ -408,109 +435,131 @@ export function PostThreadClient({
     }
   };
 
-  const handleAddNestedReply = async (commentId: string, content: string) => {
-    if (!currentUser || !canComment) {
-      showToast(disabledCommentNotice.message);
-      return;
-    }
+  const handleAddNestedReply = useCallback(
+    async (commentId: string, content: string) => {
+      if (!currentUser || !canComment) {
+        showToast(disabledCommentNotice.message);
+        return;
+      }
 
-    const nowMs = Date.now();
-    const nowIso = new Date(nowMs).toISOString();
-    const previousComments = thread.comments;
-    const previousReplyingTo = replyingTo;
-    const replyTo =
-      replyingTo?.commentId === commentId ? replyingTo.replyTo : undefined;
-    const parentId =
-      replyingTo?.commentId === commentId && replyingTo.targetReplyId
-        ? replyingTo.targetReplyId
-        : commentId;
+      const nowMs = Date.now();
+      const nowIso = new Date(nowMs).toISOString();
+      const previousComments = threadRef.current.comments;
+      const previousReplyingTo = replyingToRef.current;
+      const replyTo =
+        previousReplyingTo?.commentId === commentId
+          ? previousReplyingTo.replyTo
+          : undefined;
+      const parentId =
+        previousReplyingTo?.commentId === commentId &&
+        previousReplyingTo.targetReplyId
+          ? previousReplyingTo.targetReplyId
+          : commentId;
 
-    setReferenceTime(nowMs);
-    setThread((prev) => ({
-      ...prev,
-      comments: addNestedReply(
-        prev.comments,
-        parentId,
-        content,
-        { id: currentUser.id, name: currentUser.alias },
-        nowIso,
-        prev.author.id,
-        replyTo
-      ),
-    }));
-    setExpandedCommentIds((prev) =>
-      prev.includes(commentId) ? prev : [...prev, commentId]
-    );
-    setReplyingTo(null);
+      setReferenceTime(nowMs);
+      setThread((prev) => ({
+        ...prev,
+        comments: addNestedReply(
+          prev.comments,
+          parentId,
+          content,
+          { id: currentUser.id, name: currentUser.alias },
+          nowIso,
+          prev.author.id,
+          replyTo
+        ),
+      }));
+      setExpandedCommentIds((prev) =>
+        prev.includes(commentId) ? prev : [...prev, commentId]
+      );
+      setReplyingTo(null);
 
-    try {
-      const result = await createThreadReply({
-        roomId: room.id,
-        postId: thread.id,
-        parentId,
-        content,
-      });
-      if (!result.ok) {
+      try {
+        const result = await createThreadReply({
+          roomId: room.id,
+          postId: thread.id,
+          parentId,
+          content,
+        });
+        if (!result.ok) {
+          setThread((prev) => ({ ...prev, comments: previousComments }));
+          setReplyingTo(previousReplyingTo);
+          showToast(result.error);
+          return;
+        }
+        setThread(result.data.thread);
+        showToast('ส่งข้อความตอบกลับเรียบร้อยแล้ว');
+      } catch {
         setThread((prev) => ({ ...prev, comments: previousComments }));
         setReplyingTo(previousReplyingTo);
-        showToast(result.error);
+        showToast('ไม่สามารถส่งข้อความตอบกลับได้ กรุณาลองใหม่อีกครั้ง');
+      }
+    },
+    [
+      canComment,
+      currentUser,
+      disabledCommentNotice.message,
+      room.id,
+      showToast,
+      thread.id,
+    ]
+  );
+
+  const handleEditComment = useCallback(
+    async (targetId: string, newContent: string) => {
+      if (!currentUser) {
+        showToast('กรุณาเข้าสู่ระบบก่อนแก้ไขความคิดเห็น');
         return;
       }
-      setThread(result.data.thread);
-      showToast('ส่งข้อความตอบกลับเรียบร้อยแล้ว');
-    } catch {
-      setThread((prev) => ({ ...prev, comments: previousComments }));
-      setReplyingTo(previousReplyingTo);
-      showToast('ไม่สามารถส่งข้อความตอบกลับได้ กรุณาลองใหม่อีกครั้ง');
-    }
-  };
 
-  const handleEditComment = async (targetId: string, newContent: string) => {
-    if (!currentUser) {
-      showToast('กรุณาเข้าสู่ระบบก่อนแก้ไขความคิดเห็น');
-      return;
-    }
+      const previousComments = threadRef.current.comments;
+      setThread((prev) => ({
+        ...prev,
+        comments: editCommentOrReply(
+          prev.comments,
+          targetId,
+          newContent,
+          currentUser.id
+        ),
+      }));
 
-    const previousComments = thread.comments;
-    setThread((prev) => ({
-      ...prev,
-      comments: editCommentOrReply(
-        prev.comments,
-        targetId,
-        newContent,
-        currentUser.id
-      ),
-    }));
-
-    try {
-      const result = await updateThreadMessage({
-        roomId: room.id,
-        postId: thread.id,
-        messageId: targetId,
-        content: newContent,
-      });
-      if (!result.ok) {
+      try {
+        const result = await updateThreadMessage({
+          roomId: room.id,
+          postId: thread.id,
+          messageId: targetId,
+          content: newContent,
+        });
+        if (!result.ok) {
+          setThread((prev) => ({ ...prev, comments: previousComments }));
+          showToast(result.error);
+          return;
+        }
+        showToast('แก้ไขความคิดเห็นเรียบร้อยแล้ว');
+      } catch {
         setThread((prev) => ({ ...prev, comments: previousComments }));
-        showToast(result.error);
+        showToast('ไม่สามารถแก้ไขความคิดเห็นได้ กรุณาลองใหม่อีกครั้ง');
+      }
+    },
+    [currentUser, room.id, showToast, thread.id]
+  );
+
+  const handleRequestDeleteComment = useCallback(
+    (targetId: string) => {
+      if (!currentUser) {
+        showToast('กรุณาเข้าสู่ระบบก่อนลบความคิดเห็น');
         return;
       }
-      showToast('แก้ไขความคิดเห็นเรียบร้อยแล้ว');
-    } catch {
-      setThread((prev) => ({ ...prev, comments: previousComments }));
-      showToast('ไม่สามารถแก้ไขความคิดเห็นได้ กรุณาลองใหม่อีกครั้ง');
-    }
-  };
 
-  const handleRequestDeleteComment = (targetId: string) => {
-    if (!currentUser) {
-      showToast('กรุณาเข้าสู่ระบบก่อนลบความคิดเห็น');
-      return;
-    }
-
-    const subtreeIds = collectClientSubtreeIds(thread.comments, targetId);
-    const descendantCount = Math.max(0, subtreeIds.length - 1);
-    setPendingDeleteTarget({ id: targetId, descendantCount });
-  };
+      const subtreeIds = collectClientSubtreeIds(
+        threadRef.current.comments,
+        targetId
+      );
+      const descendantCount = Math.max(0, subtreeIds.length - 1);
+      setPendingDeleteTarget({ id: targetId, descendantCount });
+    },
+    [currentUser, showToast]
+  );
 
   const handleConfirmDeleteComment = async () => {
     const target = pendingDeleteTarget;
@@ -573,33 +622,71 @@ export function PostThreadClient({
     }
   };
 
-  const handleOpenReport = (type: ReportTargetType, targetId: string) => {
-    if (!currentUser) {
-      showToast('กรุณาเข้าสู่ระบบก่อนส่งรายงาน');
+  const handleOpenReport = useCallback(
+    (type: ReportTargetType, targetId: string) => {
+      if (!currentUser) {
+        showToast('กรุณาเข้าสู่ระบบก่อนส่งรายงาน');
+        return;
+      }
+      const perm = canMemberReactInRoom({
+        isPrivate: room.isPrivate,
+        memberStatus,
+      });
+      if (!perm.ok) {
+        showToast(perm.error);
+        return;
+      }
+      setReportTarget({ type, id: targetId });
+    },
+    [currentUser, memberStatus, room.isPrivate, showToast]
+  );
+
+  const handleReportComment = useCallback(
+    (targetId: string) => {
+      handleOpenReport('comment', targetId);
+    },
+    [handleOpenReport]
+  );
+
+  const handlePostReportClick = useCallback(() => {
+    handleOpenReport('post', thread.id);
+  }, [handleOpenReport, thread.id]);
+
+  const handleReplyClick = useCallback(() => {
+    if (!canComment) {
+      showToast(disabledCommentNotice.message);
       return;
     }
-    const perm = canMemberReactInRoom({
-      isPrivate: room.isPrivate,
-      memberStatus,
-    });
-    if (!perm.ok) {
-      showToast(perm.error);
-      return;
-    }
-    setReportTarget({ type, id: targetId });
-  };
+    mainReplyInputRef.current?.focus();
+  }, [canComment, disabledCommentNotice.message, showToast]);
 
-  const handleReportComment = (targetId: string) => {
-    handleOpenReport('comment', targetId);
-  };
+  const handleStartReply = useCallback(
+    (
+      commentId: string,
+      targetName: string,
+      replyTo?: { id?: string; name: string; isNested?: boolean },
+      targetReplyId?: string
+    ) => {
+      if (!canComment) {
+        showToast(disabledCommentNotice.message);
+        return;
+      }
+      setReplyingTo({ commentId, targetName, replyTo, targetReplyId });
+    },
+    [canComment, disabledCommentNotice.message, showToast]
+  );
 
-  const handleExpandReplies = (commentId: string) => {
+  const handleCancelReply = useCallback(() => {
+    setReplyingTo(null);
+  }, []);
+
+  const handleExpandReplies = useCallback((commentId: string) => {
     setExpandedCommentIds((prev) =>
       prev.includes(commentId) ? prev : [...prev, commentId]
     );
-  };
+  }, []);
 
-  const handleCopyOrShare = async () => {
+  const handleCopyOrShare = useCallback(async () => {
     try {
       if (typeof window !== 'undefined' && navigator.clipboard) {
         await navigator.clipboard.writeText(window.location.href);
@@ -608,9 +695,9 @@ export function PostThreadClient({
       // Clipboard fallback ignored
     }
     showToast('คัดลอกลิงก์กระทู้เรียบร้อยแล้ว');
-  };
+  }, [showToast]);
 
-  const handleToggleMute = () => {
+  const handleToggleMute = useCallback(() => {
     setIsMuted((prev) => {
       const next = !prev;
       showToast(
@@ -620,7 +707,7 @@ export function PostThreadClient({
       );
       return next;
     });
-  };
+  }, [showToast]);
 
   const handleReportSubmit = async (reason: ReportReason, details: string) => {
     const target = reportTarget;
@@ -679,17 +766,11 @@ export function PostThreadClient({
           referenceTime={referenceTime}
           isMuted={isMuted}
           onToggleReaction={handleTogglePostReaction}
-          onReplyClick={() => {
-            if (!canComment) {
-              showToast(disabledCommentNotice.message);
-              return;
-            }
-            mainReplyInputRef.current?.focus();
-          }}
+          onReplyClick={handleReplyClick}
           onShareClick={handleCopyOrShare}
           onCopyLinkClick={handleCopyOrShare}
           onToggleMuteClick={handleToggleMute}
-          onReportClick={() => handleOpenReport('post', thread.id)}
+          onReportClick={handlePostReportClick}
         />
 
         {/* Reply Composer */}
@@ -832,14 +913,8 @@ export function PostThreadClient({
                 }
                 onExpandReplies={handleExpandReplies}
                 onToggleReaction={handleToggleCommentReaction}
-                onStartReply={(commentId, targetName, replyTo, targetReplyId) => {
-                  if (!canComment) {
-                    showToast(disabledCommentNotice.message);
-                    return;
-                  }
-                  setReplyingTo({ commentId, targetName, replyTo, targetReplyId });
-                }}
-                onCancelReply={() => setReplyingTo(null)}
+                onStartReply={handleStartReply}
+                onCancelReply={handleCancelReply}
                 onSubmitReply={handleAddNestedReply}
                 onEditComment={handleEditComment}
                 onDeleteComment={handleRequestDeleteComment}

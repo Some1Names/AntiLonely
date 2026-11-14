@@ -78,6 +78,27 @@ export function toggleReaction(
   return result;
 }
 
+/**
+ * Applies an explicit desired reaction state (`active`) for `emoji` without
+ * double-flipping if the UI list is already in that state.
+ */
+export function applyReactionActiveState(
+  reactions: readonly ReactionItem[],
+  emoji: string,
+  active: boolean
+): ReactionItem[] {
+  const normalized = emoji.trim();
+  if (!normalized) {
+    return reactions as ReactionItem[];
+  }
+  const existing = reactions.find((item) => item.emoji === normalized);
+  const currentlyActive = Boolean(existing?.reactedByMe);
+  if (currentlyActive === active) {
+    return reactions as ReactionItem[];
+  }
+  return toggleReaction([...reactions], normalized);
+}
+
 export function togglePostReaction(
   thread: PostThread,
   emoji: string
@@ -494,4 +515,246 @@ export function groupRepliesIntoBranches(
 
   return branches;
 }
+
+export interface ReconcileReactionsInput {
+  current: readonly ReactionItem[];
+  serverReactions: readonly ReactionItem[];
+  toggledEmoji: string;
+  pendingEmojis: ReadonlySet<string>;
+  applyExternalUpdates: boolean;
+}
+
+/**
+ * Merges a server reaction snapshot back into optimistic UI state without wiping
+ * concurrent in-flight toggles or letting stale out-of-order responses overwrite
+ * newer updates, while preserving existing pill order to prevent UI jumping.
+ */
+export function reconcileReactions(input: ReconcileReactionsInput): ReactionItem[] {
+  const {
+    current,
+    serverReactions,
+    pendingEmojis,
+    applyExternalUpdates,
+  } = input;
+  const toggledEmoji = input.toggledEmoji.trim();
+
+  const serverByEmoji = new Map<string, ReactionItem>();
+  for (const item of serverReactions) {
+    const emoji = item.emoji.trim();
+    if (!emoji) continue;
+    serverByEmoji.set(emoji, {
+      emoji,
+      count: item.count,
+      reactedByMe: Boolean(item.reactedByMe),
+    });
+  }
+
+  const result: ReactionItem[] = [];
+  const seen = new Set<string>();
+
+  for (const item of current) {
+    seen.add(item.emoji);
+
+    if (pendingEmojis.has(item.emoji)) {
+      result.push(item);
+      continue;
+    }
+
+    if (item.emoji === toggledEmoji || applyExternalUpdates) {
+      const serverItem = serverByEmoji.get(item.emoji);
+      if (serverItem) {
+        result.push(serverItem);
+      }
+      continue;
+    }
+
+    result.push(item);
+  }
+
+  if (applyExternalUpdates) {
+    for (const [emoji, serverItem] of serverByEmoji) {
+      if (!seen.has(emoji) && !pendingEmojis.has(emoji)) {
+        result.push(serverItem);
+      }
+    }
+  } else if (
+    toggledEmoji &&
+    !seen.has(toggledEmoji) &&
+    !pendingEmojis.has(toggledEmoji)
+  ) {
+    const serverToggled = serverByEmoji.get(toggledEmoji);
+    if (serverToggled) {
+      result.push(serverToggled);
+    }
+  }
+
+  return result;
+}
+
+export interface ReactionSyncRequest {
+  seq: number;
+  active: boolean;
+}
+
+export interface ReactionEnqueueResult {
+  desiredActive: boolean;
+  dispatch: ReactionSyncRequest | null;
+}
+
+export interface ReactionSettleResult {
+  nextRequest: ReactionSyncRequest | null;
+  pendingEmojis: Set<string>;
+  applyExternalUpdates: boolean;
+}
+
+export interface ReactionFailResult {
+  rollbackActive: boolean;
+}
+
+export interface ReactionMutationTracker {
+  enqueue: (
+    targetId: string,
+    emoji: string,
+    currentReactions: readonly ReactionItem[]
+  ) => ReactionEnqueueResult | null;
+  settle: (
+    targetId: string,
+    emoji: string,
+    seq: number
+  ) => ReactionSettleResult | null;
+  fail: (
+    targetId: string,
+    emoji: string,
+    seq: number
+  ) => ReactionFailResult | null;
+}
+
+/**
+ * Coordinates concurrent optimistic emoji updates and rapid repeated clicks on
+ * the same emoji using a per-(targetId, emoji) latest-intent coalescing loop.
+ */
+export function createReactionMutationTracker(): ReactionMutationTracker {
+  interface EmojiSyncState {
+    desiredActive: boolean;
+    settledActive: boolean;
+    inFlight: ReactionSyncRequest;
+  }
+
+  let nextSeq = 1;
+  const inFlightByTarget = new Map<string, Map<string, EmojiSyncState>>();
+  const lastAppliedSeqByTarget = new Map<string, number>();
+
+  function getOrCreateTargetMap(targetId: string) {
+    let targetMap = inFlightByTarget.get(targetId);
+    if (!targetMap) {
+      targetMap = new Map<string, EmojiSyncState>();
+      inFlightByTarget.set(targetId, targetMap);
+    }
+    return targetMap;
+  }
+
+  function deleteEntry(targetId: string, key: string) {
+    const targetMap = inFlightByTarget.get(targetId);
+    if (!targetMap) return;
+    targetMap.delete(key);
+    if (targetMap.size === 0) {
+      inFlightByTarget.delete(targetId);
+    }
+  }
+
+  function enqueue(
+    targetId: string,
+    emoji: string,
+    currentReactions: readonly ReactionItem[]
+  ): ReactionEnqueueResult | null {
+    const key = emoji.trim();
+    if (!key) return null;
+
+    const targetMap = getOrCreateTargetMap(targetId);
+    const existing = targetMap.get(key);
+    if (existing) {
+      existing.desiredActive = !existing.desiredActive;
+      return {
+        desiredActive: existing.desiredActive,
+        dispatch: null,
+      };
+    }
+
+    const wasActive = Boolean(
+      currentReactions.find((item) => item.emoji === key)?.reactedByMe
+    );
+    const desiredActive = !wasActive;
+    const seq = nextSeq++;
+    const dispatch: ReactionSyncRequest = { seq, active: desiredActive };
+    targetMap.set(key, {
+      desiredActive,
+      settledActive: wasActive,
+      inFlight: dispatch,
+    });
+
+    return {
+      desiredActive,
+      dispatch,
+    };
+  }
+
+  function settle(
+    targetId: string,
+    emoji: string,
+    seq: number
+  ): ReactionSettleResult | null {
+    const key = emoji.trim();
+    const targetMap = inFlightByTarget.get(targetId);
+    const entry = targetMap?.get(key);
+    if (!entry || entry.inFlight.seq !== seq) {
+      return null;
+    }
+
+    entry.settledActive = entry.inFlight.active;
+    const prevApplied = lastAppliedSeqByTarget.get(targetId) ?? 0;
+    const applyExternalUpdates = seq >= prevApplied;
+    if (applyExternalUpdates) {
+      lastAppliedSeqByTarget.set(targetId, seq);
+    }
+
+    if (entry.desiredActive !== entry.settledActive) {
+      const nextRequest: ReactionSyncRequest = {
+        seq: nextSeq++,
+        active: entry.desiredActive,
+      };
+      entry.inFlight = nextRequest;
+      return {
+        nextRequest,
+        pendingEmojis: new Set(targetMap?.keys() ?? []),
+        applyExternalUpdates,
+      };
+    }
+
+    deleteEntry(targetId, key);
+    return {
+      nextRequest: null,
+      pendingEmojis: new Set(inFlightByTarget.get(targetId)?.keys() ?? []),
+      applyExternalUpdates,
+    };
+  }
+
+  function fail(
+    targetId: string,
+    emoji: string,
+    seq: number
+  ): ReactionFailResult | null {
+    const key = emoji.trim();
+    const entry = inFlightByTarget.get(targetId)?.get(key);
+    if (!entry || entry.inFlight.seq !== seq) {
+      return null;
+    }
+
+    const rollbackActive = entry.settledActive;
+    deleteEntry(targetId, key);
+    return { rollbackActive };
+  }
+
+  return { enqueue, settle, fail };
+}
+
 

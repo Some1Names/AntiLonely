@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { memo, useCallback, useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
 import ReactionBar from "@/component/ReactionBar";
 import { ReportModal } from "@/component/post-thread/ReportModal";
@@ -36,7 +36,7 @@ type Props = {
 
 // One shared empty list, so a post without reactions gets the same array on
 // every render instead of a new one that looks like a change.
-const noReactions: NonNullable<Props["reactions"]> = [];
+const noReactions: ReactionItem[] = [];
 
 function toReactionItems(
   reactions: NonNullable<Props["reactions"]>
@@ -48,7 +48,7 @@ function toReactionItems(
   }));
 }
 
-export default function PostCard({
+const PostCard = memo(function PostCard({
   id,
   roomId,
   author,
@@ -66,18 +66,16 @@ export default function PostCard({
   onReportPost,
   onReportSubmitted,
 }: Props) {
-  const reactionSig = initialReactions
-    .map((r) => `${r.emoji}:${r.count}:${Boolean(r.reactedByMe)}`)
-    .join("|");
-  const [prevReactionSig, setPrevReactionSig] = useState(reactionSig);
-  const [reactions, setReactions] = useState<ReactionItem[]>(() =>
-    toReactionItems(initialReactions)
+  const isControlledReactions = Boolean(onToggleReaction);
+  const controlledReactions = useMemo(
+    () => (isControlledReactions ? toReactionItems(initialReactions) : noReactions),
+    [isControlledReactions, initialReactions]
   );
 
-  if (reactionSig !== prevReactionSig) {
-    setPrevReactionSig(reactionSig);
-    setReactions(toReactionItems(initialReactions));
-  }
+  const [localReactions, setLocalReactions] = useState<ReactionItem[]>(() =>
+    toReactionItems(initialReactions)
+  );
+  const reactions = isControlledReactions ? controlledReactions : localReactions;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isReporting, setIsReporting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -115,12 +113,15 @@ export default function PostCard({
     };
   }, [isMenuOpen]);
 
-  const handleToggleReaction = (emoji: string) => {
-    if (onToggleReaction) {
-      return onToggleReaction(emoji);
-    }
-    setReactions((prev) => toggleReaction(prev, emoji));
-  };
+  const handleToggleReaction = useCallback(
+    (emoji: string) => {
+      if (onToggleReaction) {
+        return onToggleReaction(emoji);
+      }
+      setLocalReactions((prev) => toggleReaction(prev, emoji));
+    },
+    [onToggleReaction]
+  );
 
   const handleStartEdit = () => {
     setIsMenuOpen(false);
@@ -404,4 +405,6 @@ export default function PostCard({
       />
     </article>
   );
-}
+});
+
+export default PostCard;
