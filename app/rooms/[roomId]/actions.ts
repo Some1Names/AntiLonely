@@ -496,16 +496,21 @@ export async function toggleRoomPostReaction(input: {
   roomId: string;
   postId: string;
   emoji: string;
+  active?: boolean;
 }): Promise<ActionResult<{ postId: string; reactions: ReactionItem[] }>> {
   return runSafeMutation(async () => {
     const result = await toggleMessageReaction({
       roomId: input.roomId,
       messageId: input.postId,
       emoji: input.emoji,
+      active: input.active,
     });
     if (!result.ok) {
       return { ok: false, error: result.error };
     }
+    revalidateRoomPaths(result.data.roomId, result.data.roomSlug);
+    revalidatePath(`/rooms/${result.data.roomSlug}/posts/${result.data.postId}`);
+    revalidatePath(`/rooms/${result.data.roomId}/posts/${result.data.postId}`);
     return {
       ok: true,
       data: {

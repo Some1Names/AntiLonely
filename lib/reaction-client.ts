@@ -2,6 +2,7 @@ import type { ActionResult } from './server-action-helpers.ts';
 import type { ReactionItem } from '../types/post-thread.ts';
 import {
   reconcileReactions,
+  restoreReactionSnapshot,
   type ReactionMutationTracker,
   type ReactionSyncRequest,
 } from './post-thread.ts';
@@ -43,6 +44,13 @@ export async function requestToggleReaction(
     const payload = (await response.json()) as ToggleReactionRequestResult;
 
     if (!payload || typeof payload.ok !== 'boolean') {
+      return {
+        ok: false,
+        error: 'ไม่สามารถอัปเดตรีแอคชันได้ กรุณาลองใหม่อีกครั้ง',
+      };
+    }
+
+    if (!response.ok && payload.ok) {
       return {
         ok: false,
         error: 'ไม่สามารถอัปเดตรีแอคชันได้ กรุณาลองใหม่อีกครั้ง',
@@ -120,7 +128,14 @@ export async function syncReactionMutation(input: {
           currentDispatch.seq
         );
         if (failed) {
-          input.applyOptimisticActive(failed.rollbackActive);
+          input.applyResolvedReactions((current) =>
+            restoreReactionSnapshot(
+              current,
+              trimmedEmoji,
+              failed.rollbackActive,
+              failed.rollbackReaction
+            )
+          );
         }
         input.onError(result.error);
         return false;
@@ -129,7 +144,8 @@ export async function syncReactionMutation(input: {
       const settlement = input.tracker.settle(
         input.messageId,
         trimmedEmoji,
-        currentDispatch.seq
+        currentDispatch.seq,
+        result.data.reactions
       );
       if (!settlement) {
         return true;
@@ -153,7 +169,14 @@ export async function syncReactionMutation(input: {
         currentDispatch.seq
       );
       if (failed) {
-        input.applyOptimisticActive(failed.rollbackActive);
+        input.applyResolvedReactions((current) =>
+          restoreReactionSnapshot(
+            current,
+            trimmedEmoji,
+            failed.rollbackActive,
+            failed.rollbackReaction
+          )
+        );
       }
       input.onError('ไม่สามารถอัปเดตรีแอคชันได้ กรุณาลองใหม่อีกครั้ง');
       return false;

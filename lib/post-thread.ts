@@ -146,7 +146,8 @@ export function addTopLevelComment(
   content: string,
   author: ThreadAuthor,
   nowIso: string = new Date().toISOString(),
-  postAuthorId?: string
+  postAuthorId?: string,
+  tempId?: string
 ): ThreadComment[] {
   const trimmed = content.trim();
   if (!trimmed) {
@@ -155,7 +156,7 @@ export function addTopLevelComment(
 
   const timeSeed = Date.parse(nowIso) || Date.now();
   const newComment: ThreadComment = {
-    id: `comment-${timeSeed}-${comments.length + 1}`,
+    id: tempId ?? `comment-${timeSeed}-${comments.length + 1}`,
     author,
     isPostAuthor: Boolean(postAuthorId && author.id === postAuthorId),
     content: trimmed,
@@ -174,7 +175,8 @@ export function addNestedReply(
   author: ThreadAuthor,
   nowIso: string = new Date().toISOString(),
   postAuthorId?: string,
-  replyTo?: { id?: string; name: string; isNested?: boolean }
+  replyTo?: { id?: string; name: string; isNested?: boolean },
+  tempId?: string
 ): ThreadComment[] {
   const trimmed = content.trim();
   if (!trimmed) {
@@ -201,7 +203,7 @@ export function addNestedReply(
     const validReplyTo = replyTo && !isSelfReplyToTopComment ? replyTo : undefined;
 
     const newReply: ThreadReply = {
-      id: `reply-${timeSeed}-${comment.replies.length + 1}`,
+      id: tempId ?? `reply-${timeSeed}-${comment.replies.length + 1}`,
       author,
       ...(validReplyTo ? { replyTo: validReplyTo } : {}),
       isPostAuthor: Boolean(postAuthorId && author.id === postAuthorId),
@@ -609,6 +611,7 @@ export interface ReactionSettleResult {
 
 export interface ReactionFailResult {
   rollbackActive: boolean;
+  rollbackReaction?: ReactionItem | null;
 }
 
 export interface ReactionMutationTracker {
@@ -620,13 +623,28 @@ export interface ReactionMutationTracker {
   settle: (
     targetId: string,
     emoji: string,
-    seq: number
+    seq: number,
+    serverReactions?: readonly ReactionItem[]
   ) => ReactionSettleResult | null;
   fail: (
     targetId: string,
     emoji: string,
     seq: number
   ) => ReactionFailResult | null;
+  getCurrentEpoch: () => number;
+  getPendingEmojis: (targetId: string) => ReadonlySet<string>;
+  getProtectedEmojisSince: (
+    targetId: string,
+    sinceEpoch: number
+  ) => ReadonlySet<string>;
+}
+
+function cloneReactionItem(item: ReactionItem): ReactionItem {
+  return {
+    emoji: item.emoji.trim(),
+    count: item.count,
+    reactedByMe: Boolean(item.reactedByMe),
+  };
 }
 
 /**
@@ -637,12 +655,23 @@ export function createReactionMutationTracker(): ReactionMutationTracker {
   interface EmojiSyncState {
     desiredActive: boolean;
     settledActive: boolean;
+    settledReaction?: ReactionItem | null;
     inFlight: ReactionSyncRequest;
   }
 
   let nextSeq = 1;
   const inFlightByTarget = new Map<string, Map<string, EmojiSyncState>>();
   const lastAppliedSeqByTarget = new Map<string, number>();
+  const lastChangedEpochByTarget = new Map<string, Map<string, number>>();
+
+  function recordEmojiActivity(targetId: string, key: string, epoch: number) {
+    let targetEpochs = lastChangedEpochByTarget.get(targetId);
+    if (!targetEpochs) {
+      targetEpochs = new Map<string, number>();
+      lastChangedEpochByTarget.set(targetId, targetEpochs);
+    }
+    targetEpochs.set(key, epoch);
+  }
 
   function getOrCreateTargetMap(targetId: string) {
     let targetMap = inFlightByTarget.get(targetId);
@@ -674,23 +703,25 @@ export function createReactionMutationTracker(): ReactionMutationTracker {
     const existing = targetMap.get(key);
     if (existing) {
       existing.desiredActive = !existing.desiredActive;
+      recordEmojiActivity(targetId, key, nextSeq++);
       return {
         desiredActive: existing.desiredActive,
         dispatch: null,
       };
     }
 
-    const wasActive = Boolean(
-      currentReactions.find((item) => item.emoji === key)?.reactedByMe
-    );
+    const currentItem = currentReactions.find((item) => item.emoji === key);
+    const wasActive = Boolean(currentItem?.reactedByMe);
     const desiredActive = !wasActive;
     const seq = nextSeq++;
     const dispatch: ReactionSyncRequest = { seq, active: desiredActive };
     targetMap.set(key, {
       desiredActive,
       settledActive: wasActive,
+      settledReaction: currentItem ? cloneReactionItem(currentItem) : null,
       inFlight: dispatch,
     });
+    recordEmojiActivity(targetId, key, seq);
 
     return {
       desiredActive,
@@ -701,7 +732,8 @@ export function createReactionMutationTracker(): ReactionMutationTracker {
   function settle(
     targetId: string,
     emoji: string,
-    seq: number
+    seq: number,
+    serverReactions?: readonly ReactionItem[]
   ): ReactionSettleResult | null {
     const key = emoji.trim();
     const targetMap = inFlightByTarget.get(targetId);
@@ -711,6 +743,14 @@ export function createReactionMutationTracker(): ReactionMutationTracker {
     }
 
     entry.settledActive = entry.inFlight.active;
+    if (serverReactions) {
+      const serverItem = serverReactions.find(
+        (item) => item.emoji.trim() === key
+      );
+      entry.settledReaction = serverItem ? cloneReactionItem(serverItem) : null;
+    }
+    recordEmojiActivity(targetId, key, nextSeq++);
+
     const prevApplied = lastAppliedSeqByTarget.get(targetId) ?? 0;
     const applyExternalUpdates = seq >= prevApplied;
     if (applyExternalUpdates) {
@@ -750,11 +790,256 @@ export function createReactionMutationTracker(): ReactionMutationTracker {
     }
 
     const rollbackActive = entry.settledActive;
+    const rollbackReaction = entry.settledReaction;
+    recordEmojiActivity(targetId, key, nextSeq++);
     deleteEntry(targetId, key);
-    return { rollbackActive };
+    return { rollbackActive, rollbackReaction };
   }
 
-  return { enqueue, settle, fail };
+  function getCurrentEpoch(): number {
+    return nextSeq;
+  }
+
+  function getPendingEmojis(targetId: string): ReadonlySet<string> {
+    return new Set(inFlightByTarget.get(targetId)?.keys() ?? []);
+  }
+
+  function getProtectedEmojisSince(
+    targetId: string,
+    sinceEpoch: number
+  ): ReadonlySet<string> {
+    const protectedSet = new Set<string>(
+      inFlightByTarget.get(targetId)?.keys() ?? []
+    );
+    const targetEpochs = lastChangedEpochByTarget.get(targetId);
+    if (targetEpochs) {
+      for (const [emojiKey, epoch] of targetEpochs) {
+        if (epoch >= sinceEpoch) {
+          protectedSet.add(emojiKey);
+        }
+      }
+    }
+    return protectedSet;
+  }
+
+  return {
+    enqueue,
+    settle,
+    fail,
+    getCurrentEpoch,
+    getPendingEmojis,
+    getProtectedEmojisSince,
+  };
+}
+
+/**
+ * Restores a reaction pill to the last server-confirmed snapshot when available
+ * so follow-up failures keep other users' counts intact.
+ */
+export function restoreReactionSnapshot(
+  current: readonly ReactionItem[],
+  emoji: string,
+  rollbackActive: boolean,
+  rollbackReaction?: ReactionItem | null
+): ReactionItem[] {
+  const key = emoji.trim();
+  if (!key) {
+    return [...current];
+  }
+
+  if (rollbackReaction === undefined) {
+    return applyReactionActiveState([...current], key, rollbackActive);
+  }
+
+  const next: ReactionItem[] = [];
+  let replaced = false;
+
+  for (const item of current) {
+    if (item.emoji === key) {
+      if (rollbackReaction) {
+        next.push(cloneReactionItem(rollbackReaction));
+      }
+      replaced = true;
+      continue;
+    }
+    next.push(item);
+  }
+
+  if (!replaced && rollbackReaction) {
+    next.push(cloneReactionItem(rollbackReaction));
+  }
+
+  return next;
+}
+
+type ReactionInput = {
+  emoji: string;
+  count: number;
+  reactedByMe?: boolean;
+};
+
+function normalizeReactionList(items: readonly ReactionInput[]): ReactionItem[] {
+  return items.map((item) => ({
+    emoji: item.emoji.trim(),
+    count: item.count,
+    reactedByMe: Boolean(item.reactedByMe),
+  }));
+}
+
+/**
+ * Reconciles an incoming server reaction list (such as from an RSC refresh or
+ * sibling comment mutation) while keeping any emojis that are still pending or
+ * settled since `sinceEpoch`.
+ */
+export function mergeIncomingReactions(input: {
+  tracker: ReactionMutationTracker;
+  targetId: string;
+  currentReactions: readonly ReactionInput[];
+  incomingReactions: readonly ReactionInput[];
+  sinceEpoch?: number;
+}): ReactionItem[] {
+  const pendingEmojis =
+    input.sinceEpoch !== undefined
+      ? input.tracker.getProtectedEmojisSince(input.targetId, input.sinceEpoch)
+      : input.tracker.getPendingEmojis(input.targetId);
+
+  const normalizedIncoming = normalizeReactionList(input.incomingReactions);
+  if (pendingEmojis.size === 0) {
+    return normalizedIncoming;
+  }
+
+  return reconcileReactions({
+    current: normalizeReactionList(input.currentReactions),
+    serverReactions: normalizedIncoming,
+    toggledEmoji: '',
+    pendingEmojis,
+    applyExternalUpdates: true,
+  });
+}
+
+/**
+ * Merges a refreshed `PostThread` snapshot while preserving in-flight and
+ * recently settled reactions across the root post, comments, and replies.
+ */
+export function mergeThreadReactions(input: {
+  currentThread: PostThread;
+  incomingThread: PostThread;
+  tracker: ReactionMutationTracker;
+  sinceEpoch: number;
+}): PostThread {
+  const currentReactionsById = new Map<string, readonly ReactionItem[]>();
+  for (const comment of input.currentThread.comments) {
+    currentReactionsById.set(comment.id, comment.reactions);
+    for (const reply of comment.replies) {
+      currentReactionsById.set(reply.id, reply.reactions);
+    }
+  }
+
+  return {
+    ...input.incomingThread,
+    reactions: mergeIncomingReactions({
+      tracker: input.tracker,
+      targetId: input.incomingThread.id,
+      currentReactions: input.currentThread.reactions,
+      incomingReactions: input.incomingThread.reactions,
+      sinceEpoch: input.sinceEpoch,
+    }),
+    comments: input.incomingThread.comments.map((comment) => ({
+      ...comment,
+      reactions: mergeIncomingReactions({
+        tracker: input.tracker,
+        targetId: comment.id,
+        currentReactions: currentReactionsById.get(comment.id) ?? [],
+        incomingReactions: comment.reactions,
+        sinceEpoch: input.sinceEpoch,
+      }),
+      replies: comment.replies.map((reply) => ({
+        ...reply,
+        reactions: mergeIncomingReactions({
+          tracker: input.tracker,
+          targetId: reply.id,
+          currentReactions: currentReactionsById.get(reply.id) ?? [],
+          incomingReactions: reply.reactions,
+          sinceEpoch: input.sinceEpoch,
+        }),
+      })),
+    })),
+  };
+}
+
+/**
+ * Copies latest reaction arrays from surviving comments/replies back onto a
+ * pre-mutation snapshot when rolling back a failed delete operation.
+ */
+export function preserveCommentReactions(
+  targetComments: readonly ThreadComment[],
+  currentComments: readonly ThreadComment[]
+): ThreadComment[] {
+  const currentReactionsById = new Map<string, ReactionItem[]>();
+  for (const comment of currentComments) {
+    currentReactionsById.set(comment.id, comment.reactions);
+    for (const reply of comment.replies) {
+      currentReactionsById.set(reply.id, reply.reactions);
+    }
+  }
+
+  return targetComments.map((comment) => ({
+    ...comment,
+    reactions: currentReactionsById.get(comment.id) ?? comment.reactions,
+    replies: comment.replies.map((reply) => ({
+      ...reply,
+      reactions: currentReactionsById.get(reply.id) ?? reply.reactions,
+    })),
+  }));
+}
+
+export function revertEditedCommentContent(
+  comments: readonly ThreadComment[],
+  targetId: string,
+  original: { content: string; isEdited?: boolean }
+): ThreadComment[] {
+  return comments.map((comment) => {
+    if (comment.id === targetId) {
+      return {
+        ...comment,
+        content: original.content,
+        isEdited: original.isEdited,
+      };
+    }
+
+    if (!comment.replies.some((reply) => reply.id === targetId)) {
+      return comment;
+    }
+
+    return {
+      ...comment,
+      replies: comment.replies.map((reply) =>
+        reply.id === targetId
+          ? {
+              ...reply,
+              content: original.content,
+              isEdited: original.isEdited,
+            }
+          : reply
+      ),
+    };
+  });
+}
+
+export function removeOptimisticCommentOrReply(
+  comments: readonly ThreadComment[],
+  tempId: string
+): ThreadComment[] {
+  return comments
+    .filter((comment) => comment.id !== tempId)
+    .map((comment) =>
+      comment.replies.some((reply) => reply.id === tempId)
+        ? {
+            ...comment,
+            replies: comment.replies.filter((reply) => reply.id !== tempId),
+          }
+        : comment
+    );
 }
 
 

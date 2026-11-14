@@ -24,9 +24,12 @@ import {
   countTotalComments,
   createReactionMutationTracker,
   editCommentOrReply,
+  mergeThreadReactions,
+  preserveCommentReactions,
+  removeOptimisticCommentOrReply,
+  revertEditedCommentContent,
   sortComments,
   TIME_REFRESH_INTERVAL_MS,
-  type ReactionMutationTracker,
 } from '@/lib/post-thread';
 import { syncReactionMutation } from '@/lib/reaction-client';
 import {
@@ -186,7 +189,8 @@ export function PostThreadClient({
   const mainReplyInputRef = useRef<HTMLInputElement | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sortMenuRef = useRef<HTMLDivElement | null>(null);
-  const reactionTrackerRef = useRef<ReactionMutationTracker | null>(null);
+  const [reactionTracker] = useState(createReactionMutationTracker);
+  const tempIdSeqRef = useRef(0);
   const threadRef = useRef(thread);
   const replyingToRef = useRef(replyingTo);
 
@@ -194,13 +198,6 @@ export function PostThreadClient({
     threadRef.current = thread;
     replyingToRef.current = replyingTo;
   }, [thread, replyingTo]);
-
-  const getReactionTracker = useCallback((): ReactionMutationTracker => {
-    if (!reactionTrackerRef.current) {
-      reactionTrackerRef.current = createReactionMutationTracker();
-    }
-    return reactionTrackerRef.current;
-  }, []);
 
   useEffect(() => {
     return () => {
@@ -321,7 +318,7 @@ export function PostThreadClient({
 
       const targetId = thread.id;
       return syncReactionMutation({
-        tracker: getReactionTracker(),
+        tracker: reactionTracker,
         roomId: room.id,
         postId: targetId,
         messageId: targetId,
@@ -346,7 +343,7 @@ export function PostThreadClient({
         onError: showToast,
       });
     },
-    [ensureReactAllowed, getReactionTracker, room.id, showToast, thread.id]
+    [ensureReactAllowed, reactionTracker, room.id, showToast, thread.id]
   );
 
   const handleToggleCommentReaction = useCallback(
@@ -361,7 +358,7 @@ export function PostThreadClient({
       );
 
       return syncReactionMutation({
-        tracker: getReactionTracker(),
+        tracker: reactionTracker,
         roomId: room.id,
         postId: thread.id,
         messageId: targetId,
@@ -391,7 +388,7 @@ export function PostThreadClient({
         onError: showToast,
       });
     },
-    [ensureReactAllowed, getReactionTracker, room.id, showToast, thread.id]
+    [ensureReactAllowed, reactionTracker, room.id, showToast, thread.id]
   );
 
   const handleAddTopLevelComment = async (content: string) => {
@@ -400,18 +397,25 @@ export function PostThreadClient({
       return;
     }
 
+    const trimmed = content.trim();
+    if (!trimmed) {
+      return;
+    }
+
     const nowMs = Date.now();
     const nowIso = new Date(nowMs).toISOString();
-    const previousComments = thread.comments;
+    const tempId = `temp-comment-${nowMs}-${++tempIdSeqRef.current}`;
+    const sinceEpoch = reactionTracker.getCurrentEpoch();
     setReferenceTime(nowMs);
     setThread((prev) => ({
       ...prev,
       comments: addTopLevelComment(
         prev.comments,
-        content,
+        trimmed,
         { id: currentUser.id, name: currentUser.alias },
         nowIso,
-        prev.author.id
+        prev.author.id,
+        tempId
       ),
     }));
 
@@ -420,17 +424,30 @@ export function PostThreadClient({
         roomId: room.id,
         postId: thread.id,
         parentId: thread.id,
-        content,
+        content: trimmed,
       });
       if (!result.ok) {
-        setThread((prev) => ({ ...prev, comments: previousComments }));
+        setThread((prev) => ({
+          ...prev,
+          comments: removeOptimisticCommentOrReply(prev.comments, tempId),
+        }));
         showToast(result.error);
         return;
       }
-      setThread(result.data.thread);
+      setThread((prev) =>
+        mergeThreadReactions({
+          currentThread: prev,
+          incomingThread: result.data.thread,
+          tracker: reactionTracker,
+          sinceEpoch,
+        })
+      );
       showToast('เพิ่มความคิดเห็นเรียบร้อยแล้ว');
     } catch {
-      setThread((prev) => ({ ...prev, comments: previousComments }));
+      setThread((prev) => ({
+        ...prev,
+        comments: removeOptimisticCommentOrReply(prev.comments, tempId),
+      }));
       showToast('ไม่สามารถส่งความคิดเห็นได้ กรุณาลองใหม่อีกครั้ง');
     }
   };
@@ -442,9 +459,15 @@ export function PostThreadClient({
         return;
       }
 
+      const trimmed = content.trim();
+      if (!trimmed) {
+        return;
+      }
+
       const nowMs = Date.now();
       const nowIso = new Date(nowMs).toISOString();
-      const previousComments = threadRef.current.comments;
+      const tempId = `temp-reply-${nowMs}-${++tempIdSeqRef.current}`;
+      const sinceEpoch = reactionTracker.getCurrentEpoch();
       const previousReplyingTo = replyingToRef.current;
       const replyTo =
         previousReplyingTo?.commentId === commentId
@@ -462,11 +485,12 @@ export function PostThreadClient({
         comments: addNestedReply(
           prev.comments,
           parentId,
-          content,
+          trimmed,
           { id: currentUser.id, name: currentUser.alias },
           nowIso,
           prev.author.id,
-          replyTo
+          replyTo,
+          tempId
         ),
       }));
       setExpandedCommentIds((prev) =>
@@ -479,18 +503,31 @@ export function PostThreadClient({
           roomId: room.id,
           postId: thread.id,
           parentId,
-          content,
+          content: trimmed,
         });
         if (!result.ok) {
-          setThread((prev) => ({ ...prev, comments: previousComments }));
+          setThread((prev) => ({
+            ...prev,
+            comments: removeOptimisticCommentOrReply(prev.comments, tempId),
+          }));
           setReplyingTo(previousReplyingTo);
           showToast(result.error);
           return;
         }
-        setThread(result.data.thread);
+        setThread((prev) =>
+          mergeThreadReactions({
+            currentThread: prev,
+            incomingThread: result.data.thread,
+            tracker: reactionTracker,
+            sinceEpoch,
+          })
+        );
         showToast('ส่งข้อความตอบกลับเรียบร้อยแล้ว');
       } catch {
-        setThread((prev) => ({ ...prev, comments: previousComments }));
+        setThread((prev) => ({
+          ...prev,
+          comments: removeOptimisticCommentOrReply(prev.comments, tempId),
+        }));
         setReplyingTo(previousReplyingTo);
         showToast('ไม่สามารถส่งข้อความตอบกลับได้ กรุณาลองใหม่อีกครั้ง');
       }
@@ -499,6 +536,7 @@ export function PostThreadClient({
       canComment,
       currentUser,
       disabledCommentNotice.message,
+      reactionTracker,
       room.id,
       showToast,
       thread.id,
@@ -512,7 +550,25 @@ export function PostThreadClient({
         return;
       }
 
-      const previousComments = threadRef.current.comments;
+      let originalCommentSnapshot: { content: string; isEdited?: boolean } | null = null;
+      for (const comment of threadRef.current.comments) {
+        if (comment.id === targetId) {
+          originalCommentSnapshot = {
+            content: comment.content,
+            isEdited: comment.isEdited,
+          };
+          break;
+        }
+        const reply = comment.replies.find((item) => item.id === targetId);
+        if (reply) {
+          originalCommentSnapshot = {
+            content: reply.content,
+            isEdited: reply.isEdited,
+          };
+          break;
+        }
+      }
+
       setThread((prev) => ({
         ...prev,
         comments: editCommentOrReply(
@@ -523,6 +579,18 @@ export function PostThreadClient({
         ),
       }));
 
+      const rollbackEdit = () => {
+        if (!originalCommentSnapshot) return;
+        setThread((prev) => ({
+          ...prev,
+          comments: revertEditedCommentContent(
+            prev.comments,
+            targetId,
+            originalCommentSnapshot
+          ),
+        }));
+      };
+
       try {
         const result = await updateThreadMessage({
           roomId: room.id,
@@ -531,13 +599,13 @@ export function PostThreadClient({
           content: newContent,
         });
         if (!result.ok) {
-          setThread((prev) => ({ ...prev, comments: previousComments }));
+          rollbackEdit();
           showToast(result.error);
           return;
         }
         showToast('แก้ไขความคิดเห็นเรียบร้อยแล้ว');
       } catch {
-        setThread((prev) => ({ ...prev, comments: previousComments }));
+        rollbackEdit();
         showToast('ไม่สามารถแก้ไขความคิดเห็นได้ กรุณาลองใหม่อีกครั้ง');
       }
     },
@@ -571,9 +639,9 @@ export function PostThreadClient({
       return;
     }
 
-    const previousComments = thread.comments;
+    const previousComments = threadRef.current.comments;
     const { nextComments, removedIds } = deleteCommentSubtreeOptimistic(
-      thread.comments,
+      previousComments,
       target.id,
       currentUser.id
     );
@@ -599,7 +667,10 @@ export function PostThreadClient({
         messageId: target.id,
       });
       if (!result.ok) {
-        setThread((prev) => ({ ...prev, comments: previousComments }));
+        setThread((prev) => ({
+          ...prev,
+          comments: preserveCommentReactions(previousComments, prev.comments),
+        }));
         showToast(result.error);
         return;
       }
@@ -617,7 +688,10 @@ export function PostThreadClient({
       }
       showToast('ลบความคิดเห็นเรียบร้อยแล้ว');
     } catch {
-      setThread((prev) => ({ ...prev, comments: previousComments }));
+      setThread((prev) => ({
+        ...prev,
+        comments: preserveCommentReactions(previousComments, prev.comments),
+      }));
       showToast('ไม่สามารถลบความคิดเห็นได้ กรุณาลองใหม่อีกครั้ง');
     }
   };

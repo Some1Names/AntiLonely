@@ -72,6 +72,7 @@ export const ReactionBar = memo(function ReactionBar({
   const [showAllPickerEmojis, setShowAllPickerEmojis] = useState(false);
   const [position, setPosition] = useState<PopoverResult | null>(null);
   const [focusedIndex, setFocusedIndex] = useState(0);
+  const [prevWasOpen, setPrevWasOpen] = useState(false);
 
   // Drag down gesture state for mobile bottom sheet
   const [dragTranslateY, setDragTranslateY] = useState(0);
@@ -111,6 +112,16 @@ export const ReactionBar = memo(function ReactionBar({
         : [...INITIAL_PICKER_EMOJIS],
     [showAllPickerEmojis]
   );
+
+  if (isOpen !== prevWasOpen) {
+    setPrevWasOpen(isOpen);
+    if (isOpen) {
+      const firstSelectedIndex = currentPickerEmojis.findIndex((char) =>
+        optimisticReactions.some((r) => r.emoji === char && r.reactedByMe)
+      );
+      setFocusedIndex(firstSelectedIndex >= 0 ? firstSelectedIndex : 0);
+    }
+  }
 
   const handleClose = useCallback(() => {
     setDragTranslateY(0);
@@ -175,23 +186,45 @@ export const ReactionBar = memo(function ReactionBar({
   }, [optimisticReactions, reactions]);
 
   const prevDesktopOpenRef = useRef(false);
+  const pendingDesktopFocusRef = useRef(false);
+  const hasDesktopPosition = Boolean(position);
   // Measure and compute layout on open or picker expansion (desktop only)
   useLayoutEffect(() => {
-    const justOpened = isOpen && !isMobile && !prevDesktopOpenRef.current;
-    prevDesktopOpenRef.current = isOpen && !isMobile;
+    const isDesktopOpen = isOpen && !isMobile;
+    const justOpened = isDesktopOpen && !prevDesktopOpenRef.current;
+    prevDesktopOpenRef.current = isDesktopOpen;
 
-    if (isOpen && !isMobile) {
-      updatePosition();
-      if (justOpened) {
-        const currentReactions = optimisticReactionsRef.current;
-        const firstSelectedIndex = currentPickerEmojis.findIndex((char) =>
-          currentReactions.some((r) => r.emoji === char && r.reactedByMe)
-        );
-        const initialIndex = firstSelectedIndex >= 0 ? firstSelectedIndex : 0;
-        buttonRefs.current[initialIndex]?.focus();
+    if (!isDesktopOpen) {
+      pendingDesktopFocusRef.current = false;
+      return;
+    }
+
+    if (justOpened) {
+      pendingDesktopFocusRef.current = true;
+    }
+
+    updatePosition();
+
+    if (pendingDesktopFocusRef.current && popoverRef.current) {
+      const currentReactions = optimisticReactionsRef.current;
+      const firstSelectedIndex = currentPickerEmojis.findIndex((char) =>
+        currentReactions.some((r) => r.emoji === char && r.reactedByMe)
+      );
+      const initialIndex = firstSelectedIndex >= 0 ? firstSelectedIndex : 0;
+      const targetButton = buttonRefs.current[initialIndex];
+      if (targetButton) {
+        pendingDesktopFocusRef.current = false;
+        targetButton.focus();
       }
     }
-  }, [isOpen, isMobile, showAllPickerEmojis, updatePosition, currentPickerEmojis]);
+  }, [
+    isOpen,
+    isMobile,
+    hasDesktopPosition,
+    showAllPickerEmojis,
+    updatePosition,
+    currentPickerEmojis,
+  ]);
 
   // Focus initial item only when opening mobile bottom sheet
   useEffect(() => {

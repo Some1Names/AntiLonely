@@ -27,6 +27,7 @@ async function RoomBoardFeedContent({ params }: Props) {
 
   return (
     <RoomBoardFeed
+      key={data.room.id}
       room={data.room}
       initialPosts={data.initialPosts}
       initialMembership={data.membership}

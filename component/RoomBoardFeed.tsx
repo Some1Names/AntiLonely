@@ -22,8 +22,8 @@ import {
   deleteBoardPost,
   editBoardPost,
   formatRelativeTimeThai,
+  mergeIncomingReactions,
   TIME_REFRESH_INTERVAL_MS,
-  type ReactionMutationTracker,
 } from "@/lib/post-thread";
 import { syncReactionMutation } from "@/lib/reaction-client";
 import {
@@ -181,20 +181,29 @@ export default function RoomBoardFeed({
   });
   const [prevInitialPosts, setPrevInitialPosts] = useState(initialPosts);
   const [posts, setPosts] = useState<BoardPostSummary[]>(initialPosts);
-  const reactionTrackerRef = useRef<ReactionMutationTracker | null>(null);
+  const [reactionTracker] = useState(createReactionMutationTracker);
   const postsRef = useRef(posts);
   useLayoutEffect(() => {
     postsRef.current = posts;
   }, [posts]);
-  const getReactionTracker = useCallback((): ReactionMutationTracker => {
-    if (!reactionTrackerRef.current) {
-      reactionTrackerRef.current = createReactionMutationTracker();
-    }
-    return reactionTrackerRef.current;
-  }, []);
   if (initialPosts !== prevInitialPosts) {
     setPrevInitialPosts(initialPosts);
-    setPosts(initialPosts);
+    setPosts((prev) => {
+      const prevById = new Map(prev.map((post) => [post.id, post]));
+      return initialPosts.map((incoming) => {
+        const current = prevById.get(incoming.id);
+        if (!current) return incoming;
+        return {
+          ...incoming,
+          reactions: mergeIncomingReactions({
+            tracker: reactionTracker,
+            targetId: incoming.id,
+            currentReactions: current.reactions,
+            incomingReactions: incoming.reactions,
+          }),
+        };
+      });
+    });
   }
 
   const [text, setText] = useState("");
@@ -352,10 +361,26 @@ export default function RoomBoardFeed({
         return;
       }
 
-      const previousPosts = postsRef.current;
+      const previousPost = postsRef.current.find((p) => p.id === postId);
+      const sinceEpoch = reactionTracker.getCurrentEpoch();
       setPosts((prev) =>
         editBoardPost(prev, postId, newContent, currentUser.id)
       );
+
+      const rollbackPostContent = () => {
+        if (!previousPost) return;
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.id === postId
+              ? {
+                  ...p,
+                  content: previousPost.content,
+                  isEdited: previousPost.isEdited,
+                }
+              : p
+          )
+        );
+      };
 
       try {
         const result = await updateRoomPost({
@@ -364,20 +389,33 @@ export default function RoomBoardFeed({
           content: newContent,
         });
         if (!result.ok) {
-          setPosts(previousPosts);
+          rollbackPostContent();
           showToast(result.error);
           return;
         }
         setPosts((prev) =>
-          prev.map((p) => (p.id === postId ? result.data : p))
+          prev.map((p) =>
+            p.id === postId
+              ? {
+                  ...result.data,
+                  reactions: mergeIncomingReactions({
+                    tracker: reactionTracker,
+                    targetId: postId,
+                    currentReactions: p.reactions,
+                    incomingReactions: result.data.reactions,
+                    sinceEpoch,
+                  }),
+                }
+              : p
+          )
         );
         showToast("แก้ไขกระทู้เรียบร้อยแล้ว");
       } catch {
-        setPosts(previousPosts);
+        rollbackPostContent();
         showToast("ไม่สามารถแก้ไขกระทู้ได้ กรุณาลองใหม่อีกครั้ง");
       }
     },
-    [currentUser, room.id, showToast]
+    [currentUser, reactionTracker, room.id, showToast]
   );
 
   const handleDeletePost = useCallback(
@@ -387,8 +425,23 @@ export default function RoomBoardFeed({
         return;
       }
 
-      const previousPosts = postsRef.current;
+      const deletedIndex = postsRef.current.findIndex((p) => p.id === postId);
+      const deletedPost =
+        deletedIndex >= 0 ? postsRef.current[deletedIndex] : undefined;
       setPosts((prev) => deleteBoardPost(prev, postId, currentUser.id));
+
+      const restoreDeletedPost = () => {
+        if (!deletedPost) return;
+        setPosts((prev) => {
+          if (prev.some((p) => p.id === deletedPost.id)) {
+            return prev;
+          }
+          const next = [...prev];
+          const insertAt = Math.min(Math.max(deletedIndex, 0), next.length);
+          next.splice(insertAt, 0, deletedPost);
+          return next;
+        });
+      };
 
       try {
         const result = await deleteRoomPost({
@@ -396,13 +449,13 @@ export default function RoomBoardFeed({
           postId,
         });
         if (!result.ok) {
-          setPosts(previousPosts);
+          restoreDeletedPost();
           showToast(result.error);
           return;
         }
         showToast("ลบกระทู้เรียบร้อยแล้ว");
       } catch {
-        setPosts(previousPosts);
+        restoreDeletedPost();
         showToast("ไม่สามารถลบกระทู้ได้ กรุณาลองใหม่อีกครั้ง");
       }
     },
@@ -456,7 +509,7 @@ export default function RoomBoardFeed({
       }));
 
       return syncReactionMutation({
-        tracker: getReactionTracker(),
+        tracker: reactionTracker,
         roomId: room.id,
         messageId: postId,
         emoji,
@@ -474,8 +527,8 @@ export default function RoomBoardFeed({
     },
     [
       currentUser,
-      getReactionTracker,
       membership.status,
+      reactionTracker,
       room.id,
       room.isPrivate,
       showToast,

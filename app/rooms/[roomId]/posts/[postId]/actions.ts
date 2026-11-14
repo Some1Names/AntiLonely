@@ -692,6 +692,7 @@ export async function toggleThreadReaction(input: {
   postId: string;
   messageId: string;
   emoji: string;
+  active?: boolean;
 }): Promise<ActionResult<{ messageId: string; reactions: ReactionItem[] }>> {
   return runSafeMutation(async () => {
     const result = await toggleMessageReaction({
@@ -699,10 +700,16 @@ export async function toggleThreadReaction(input: {
       postId: input.postId,
       messageId: input.messageId,
       emoji: input.emoji,
+      active: input.active,
     });
     if (!result.ok) {
       return { ok: false, error: result.error };
     }
+    revalidateThreadPaths(
+      result.data.roomId,
+      result.data.roomSlug,
+      result.data.postId
+    );
     return {
       ok: true,
       data: {
