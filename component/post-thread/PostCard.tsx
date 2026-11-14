@@ -16,7 +16,7 @@ interface PostCardProps {
   thread: PostThread;
   referenceTime: number;
   isMuted: boolean;
-  onToggleReaction: (emoji: string) => void;
+  onToggleReaction: (emoji: string) => Promise<boolean | void> | boolean | void;
   onReplyClick: () => void;
   onShareClick: () => void;
   onCopyLinkClick: () => void;

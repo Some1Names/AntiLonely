@@ -5,31 +5,63 @@ import Link from 'next/link';
 import type {
   CommentSortOrder,
   PostThread,
+  ReactionItem,
+  ReportReason,
   ReportTargetType,
-  ThreadAuthor,
 } from '@/types/post-thread';
+import type { MyRoom } from '@/types/room';
 import {
   addNestedReply,
   addTopLevelComment,
   countTotalComments,
-  deleteCommentOrReply,
   editCommentOrReply,
   sortComments,
   toggleCommentReaction,
   togglePostReaction,
   TIME_REFRESH_INTERVAL_MS,
 } from '@/lib/post-thread';
+import {
+  collectClientSubtreeIds,
+  deleteCommentSubtreeOptimistic,
+  removeDeletedIdsFromComments,
+} from '@/lib/post-thread-mapper';
+import { canMemberReactInRoom, type DbMemberStatus } from '@/lib/room-board';
+import {
+  createThreadReply,
+  deleteThreadMessage,
+  reportThreadTarget,
+  toggleThreadReaction,
+  updateThreadMessage,
+} from '@/app/rooms/[roomId]/posts/[postId]/actions';
 import Header from '@/component/Header';
-import { currentUser as mockCurrentUser, myRooms } from '@/lib/mock';
 import { PostCard } from './PostCard';
 import { ReplyComposer } from './ReplyComposer';
 import { CommentItem } from './CommentItem';
 import { ReportModal } from './ReportModal';
-import { indexCardClass, outlineButtonClass } from '@/lib/styles';
+import {
+  dangerButtonClass,
+  indexCardClass,
+  outlineButtonClass,
+} from '@/lib/styles';
 
 interface PostThreadClientProps {
+  room: {
+    id: string;
+    slug: string;
+    name: string;
+    isPrivate: boolean;
+    isLocked: boolean;
+  };
+  memberStatus: DbMemberStatus | null;
+  canComment: boolean;
+  canReact: boolean;
   initialThread: PostThread;
-  currentUser: ThreadAuthor;
+  currentUser: {
+    id: string;
+    alias: string;
+    notifications: number;
+  } | null;
+  myRooms: MyRoom[];
   serverTime: string;
 }
 
@@ -38,9 +70,70 @@ const SORT_OPTIONS: { value: CommentSortOrder; label: string }[] = [
   { value: 'newest', label: 'ใหม่สุดก่อน' },
 ];
 
+function replaceMessageReactionsInComments(
+  comments: PostThread['comments'],
+  targetId: string,
+  reactions: ReactionItem[]
+): PostThread['comments'] {
+  return comments.map((comment) => {
+    if (comment.id === targetId) {
+      return { ...comment, reactions };
+    }
+    if (!comment.replies.some((reply) => reply.id === targetId)) {
+      return comment;
+    }
+    return {
+      ...comment,
+      replies: comment.replies.map((reply) =>
+        reply.id === targetId ? { ...reply, reactions } : reply
+      ),
+    };
+  });
+}
+
+function getDisabledCommentNotice(input: {
+  isAuthenticated: boolean;
+  isLocked: boolean;
+  memberStatus: DbMemberStatus | null;
+}): { message: string; showJoinLink: boolean } {
+  if (!input.isAuthenticated) {
+    return {
+      message: 'เข้าสู่ระบบและเข้าร่วมห้องก่อนจึงจะแสดงความคิดเห็นได้',
+      showJoinLink: true,
+    };
+  }
+  if (input.isLocked) {
+    return {
+      message: 'ห้องนี้ถูกล็อกชั่วคราว ไม่สามารถแสดงความคิดเห็นเพิ่มเติมได้',
+      showJoinLink: false,
+    };
+  }
+  if (input.memberStatus === 'muted') {
+    return {
+      message: 'คุณถูกจำกัดสิทธิ์การแสดงความคิดเห็นในห้องนี้ชั่วคราว',
+      showJoinLink: false,
+    };
+  }
+  if (input.memberStatus === 'banned') {
+    return {
+      message: 'คุณถูกระงับสิทธิ์การใช้งานในห้องนี้',
+      showJoinLink: false,
+    };
+  }
+  return {
+    message: 'เข้าร่วมห้องก่อนจึงจะแสดงความคิดเห็นและตอบกลับในกระทู้นี้ได้',
+    showJoinLink: true,
+  };
+}
+
 export function PostThreadClient({
+  room,
+  memberStatus,
+  canComment,
+  canReact,
   initialThread,
   currentUser,
+  myRooms,
   serverTime,
 }: PostThreadClientProps) {
   const [thread, setThread] = useState<PostThread>(initialThread);
@@ -58,11 +151,16 @@ export function PostThreadClient({
     type: ReportTargetType;
     id: string;
   } | null>(null);
+  const [pendingDeleteTarget, setPendingDeleteTarget] = useState<{
+    id: string;
+    descendantCount: number;
+  } | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const mainReplyInputRef = useRef<HTMLInputElement | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sortMenuRef = useRef<HTMLDivElement | null>(null);
+  const pendingReactionsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     return () => {
@@ -98,6 +196,19 @@ export function PostThreadClient({
     };
   }, [isSortMenuOpen]);
 
+  useEffect(() => {
+    if (!pendingDeleteTarget) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setPendingDeleteTarget(null);
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [pendingDeleteTarget]);
+
   const [referenceTime, setReferenceTime] = useState<number>(() => {
     const parsed = Date.parse(serverTime);
     return Number.isNaN(parsed) ? Date.now() : parsed;
@@ -121,6 +232,16 @@ export function PostThreadClient({
     [thread.comments]
   );
 
+  const disabledCommentNotice = useMemo(
+    () =>
+      getDisabledCommentNotice({
+        isAuthenticated: Boolean(currentUser),
+        isLocked: room.isLocked,
+        memberStatus,
+      }),
+    [currentUser, room.isLocked, memberStatus]
+  );
+
   const showToast = (message: string) => {
     if (toastTimeoutRef.current) {
       clearTimeout(toastTimeoutRef.current);
@@ -132,46 +253,186 @@ export function PostThreadClient({
     }, 3000);
   };
 
-  const handleTogglePostReaction = (emoji: string) => {
-    setThread((prev) => togglePostReaction(prev, emoji));
+  const ensureReactAllowed = (): boolean => {
+    if (!currentUser) {
+      showToast('กรุณาเข้าสู่ระบบก่อนกดรีแอคชัน');
+      return false;
+    }
+    const perm = canMemberReactInRoom({
+      isPrivate: room.isPrivate,
+      memberStatus,
+    });
+    if (!perm.ok) {
+      showToast(perm.error);
+      return false;
+    }
+    if (!canReact) {
+      showToast('คุณไม่มีสิทธิ์กดรีแอคชันในห้องนี้');
+      return false;
+    }
+    return true;
   };
 
-  const handleToggleCommentReaction = (targetId: string, emoji: string) => {
+  const handleTogglePostReaction = async (emoji: string): Promise<boolean> => {
+    if (!ensureReactAllowed()) {
+      return false;
+    }
+
+    const reactionKey = `${thread.id}:${emoji.trim()}`;
+    if (pendingReactionsRef.current.has(reactionKey)) {
+      return true;
+    }
+
+    pendingReactionsRef.current.add(reactionKey);
+    setThread((prev) => togglePostReaction(prev, emoji));
+
+    try {
+      const result = await toggleThreadReaction({
+        roomId: room.id,
+        postId: thread.id,
+        messageId: thread.id,
+        emoji,
+      });
+      if (!result.ok) {
+        setThread((prev) => togglePostReaction(prev, emoji));
+        showToast(result.error);
+        return false;
+      }
+      setThread((prev) => ({
+        ...prev,
+        reactions: result.data.reactions,
+      }));
+      return true;
+    } catch {
+      setThread((prev) => togglePostReaction(prev, emoji));
+      showToast('ไม่สามารถอัปเดตรีแอคชันได้ กรุณาลองใหม่อีกครั้ง');
+      return false;
+    } finally {
+      pendingReactionsRef.current.delete(reactionKey);
+    }
+  };
+
+  const handleToggleCommentReaction = async (
+    targetId: string,
+    emoji: string
+  ): Promise<boolean> => {
+    if (!ensureReactAllowed()) {
+      return false;
+    }
+
+    const reactionKey = `${targetId}:${emoji.trim()}`;
+    if (pendingReactionsRef.current.has(reactionKey)) {
+      return true;
+    }
+
+    pendingReactionsRef.current.add(reactionKey);
     setThread((prev) => ({
       ...prev,
       comments: toggleCommentReaction(prev.comments, targetId, emoji),
     }));
+
+    try {
+      const result = await toggleThreadReaction({
+        roomId: room.id,
+        postId: thread.id,
+        messageId: targetId,
+        emoji,
+      });
+      if (!result.ok) {
+        setThread((prev) => ({
+          ...prev,
+          comments: toggleCommentReaction(prev.comments, targetId, emoji),
+        }));
+        showToast(result.error);
+        return false;
+      }
+      setThread((prev) => ({
+        ...prev,
+        comments: replaceMessageReactionsInComments(
+          prev.comments,
+          targetId,
+          result.data.reactions
+        ),
+      }));
+      return true;
+    } catch {
+      setThread((prev) => ({
+        ...prev,
+        comments: toggleCommentReaction(prev.comments, targetId, emoji),
+      }));
+      showToast('ไม่สามารถอัปเดตรีแอคชันได้ กรุณาลองใหม่อีกครั้ง');
+      return false;
+    } finally {
+      pendingReactionsRef.current.delete(reactionKey);
+    }
   };
 
-  const handleAddTopLevelComment = (content: string) => {
+  const handleAddTopLevelComment = async (content: string) => {
+    if (!currentUser || !canComment) {
+      showToast(disabledCommentNotice.message);
+      return;
+    }
+
     const nowMs = Date.now();
     const nowIso = new Date(nowMs).toISOString();
+    const previousComments = thread.comments;
     setReferenceTime(nowMs);
     setThread((prev) => ({
       ...prev,
       comments: addTopLevelComment(
         prev.comments,
         content,
-        currentUser,
+        { id: currentUser.id, name: currentUser.alias },
         nowIso,
         prev.author.id
       ),
     }));
+
+    try {
+      const result = await createThreadReply({
+        roomId: room.id,
+        postId: thread.id,
+        parentId: thread.id,
+        content,
+      });
+      if (!result.ok) {
+        setThread((prev) => ({ ...prev, comments: previousComments }));
+        showToast(result.error);
+        return;
+      }
+      setThread(result.data.thread);
+      showToast('เพิ่มความคิดเห็นเรียบร้อยแล้ว');
+    } catch {
+      setThread((prev) => ({ ...prev, comments: previousComments }));
+      showToast('ไม่สามารถส่งความคิดเห็นได้ กรุณาลองใหม่อีกครั้ง');
+    }
   };
 
-  const handleAddNestedReply = (commentId: string, content: string) => {
+  const handleAddNestedReply = async (commentId: string, content: string) => {
+    if (!currentUser || !canComment) {
+      showToast(disabledCommentNotice.message);
+      return;
+    }
+
     const nowMs = Date.now();
     const nowIso = new Date(nowMs).toISOString();
-    setReferenceTime(nowMs);
+    const previousComments = thread.comments;
+    const previousReplyingTo = replyingTo;
     const replyTo =
       replyingTo?.commentId === commentId ? replyingTo.replyTo : undefined;
+    const parentId =
+      replyingTo?.commentId === commentId && replyingTo.targetReplyId
+        ? replyingTo.targetReplyId
+        : commentId;
+
+    setReferenceTime(nowMs);
     setThread((prev) => ({
       ...prev,
       comments: addNestedReply(
         prev.comments,
-        commentId,
+        parentId,
         content,
-        currentUser,
+        { id: currentUser.id, name: currentUser.alias },
         nowIso,
         prev.author.id,
         replyTo
@@ -181,9 +442,36 @@ export function PostThreadClient({
       prev.includes(commentId) ? prev : [...prev, commentId]
     );
     setReplyingTo(null);
+
+    try {
+      const result = await createThreadReply({
+        roomId: room.id,
+        postId: thread.id,
+        parentId,
+        content,
+      });
+      if (!result.ok) {
+        setThread((prev) => ({ ...prev, comments: previousComments }));
+        setReplyingTo(previousReplyingTo);
+        showToast(result.error);
+        return;
+      }
+      setThread(result.data.thread);
+      showToast('ส่งข้อความตอบกลับเรียบร้อยแล้ว');
+    } catch {
+      setThread((prev) => ({ ...prev, comments: previousComments }));
+      setReplyingTo(previousReplyingTo);
+      showToast('ไม่สามารถส่งข้อความตอบกลับได้ กรุณาลองใหม่อีกครั้ง');
+    }
   };
 
-  const handleEditComment = (targetId: string, newContent: string) => {
+  const handleEditComment = async (targetId: string, newContent: string) => {
+    if (!currentUser) {
+      showToast('กรุณาเข้าสู่ระบบก่อนแก้ไขความคิดเห็น');
+      return;
+    }
+
+    const previousComments = thread.comments;
     setThread((prev) => ({
       ...prev,
       comments: editCommentOrReply(
@@ -193,22 +481,116 @@ export function PostThreadClient({
         currentUser.id
       ),
     }));
-    showToast('แก้ไขความคิดเห็นเรียบร้อยแล้ว');
+
+    try {
+      const result = await updateThreadMessage({
+        roomId: room.id,
+        postId: thread.id,
+        messageId: targetId,
+        content: newContent,
+      });
+      if (!result.ok) {
+        setThread((prev) => ({ ...prev, comments: previousComments }));
+        showToast(result.error);
+        return;
+      }
+      showToast('แก้ไขความคิดเห็นเรียบร้อยแล้ว');
+    } catch {
+      setThread((prev) => ({ ...prev, comments: previousComments }));
+      showToast('ไม่สามารถแก้ไขความคิดเห็นได้ กรุณาลองใหม่อีกครั้ง');
+    }
   };
 
-  const handleDeleteComment = (targetId: string) => {
+  const handleRequestDeleteComment = (targetId: string) => {
+    if (!currentUser) {
+      showToast('กรุณาเข้าสู่ระบบก่อนลบความคิดเห็น');
+      return;
+    }
+
+    const subtreeIds = collectClientSubtreeIds(thread.comments, targetId);
+    const descendantCount = Math.max(0, subtreeIds.length - 1);
+    setPendingDeleteTarget({ id: targetId, descendantCount });
+  };
+
+  const handleConfirmDeleteComment = async () => {
+    const target = pendingDeleteTarget;
+    if (!target) return;
+    setPendingDeleteTarget(null);
+
+    if (!currentUser) {
+      showToast('กรุณาเข้าสู่ระบบก่อนลบความคิดเห็น');
+      return;
+    }
+
+    const previousComments = thread.comments;
+    const { nextComments, removedIds } = deleteCommentSubtreeOptimistic(
+      thread.comments,
+      target.id,
+      currentUser.id
+    );
+    const optimisticRemovedSet = new Set(removedIds);
+
     setThread((prev) => ({
       ...prev,
-      comments: deleteCommentOrReply(prev.comments, targetId, currentUser.id),
+      comments: nextComments,
     }));
-    if (replyingTo?.commentId === targetId) {
+    if (
+      replyingTo &&
+      (optimisticRemovedSet.has(replyingTo.commentId) ||
+        (replyingTo.targetReplyId &&
+          optimisticRemovedSet.has(replyingTo.targetReplyId)))
+    ) {
       setReplyingTo(null);
     }
-    showToast('ลบความคิดเห็นเรียบร้อยแล้ว');
+
+    try {
+      const result = await deleteThreadMessage({
+        roomId: room.id,
+        postId: thread.id,
+        messageId: target.id,
+      });
+      if (!result.ok) {
+        setThread((prev) => ({ ...prev, comments: previousComments }));
+        showToast(result.error);
+        return;
+      }
+      const deletedSet = new Set(result.data.deletedIds);
+      setThread((prev) => ({
+        ...prev,
+        comments: removeDeletedIdsFromComments(prev.comments, deletedSet),
+      }));
+      if (
+        replyingTo &&
+        (deletedSet.has(replyingTo.commentId) ||
+          (replyingTo.targetReplyId && deletedSet.has(replyingTo.targetReplyId)))
+      ) {
+        setReplyingTo(null);
+      }
+      showToast('ลบความคิดเห็นเรียบร้อยแล้ว');
+    } catch {
+      setThread((prev) => ({ ...prev, comments: previousComments }));
+      showToast('ไม่สามารถลบความคิดเห็นได้ กรุณาลองใหม่อีกครั้ง');
+    }
+  };
+
+  const handleOpenReport = (type: ReportTargetType, targetId: string) => {
+    if (!currentUser) {
+      showToast('กรุณาเข้าสู่ระบบก่อนส่งรายงาน');
+      return;
+    }
+    const perm = canMemberReactInRoom({
+      isPrivate: room.isPrivate,
+      memberStatus,
+    });
+    if (!perm.ok) {
+      showToast(perm.error);
+      return;
+    }
+    setReportTarget({ type, id: targetId });
   };
 
   const handleReportComment = (targetId: string) => {
-    setReportTarget({ type: 'comment', id: targetId });
+    handleOpenReport('comment', targetId);
   };
 
   const handleExpandReplies = (commentId: string) => {
@@ -223,7 +605,7 @@ export function PostThreadClient({
         await navigator.clipboard.writeText(window.location.href);
       }
     } catch {
-      // Clipboard fallback ignored in mock environment
+      // Clipboard fallback ignored
     }
     showToast('คัดลอกลิงก์กระทู้เรียบร้อยแล้ว');
   };
@@ -240,28 +622,50 @@ export function PostThreadClient({
     });
   };
 
-  const handleReportSubmit = () => {
-    const targetType = reportTarget?.type ?? 'post';
+  const handleReportSubmit = async (reason: ReportReason, details: string) => {
+    const target = reportTarget;
     setReportTarget(null);
-    showToast(
-      targetType === 'comment'
-        ? 'ส่งรายงานความคิดเห็นให้ทีมงานตรวจสอบเรียบร้อยแล้ว'
-        : 'ส่งรายงานกระทู้ให้ทีมงานตรวจสอบเรียบร้อยแล้ว'
-    );
+    if (!target) return;
+
+    if (!currentUser) {
+      showToast('กรุณาเข้าสู่ระบบก่อนส่งรายงาน');
+      return;
+    }
+
+    try {
+      const result = await reportThreadTarget({
+        roomId: room.id,
+        postId: thread.id,
+        messageId: target.id,
+        reason,
+        details,
+      });
+      if (!result.ok) {
+        showToast(result.error);
+        return;
+      }
+      showToast(
+        target.type === 'comment'
+          ? 'ส่งรายงานความคิดเห็นให้ทีมงานตรวจสอบเรียบร้อยแล้ว'
+          : 'ส่งรายงานกระทู้ให้ทีมงานตรวจสอบเรียบร้อยแล้ว'
+      );
+    } catch {
+      showToast('ไม่สามารถส่งรายงานได้ กรุณาลองใหม่อีกครั้ง');
+    }
   };
 
   return (
     <div className="min-h-screen flex flex-col font-sans">
       <Header
-        notifications={mockCurrentUser.notifications}
+        notifications={currentUser?.notifications ?? 0}
         rooms={myRooms}
-        alias={mockCurrentUser.alias}
+        alias={currentUser?.alias ?? 'ผู้เยี่ยมชม'}
       />
       <main className="w-full max-w-[760px] mx-auto px-4 sm:px-6 pt-6 pb-32 sm:pb-16 space-y-4 flex-1">
         {/* Back link */}
         <div>
           <Link
-            href={`/rooms/${thread.boardSlug}`}
+            href={`/rooms/${room.slug}`}
             className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-soft hover:text-kmutt-orange-dark hover:underline"
           >
             <span aria-hidden="true">←</span>
@@ -275,19 +679,43 @@ export function PostThreadClient({
           referenceTime={referenceTime}
           isMuted={isMuted}
           onToggleReaction={handleTogglePostReaction}
-          onReplyClick={() => mainReplyInputRef.current?.focus()}
+          onReplyClick={() => {
+            if (!canComment) {
+              showToast(disabledCommentNotice.message);
+              return;
+            }
+            mainReplyInputRef.current?.focus();
+          }}
           onShareClick={handleCopyOrShare}
           onCopyLinkClick={handleCopyOrShare}
           onToggleMuteClick={handleToggleMute}
-          onReportClick={() => setReportTarget({ type: 'post', id: thread.id })}
+          onReportClick={() => handleOpenReport('post', thread.id)}
         />
 
         {/* Reply Composer */}
-        <ReplyComposer
-          currentUserName={currentUser.name}
-          inputRef={mainReplyInputRef}
-          onSubmit={handleAddTopLevelComment}
-        />
+        {canComment ? (
+          <ReplyComposer
+            currentUserName={currentUser?.alias ?? 'นิรนาม'}
+            inputRef={mainReplyInputRef}
+            onSubmit={handleAddTopLevelComment}
+          />
+        ) : (
+          <div
+            className={`${indexCardClass} p-4 flex items-center justify-between gap-3 flex-wrap`}
+          >
+            <p className="text-sm text-ink-soft">
+              {disabledCommentNotice.message}
+            </p>
+            {disabledCommentNotice.showJoinLink && (
+              <Link
+                href={`/rooms/${room.slug}`}
+                className={`h-8 px-3 ${outlineButtonClass} text-xs! sm:text-[13px]! inline-flex items-center`}
+              >
+                ไปที่หน้าห้องเพื่อเข้าร่วม
+              </Link>
+            )}
+          </div>
+        )}
 
         {/* Comments Header & Sort Dropdown */}
         <div className="flex items-center justify-between gap-4 pt-1">
@@ -388,8 +816,8 @@ export function PostThreadClient({
                 key={comment.id}
                 comment={comment}
                 referenceTime={referenceTime}
-                currentUserId={currentUser.id}
-                currentUserName={currentUser.name}
+                currentUserId={currentUser?.id ?? ''}
+                currentUserName={currentUser?.alias ?? 'ผู้เยี่ยมชม'}
                 isExpanded={expandedCommentIds.includes(comment.id)}
                 isReplying={replyingTo?.commentId === comment.id}
                 activeReplyTargetName={
@@ -404,19 +832,69 @@ export function PostThreadClient({
                 }
                 onExpandReplies={handleExpandReplies}
                 onToggleReaction={handleToggleCommentReaction}
-                onStartReply={(commentId, targetName, replyTo, targetReplyId) =>
-                  setReplyingTo({ commentId, targetName, replyTo, targetReplyId })
-                }
+                onStartReply={(commentId, targetName, replyTo, targetReplyId) => {
+                  if (!canComment) {
+                    showToast(disabledCommentNotice.message);
+                    return;
+                  }
+                  setReplyingTo({ commentId, targetName, replyTo, targetReplyId });
+                }}
                 onCancelReply={() => setReplyingTo(null)}
                 onSubmitReply={handleAddNestedReply}
                 onEditComment={handleEditComment}
-                onDeleteComment={handleDeleteComment}
+                onDeleteComment={handleRequestDeleteComment}
                 onReportComment={handleReportComment}
               />
             ))
           )}
         </section>
       </main>
+
+      {/* Delete Comment Confirmation Modal */}
+      {pendingDeleteTarget && (
+        <div
+          className="fixed inset-0 z-50 bg-ink/45 flex items-center justify-center p-4"
+          onClick={() => setPendingDeleteTarget(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-comment-title"
+            onClick={(e) => e.stopPropagation()}
+            className={`flex w-full max-w-sm flex-col gap-4 p-6 text-ink ${indexCardClass}`}
+          >
+            <div className="flex flex-col gap-1">
+              <h3
+                id="delete-comment-title"
+                className="font-display text-xl font-semibold"
+              >
+                ลบความคิดเห็นนี้ไหม?
+              </h3>
+              <p className="text-sm text-ink-soft">
+                {pendingDeleteTarget.descendantCount > 0
+                  ? `ความคิดเห็นนี้และข้อความตอบกลับย่อยอีก ${pendingDeleteTarget.descendantCount} รายการจะถูกลบออกทั้งหมดและไม่สามารถกู้คืนได้`
+                  : 'หากลบแล้ว ความคิดเห็นนี้จะหายไปและไม่สามารถกู้คืนได้'}
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setPendingDeleteTarget(null)}
+                className={`cursor-pointer px-4 py-2 ${outlineButtonClass}`}
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleConfirmDeleteComment()}
+                className={`cursor-pointer px-4 py-2 ${dangerButtonClass}`}
+              >
+                ลบความคิดเห็น
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Report Modal */}
       <ReportModal
