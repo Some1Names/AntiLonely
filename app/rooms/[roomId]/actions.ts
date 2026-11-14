@@ -125,6 +125,7 @@ export async function getRoomBoardData(
             username: true,
             displayUsername: true,
             name: true,
+            image: true,
           },
         },
         reactions: {
@@ -302,6 +303,7 @@ export async function createRoomPost(input: {
             username: true,
             displayUsername: true,
             name: true,
+            image: true,
           },
         },
       },
@@ -399,6 +401,7 @@ export async function updateRoomPost(input: {
             username: true,
             displayUsername: true,
             name: true,
+            image: true,
           },
         },
         reactions: {

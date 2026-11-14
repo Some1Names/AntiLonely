@@ -168,6 +168,7 @@ export interface DbAuthorSnapshot {
   username: string;
   displayUsername: string | null;
   name: string;
+  image?: string | null;
 }
 
 export function resolveAuthorAlias(
@@ -305,6 +306,7 @@ export function mapDbPostToBoardPost(
     roomId: message.roomId,
     authorId: message.authorId ?? 'deleted-user',
     author: resolveAuthorAlias(message.author),
+    authorImage: message.author?.image ?? null,
     createdAt: createdAtIso,
     createdAtOffsetMs,
     timeLabel: formatRelativeTimeThai(createdAtIso, nowMs),

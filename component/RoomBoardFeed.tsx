@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { authClient } from "@/lib/auth-client";
 import Link from "next/link";
 import EmptyNote from "@/component/EmptyNote";
 import Header from "@/component/Header";
@@ -70,7 +71,8 @@ type Props = {
 function createOptimisticPost(
   roomId: string,
   currentUser: RoomBoardViewer,
-  content: string
+  content: string,
+  image?: string | null
 ): { nowMs: number; post: BoardPostSummary } {
   const nowMs = Date.now();
   return {
@@ -148,6 +150,7 @@ const BoardPostRow = memo(function BoardPostRow({
       id={post.id}
       roomId={roomId}
       author={post.author}
+      authorImage={post.authorImage}
       time={time}
       createdAt={post.createdAt}
       content={post.content}
@@ -173,12 +176,15 @@ export default function RoomBoardFeed({
   serverTime,
 }: Props) {
   const [referenceTime, setReferenceTime] = useState<number>(() => {
+    
     if (serverTime) {
       const parsed = Date.parse(serverTime);
       if (!Number.isNaN(parsed)) return parsed;
     }
     return 0;
   });
+  const { data: session } = authClient.useSession();
+  const myImage = session?.user?.image;
   const [prevInitialPosts, setPrevInitialPosts] = useState(initialPosts);
   const [posts, setPosts] = useState<BoardPostSummary[]>(initialPosts);
   const [reactionTracker] = useState(createReactionMutationTracker);
@@ -927,8 +933,13 @@ export default function RoomBoardFeed({
               }}
               className="flex w-full items-center gap-2 rounded-lg border-[1.5px] border-ink bg-butter p-3 shadow-sticker-lg sm:gap-3 sm:p-4"
             >
-              <span aria-hidden="true" className={`max-sm:hidden ${avatarClass}`}>
-                <Icon name="user" className="size-4.5" />
+              <span aria-hidden="true" className={`max-sm:hidden overflow-hidden ${avatarClass}`}>
+                {myImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={myImage} alt="" className="size-full object-cover" />
+                ) : (
+                  <Icon name="user" className="size-4.5" />
+                )}
               </span>
 
               <div className="relative min-w-0 flex-1">

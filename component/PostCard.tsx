@@ -1,5 +1,6 @@
 "use client";
 
+import { authClient } from "@/lib/auth-client";
 import { memo, useCallback, useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
 import ReactionBar from "@/component/ReactionBar";
@@ -19,6 +20,7 @@ type Props = {
   id?: string | number;
   roomId?: string;
   author?: string;
+  authorImage?: string | null;
   room?: string;
   time: string;
   createdAt?: string;
@@ -48,10 +50,29 @@ function toReactionItems(
   }));
 }
 
+function AvatarFace({ src, name }: { src?: string | null; name: string }) {
+  return (
+    <span aria-hidden="true" className={`${avatarClass} overflow-hidden`}>
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt="" className="size-full object-cover" />
+      ) : (
+        name.charAt(0).toUpperCase()
+      )}
+    </span>
+  );
+}
+
+function OwnAvatar({ name, image }: { name: string; image?: string | null }) {
+  const { data: session } = authClient.useSession();
+  return <AvatarFace src={session?.user?.image ?? image} name={name} />;
+}
+
 const PostCard = memo(function PostCard({
   id,
   roomId,
   author,
+  authorImage,
   room,
   time,
   createdAt,
@@ -172,11 +193,12 @@ const PostCard = memo(function PostCard({
     >
       <div ref={headerRef} className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
-          {author && (
-            <span aria-hidden="true" className={avatarClass}>
-              {author.charAt(0).toUpperCase()}
-            </span>
-          )}
+          {author && 
+          (isOwner ? (
+            <OwnAvatar name={author} image={authorImage} />
+          ) : (
+            <AvatarFace src={authorImage} name={author} />
+          ))}
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2">
               {author && (

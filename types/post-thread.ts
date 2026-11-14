@@ -81,6 +81,7 @@ export interface BoardPostSummary {
   roomId: string;
   authorId: string;
   author: string;
+  authorImage?: string | null;
   createdAt?: string;
   createdAtOffsetMs: number;
   timeLabel: string;
