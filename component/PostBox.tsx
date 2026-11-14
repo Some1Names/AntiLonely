@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import Icon from "@/component/Icon";
+import LinkPending from "@/component/LinkPending";
 import {
   useJoinedRooms,
   usePageSignedIn,
@@ -51,16 +52,18 @@ export default function PostBox({
         <div className="mt-5 flex flex-col gap-2 sm:flex-row">
           <Link
             href="/login"
-            className={`flex items-center justify-center gap-1.5 px-5 py-2.5 ${primaryButtonClass}`}
+            className={`relative flex items-center justify-center gap-1.5 px-5 py-2.5 ${primaryButtonClass}`}
           >
             <Icon name="user" className="size-4" />
             เข้าสู่ระบบ
+            <LinkPending />
           </Link>
           <Link
             href="/signup"
-            className={`flex items-center justify-center px-5 py-2.5 ${outlineButtonClass}`}
+            className={`relative flex items-center justify-center px-5 py-2.5 ${outlineButtonClass}`}
           >
             สมัครสมาชิก
+            <LinkPending />
           </Link>
         </div>
       </Note>

@@ -104,3 +104,9 @@ export const hintClass = "text-xs text-ink-soft";
 // A form-level error, such as a failed login.
 export const alertClass =
   "rounded-lg border-[1.5px] border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700";
+
+// A grey paper block standing in for content that's still loading. It
+// breathes gently, or just sits there with reduced motion. Give it a size
+// and, where it stands for text, a rounded-full shape.
+export const skeletonClass =
+  "rounded-md bg-edge/70 motion-safe:animate-pulse";

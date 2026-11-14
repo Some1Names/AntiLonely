@@ -2,8 +2,15 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import AuthCard, { AuthLink } from "@/component/AuthCard";
+import Spinner from "@/component/Spinner";
 import CommunityRules from "@/component/CommunityRules";
 import GoogleButton from "@/component/GoogleButton";
 import PasswordInput from "@/component/PasswordInput";
@@ -24,6 +31,10 @@ export default function SignupForm({ inModal = false }: { inModal?: boolean }) {
   const [leftPassword, setLeftPassword] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [pending, setPending] = useState(false);
+  // Signed in: the modal stays busy until the home page has taken over, so
+  // the button doesn't come back to life in between.
+  const [navigating, startNavigation] = useTransition();
+  const busy = pending || navigating;
   const [error, setError] = useState<string | null>(null);
   // The rules open in place of the form, in this same card, instead of in a
   // second modal or another page: the form is only hidden, so what was typed
@@ -141,6 +152,7 @@ export default function SignupForm({ inModal = false }: { inModal?: boolean }) {
           className="flex flex-col gap-4"
           onSubmit={async (event) => {
             event.preventDefault();
+            if (busy) return;
             setSubmitted(true);
             if (password.length < MIN_PASSWORD_LENGTH) return;
             const formElement = event.currentTarget;
@@ -168,8 +180,10 @@ export default function SignupForm({ inModal = false }: { inModal?: boolean }) {
             setPending(false);
             // Signed up and logged in. Going to / closes the modal; refresh lets
             // server components see the new session.
-            router.push("/");
-            router.refresh();
+            startNavigation(() => {
+              router.push("/");
+              router.refresh();
+            });
           }}
         >
           <div className="flex flex-col gap-1">
@@ -268,10 +282,11 @@ export default function SignupForm({ inModal = false }: { inModal?: boolean }) {
           )}
           <button
             type="submit"
-            disabled={pending}
-            className={`py-2.5 ${primaryButtonClass} ${disabledButtonClass}`}
+            disabled={busy}
+            className={`flex items-center justify-center gap-2 py-2.5 ${primaryButtonClass} ${disabledButtonClass}`}
           >
-            {pending ? "กำลังสมัคร…" : "สมัครเลยยย"}
+            {busy && <Spinner />}
+            {busy ? "กำลังสมัคร…" : "สมัครเลยยย"}
           </button>
         </form>
         <GoogleButton label="สมัครด้วย Google" />

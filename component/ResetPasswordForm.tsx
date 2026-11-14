@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
 import AuthCard, { AuthLink } from "@/component/AuthCard";
+import Spinner from "@/component/Spinner";
 import PasswordInput from "@/component/PasswordInput";
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-errors";
@@ -111,6 +112,7 @@ export default function ResetPasswordForm() {
         className="flex flex-col gap-4"
         onSubmit={async (event) => {
           event.preventDefault();
+          if (pending) return;
           setSubmitted(true);
           if (password.length < MIN_PASSWORD_LENGTH) return;
           setPending(true);
@@ -161,8 +163,9 @@ export default function ResetPasswordForm() {
         <button
           type="submit"
           disabled={pending}
-          className={`py-2.5 ${primaryButtonClass} ${disabledButtonClass}`}
+          className={`flex items-center justify-center gap-2 py-2.5 ${primaryButtonClass} ${disabledButtonClass}`}
         >
+          {pending && <Spinner />}
           {pending ? "กำลังบันทึก…" : "ตั้งรหัสผ่านใหม่"}
         </button>
       </form>

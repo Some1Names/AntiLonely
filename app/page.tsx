@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import Header from "@/component/Header";
 import HomeMain from "@/component/HomeMain";
+import HomeSkeleton from "@/component/HomeSkeleton";
 import PostBox from "@/component/PostBox";
 import RoomMembership from "@/component/RoomMembership";
 import Sidebar from "@/component/Sidebar";
@@ -42,6 +43,7 @@ export default function Home() {
       fallback={
         <div className="flex flex-1 flex-col">
           <Header notifications={0} rooms={[]} alias="" />
+          <HomeSkeleton />
         </div>
       }
     >
