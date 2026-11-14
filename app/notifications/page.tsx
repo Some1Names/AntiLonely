@@ -1,10 +1,11 @@
 import { Suspense } from 'react';
+import { redirect } from "next/navigation";
 import { connection } from 'next/server';
 import { NotificationsSkeleton } from '@/component/PageSkeletons';
 import Header from '@/component/Header';
 import { NotificationsClient } from '@/component/notifications/NotificationsClient';
-import { currentUser, myRooms } from '@/lib/mock';
-import { getMockNotificationsFeed } from '@/lib/mock/notifications';
+import { getNotificationItems } from "@/lib/notifications-data";
+import { getViewerUser } from "@/lib/server-action-helpers";
 
 export const metadata = {
   title: 'การแจ้งเตือน | AntiLonely',
@@ -13,7 +14,10 @@ export const metadata = {
 
 async function NotificationsFeed() {
   await connection();
-  const feed = getMockNotificationsFeed();
+  const viewer = await getViewerUser();
+  if (!viewer) redirect("/login");
+
+  const feed = await getNotificationItems(viewer.id);
 
   return (
     <NotificationsClient
@@ -28,7 +32,7 @@ export default function NotificationsPage() {
     <Suspense
       fallback={
         <div className="flex flex-1 flex-col">
-          <Header notifications={0} rooms={myRooms} alias={currentUser.alias} />
+          <Header notifications={0} rooms={[]} alias="" />
           <NotificationsSkeleton />
         </div>
       }
