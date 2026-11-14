@@ -1,6 +1,7 @@
 'use client';
 
 import React, {
+  memo,
   useState,
   useRef,
   useEffect,
@@ -16,6 +17,8 @@ import {
   INITIAL_PICKER_EMOJIS,
   REMAINING_PICKER_EMOJIS,
   REACTION_SIZES,
+  applyReactionActiveState,
+  toggleReaction,
   type ReactionSize,
 } from '@/lib/post-thread';
 import {
@@ -41,13 +44,13 @@ const pickerCellFocusClass = 'focus-visible:bg-highlight';
 
 export interface ReactionBarProps {
   reactions: ReactionItem[];
-  onToggleReaction: (emoji: string) => Promise<void> | void;
+  onToggleReaction: (emoji: string) => Promise<boolean | void> | boolean | void;
   size?: ReactionSize;
   avoidRef?: React.RefObject<HTMLElement | null>;
   pickerId?: string;
 }
 
-export function ReactionBar({
+export const ReactionBar = memo(function ReactionBar({
   reactions,
   onToggleReaction,
   size = 'md',
@@ -69,12 +72,19 @@ export function ReactionBar({
   const [showAllPickerEmojis, setShowAllPickerEmojis] = useState(false);
   const [position, setPosition] = useState<PopoverResult | null>(null);
   const [focusedIndex, setFocusedIndex] = useState(0);
+  const [prevWasOpen, setPrevWasOpen] = useState(false);
 
   // Drag down gesture state for mobile bottom sheet
   const [dragTranslateY, setDragTranslateY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartYRef = useRef(0);
   const dragStartTimeRef = useRef(0);
+  const fallbackInFlightRef = useRef<
+    Map<
+      string,
+      { count: number; baselineActive: boolean; reactionsAtStart: ReactionItem[] }
+    >
+  >(new Map());
 
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -86,6 +96,8 @@ export function ReactionBar({
   // Optimistic reactions state synced with props during render
   const [prevReactions, setPrevReactions] = useState<ReactionItem[]>(reactions);
   const [optimisticReactions, setOptimisticReactions] = useState<ReactionItem[]>(reactions);
+  const optimisticReactionsRef = useRef<ReactionItem[]>(optimisticReactions);
+  const reactionsPropRef = useRef<ReactionItem[]>(reactions);
 
   if (prevReactions !== reactions) {
     setPrevReactions(reactions);
@@ -100,6 +112,16 @@ export function ReactionBar({
         : [...INITIAL_PICKER_EMOJIS],
     [showAllPickerEmojis]
   );
+
+  if (isOpen !== prevWasOpen) {
+    setPrevWasOpen(isOpen);
+    if (isOpen) {
+      const firstSelectedIndex = currentPickerEmojis.findIndex((char) =>
+        optimisticReactions.some((r) => r.emoji === char && r.reactedByMe)
+      );
+      setFocusedIndex(firstSelectedIndex >= 0 ? firstSelectedIndex : 0);
+    }
+  }
 
   const handleClose = useCallback(() => {
     setDragTranslateY(0);
@@ -146,34 +168,70 @@ export function ReactionBar({
       { width: window.innerWidth, height: window.innerHeight },
       { gap: 8, viewportPadding: 12, avoidRect }
     );
-    setPosition(pos);
+    setPosition((prev) =>
+      prev &&
+      prev.top === pos.top &&
+      prev.left === pos.left &&
+      prev.placement === pos.placement &&
+      prev.transformOrigin === pos.transformOrigin &&
+      prev.shouldFallbackToSheet === pos.shouldFallbackToSheet
+        ? prev
+        : pos
+    );
   }, [avoidRef, isMobile, showAllPickerEmojis, isCoarsePointer]);
 
-  // Measure and compute layout on open (desktop only)
   useLayoutEffect(() => {
-    if (isOpen && !isMobile) {
-      updatePosition();
-      // Focus initial item
+    optimisticReactionsRef.current = optimisticReactions;
+    reactionsPropRef.current = reactions;
+  }, [optimisticReactions, reactions]);
+
+  const prevDesktopOpenRef = useRef(false);
+  const pendingDesktopFocusRef = useRef(false);
+  const hasDesktopPosition = Boolean(position);
+  // Measure and compute layout on open or picker expansion (desktop only)
+  useLayoutEffect(() => {
+    const isDesktopOpen = isOpen && !isMobile;
+    const justOpened = isDesktopOpen && !prevDesktopOpenRef.current;
+    prevDesktopOpenRef.current = isDesktopOpen;
+
+    if (!isDesktopOpen) {
+      pendingDesktopFocusRef.current = false;
+      return;
+    }
+
+    if (justOpened) {
+      pendingDesktopFocusRef.current = true;
+    }
+
+    updatePosition();
+
+    if (pendingDesktopFocusRef.current && popoverRef.current) {
+      const currentReactions = optimisticReactionsRef.current;
       const firstSelectedIndex = currentPickerEmojis.findIndex((char) =>
-        optimisticReactions.some((r) => r.emoji === char && r.reactedByMe)
+        currentReactions.some((r) => r.emoji === char && r.reactedByMe)
       );
       const initialIndex = firstSelectedIndex >= 0 ? firstSelectedIndex : 0;
-      buttonRefs.current[initialIndex]?.focus();
+      const targetButton = buttonRefs.current[initialIndex];
+      if (targetButton) {
+        pendingDesktopFocusRef.current = false;
+        targetButton.focus();
+      }
     }
-  }, [isOpen, isMobile, updatePosition, optimisticReactions, currentPickerEmojis]);
+  }, [
+    isOpen,
+    isMobile,
+    hasDesktopPosition,
+    showAllPickerEmojis,
+    updatePosition,
+    currentPickerEmojis,
+  ]);
 
-  // Re-measure when expanding/collapsing emojis on desktop
-  useEffect(() => {
-    if (isOpen && !isMobile) {
-      updatePosition();
-    }
-  }, [showAllPickerEmojis, isOpen, isMobile, updatePosition]);
-
-  // Focus initial item for mobile bottom sheet
+  // Focus initial item only when opening mobile bottom sheet
   useEffect(() => {
     if (isOpen && isMobile) {
+      const currentReactions = optimisticReactionsRef.current;
       const firstSelectedIndex = currentPickerEmojis.findIndex((char) =>
-        optimisticReactions.some((r) => r.emoji === char && r.reactedByMe)
+        currentReactions.some((r) => r.emoji === char && r.reactedByMe)
       );
       const initialIndex = firstSelectedIndex >= 0 ? firstSelectedIndex : 0;
       const timer = setTimeout(() => {
@@ -181,7 +239,7 @@ export function ReactionBar({
       }, 50);
       return () => clearTimeout(timer);
     }
-  }, [isOpen, isMobile, currentPickerEmojis, optimisticReactions]);
+  }, [isOpen, isMobile, currentPickerEmojis]);
 
   // Scroll lock & auto-scroll for mobile bottom sheet: ensures target post is visible above sheet
   useEffect(() => {
@@ -290,34 +348,57 @@ export function ReactionBar({
   }, [isOpen, isMobile, handleClose, updatePosition]);
 
   const handleToggle = async (emoji: string) => {
-    const previous = optimisticReactions;
-    const existingIndex = previous.findIndex((r) => r.emoji === emoji);
+    const key = emoji.trim();
+    if (!key) return;
 
-    let updated: ReactionItem[];
-    if (existingIndex >= 0) {
-      const item = previous[existingIndex];
-      const nextReacted = !item.reactedByMe;
-      const nextCount = nextReacted ? item.count + 1 : Math.max(0, item.count - 1);
-      if (nextCount === 0) {
-        updated = previous.filter((_, idx) => idx !== existingIndex);
-      } else {
-        updated = previous.map((r, idx) =>
-          idx === existingIndex
-            ? { ...r, reactedByMe: nextReacted, count: nextCount }
-            : r
+    const currentEntry = fallbackInFlightRef.current.get(key);
+    const reactionsAtCallStart = currentEntry
+      ? currentEntry.reactionsAtStart
+      : reactionsPropRef.current;
+    const baselineActive = currentEntry
+      ? currentEntry.baselineActive
+      : Boolean(
+          reactionsPropRef.current.find((r) => r.emoji === key)?.reactedByMe
         );
-      }
-    } else {
-      updated = [...previous, { emoji, count: 1, reactedByMe: true }];
-    }
 
-    setOptimisticReactions(updated);
+    fallbackInFlightRef.current.set(key, {
+      count: (currentEntry?.count ?? 0) + 1,
+      baselineActive,
+      reactionsAtStart: reactionsAtCallStart,
+    });
+
+    setOptimisticReactions((curr) => toggleReaction(curr, key));
 
     try {
-      await onToggleReaction(emoji);
+      const accepted = await onToggleReaction(key);
+      const entry = fallbackInFlightRef.current.get(key);
+      if (entry) {
+        entry.count -= 1;
+        if (entry.count <= 0) {
+          fallbackInFlightRef.current.delete(key);
+          if (
+            accepted === false &&
+            reactionsPropRef.current === entry.reactionsAtStart
+          ) {
+            setOptimisticReactions((curr) =>
+              applyReactionActiveState(curr, key, entry.baselineActive)
+            );
+          }
+        }
+      }
     } catch {
-      // rollback
-      setOptimisticReactions(previous);
+      const entry = fallbackInFlightRef.current.get(key);
+      if (entry) {
+        entry.count -= 1;
+        if (entry.count <= 0) {
+          fallbackInFlightRef.current.delete(key);
+          if (reactionsPropRef.current === entry.reactionsAtStart) {
+            setOptimisticReactions((curr) =>
+              applyReactionActiveState(curr, key, entry.baselineActive)
+            );
+          }
+        }
+      }
     }
   };
 
@@ -434,51 +515,6 @@ export function ReactionBar({
       ref={containerRef}
       className="relative inline-flex items-center flex-wrap gap-[3px]"
     >
-      <style>{`
-        @keyframes popoverScaleIn {
-          from {
-            opacity: 0;
-            transform: scale(0.96);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-        @keyframes bottomSheetSlideUp {
-          from {
-            transform: translateY(100%);
-          }
-          to {
-            transform: translateY(0);
-          }
-        }
-        @keyframes backdropFadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .reaction-popover-anim,
-          .reaction-sheet-anim,
-          .reaction-backdrop-anim {
-            animation: none !important;
-          }
-        }
-        .reaction-popover-anim {
-          animation: popoverScaleIn 120ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        .reaction-sheet-anim {
-          animation: bottomSheetSlideUp 200ms cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .reaction-backdrop-anim {
-          animation: backdropFadeIn 200ms ease-out forwards;
-        }
-      `}</style>
-
       {optimisticReactions.map((item) => (
         <button
           key={item.emoji}
@@ -492,7 +528,7 @@ export function ReactionBar({
               : 'คลิกเพื่อกดรีแอคชัน'
           }
 
-            className={`inline-flex items-center justify-center inline-flex items-center justify-center cursor-pointer select-none text-ink relative after:absolute after:inset-y-[-6px] after:inset-x-0 after:content-[''] ${chipClass} ${pillClasses}`}
+            className={`inline-flex items-center justify-center touch-manipulation cursor-pointer select-none text-ink relative after:absolute after:inset-y-[-6px] after:inset-x-0 after:content-[''] ${chipClass} ${pillClasses}`}
         >
           <span
             className="inline-flex items-center justify-center leading-none select-none shrink-0"
@@ -519,7 +555,7 @@ export function ReactionBar({
           aria-haspopup="true"
           aria-expanded={isOpen}
           aria-label="เพิ่มรีแอคชัน"
-          className={`inline-flex items-center justify-center inline-flex items-center justify-center cursor-pointer select-none relative after:absolute after:inset-y-[-6px] after:inset-x-0 after:content-[''] ${chipClass} ${triggerClasses} ${
+          className={`inline-flex items-center justify-center touch-manipulation cursor-pointer select-none relative after:absolute after:inset-y-[-6px] after:inset-x-0 after:content-[''] ${chipClass} ${triggerClasses} ${
             isOpen
               ? 'translate-0.5 bg-kmutt-yellow text-ink shadow-none hover:bg-kmutt-yellow'
               : 'text-ink-soft hover:text-ink'
@@ -868,6 +904,6 @@ export function ReactionBar({
       </div>
     </div>
   );
-}
+});
 
 export default ReactionBar;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { memo, useCallback, useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
 import ReactionBar from "@/component/ReactionBar";
 import { ReportModal } from "@/component/post-thread/ReportModal";
@@ -13,7 +13,7 @@ import {
   disabledButtonClass,
   secondaryButtonClass,
 } from "@/lib/styles";
-import type { ReactionItem } from "@/types/post-thread";
+import type { ReactionItem, ReportReason } from "@/types/post-thread";
 
 type Props = {
   id?: string | number;
@@ -29,12 +29,14 @@ type Props = {
   replyCount: number;
   onEditPost?: (newContent: string) => void;
   onDeletePost?: () => void;
+  onToggleReaction?: (emoji: string) => boolean | void | Promise<boolean | void>;
+  onReportPost?: (reason: ReportReason, details: string) => void | Promise<void>;
   onReportSubmitted?: (message?: string) => void;
 };
 
 // One shared empty list, so a post without reactions gets the same array on
 // every render instead of a new one that looks like a change.
-const noReactions: NonNullable<Props["reactions"]> = [];
+const noReactions: ReactionItem[] = [];
 
 function toReactionItems(
   reactions: NonNullable<Props["reactions"]>
@@ -46,7 +48,7 @@ function toReactionItems(
   }));
 }
 
-export default function PostCard({
+const PostCard = memo(function PostCard({
   id,
   roomId,
   author,
@@ -60,19 +62,20 @@ export default function PostCard({
   replyCount,
   onEditPost,
   onDeletePost,
+  onToggleReaction,
+  onReportPost,
   onReportSubmitted,
 }: Props) {
-  const [reactions, setReactions] = useState<ReactionItem[]>(() =>
-    toReactionItems(initialReactions)
+  const isControlledReactions = Boolean(onToggleReaction);
+  const controlledReactions = useMemo(
+    () => (isControlledReactions ? toReactionItems(initialReactions) : noReactions),
+    [isControlledReactions, initialReactions]
   );
 
-  // When the parent sends a new list, start again from it. Done while
-  // rendering (not in an effect) so there's no extra render with stale data.
-  const [seenReactions, setSeenReactions] = useState(initialReactions);
-  if (seenReactions !== initialReactions) {
-    setSeenReactions(initialReactions);
-    setReactions(toReactionItems(initialReactions));
-  }
+  const [localReactions, setLocalReactions] = useState<ReactionItem[]>(() =>
+    toReactionItems(initialReactions)
+  );
+  const reactions = isControlledReactions ? controlledReactions : localReactions;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isReporting, setIsReporting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -110,9 +113,15 @@ export default function PostCard({
     };
   }, [isMenuOpen]);
 
-  const handleToggleReaction = (emoji: string) => {
-    setReactions((prev) => toggleReaction(prev, emoji));
-  };
+  const handleToggleReaction = useCallback(
+    (emoji: string) => {
+      if (onToggleReaction) {
+        return onToggleReaction(emoji);
+      }
+      setLocalReactions((prev) => toggleReaction(prev, emoji));
+    },
+    [onToggleReaction]
+  );
 
   const handleStartEdit = () => {
     setIsMenuOpen(false);
@@ -385,11 +394,17 @@ export default function PostCard({
         isOpen={isReporting}
         targetType="post"
         onClose={() => setIsReporting(false)}
-        onSubmit={() => {
+        onSubmit={(reason, details) => {
           setIsReporting(false);
-          onReportSubmitted?.("ส่งรายงานกระทู้ให้ทีมงานตรวจสอบเรียบร้อยแล้ว");
+          if (onReportPost) {
+            void onReportPost(reason, details);
+          } else {
+            onReportSubmitted?.("ส่งรายงานกระทู้ให้ทีมงานตรวจสอบเรียบร้อยแล้ว");
+          }
         }}
       />
     </article>
   );
-}
+});
+
+export default PostCard;

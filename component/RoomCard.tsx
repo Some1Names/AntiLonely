@@ -1,9 +1,12 @@
 import Link from "next/link";
 import Icon from "@/component/Icon";
 import JoinButton from "@/component/JoinButton";
+import LinkPending from "@/component/LinkPending";
 import Tape from "@/component/Tape";
 import { formatCount } from "@/lib/format";
-import { defaultRoomEmoji, type Room } from "@/lib/mock";
+import { DEFAULT_ROOM_EMOJI } from "@/lib/room-board";
+import type { Room } from "@/types/room";
+import { resolveRoomPostCountStats } from "@/lib/room-board";
 import { roomLook } from "@/lib/styles";
 
 // An index card taped into the notebook, with an ink outline and a shadow in
@@ -21,7 +24,7 @@ export default function RoomCard({ room }: { room: Room }) {
           aria-hidden="true"
           className={`flex size-11 shrink-0 items-center justify-center rounded-lg border-[1.5px] text-xl group-hover:-rotate-6 motion-safe:transition-transform ${tile}`}
         >
-          {room.emoji ?? defaultRoomEmoji}
+          {room.emoji ?? DEFAULT_ROOM_EMOJI}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
@@ -30,10 +33,12 @@ export default function RoomCard({ room }: { room: Room }) {
                   room; the join button sits above it and stays separate. The
                   card draws the focus ring for it. */}
               <Link
-                href={`/rooms/${room.id}`}
+                href={`/rooms/${room.slug ?? room.id}`}
                 className="outline-none after:absolute after:inset-0 after:rounded-xl"
               >
                 {room.name}
+                {/* On the card's corner while the room page loads. */}
+                <LinkPending className="-right-2.5 -top-2.5" />
               </Link>
             </h3>
             <RoomTags room={room} />
@@ -72,8 +77,16 @@ export function RoomTags({ room }: { room: Room }) {
   );
 }
 
-// Members and today's posts, with icons.
+// Members and today's (or total) posts, with icons.
 export function RoomStats({ room }: { room: Room }) {
+  const postStats = resolveRoomPostCountStats(room);
+  const postsLabel =
+    postStats.totalPosts !== null && postStats.postsToday !== null
+      ? `ทั้งหมด ${formatCount(postStats.totalPosts)} · วันนี้ ${formatCount(postStats.postsToday)} กระทู้`
+      : postStats.totalPosts !== null
+        ? `ทั้งหมด ${formatCount(postStats.totalPosts)} กระทู้`
+        : `วันนี้ ${formatCount(postStats.postsToday ?? 0)} กระทู้`;
+
   return (
     <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-soft">
       <span className="flex items-center gap-1">
@@ -82,7 +95,7 @@ export function RoomStats({ room }: { room: Room }) {
       </span>
       <span className="flex items-center gap-1">
         <Icon name="message" className="size-3.5" />
-        วันนี้ {room.postsToday} กระทู้
+        {postsLabel}
       </span>
     </p>
   );

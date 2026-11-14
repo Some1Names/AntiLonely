@@ -1,4 +1,5 @@
 import Link from "next/link";
+import LinkPending from "@/component/LinkPending";
 import Icon from "@/component/Icon";
 import Paper from "@/component/Paper";
 import { highlightClass } from "@/lib/styles";
@@ -34,23 +35,26 @@ export default function AuthCard({
   );
 }
 
-// Switches between log in and sign up. Inside the modal, replace history so
-// one Back or close returns to the page underneath. On the full page, do a
-// normal load: a client-side Link would be intercepted and open a modal.
+// Switches between the auth forms (log in, sign up, forgot password).
+// Inside the modal, replace history so one Back or close returns to the page
+// underneath. On the full page, do a normal load: a client-side Link would
+// be intercepted and open a modal.
 export function AuthLink({
   href,
   inModal,
+  className = "font-semibold text-kmutt-orange-dark underline-offset-4 hover:underline",
   children,
 }: {
   href: string;
   inModal: boolean;
+  className?: string;
   children: React.ReactNode;
 }) {
-  const className =
-    "font-semibold text-kmutt-orange-dark underline-offset-4 hover:underline";
   return inModal ? (
-    <Link href={href} replace className={className}>
+    <Link href={href} replace className={`relative ${className}`}>
       {children}
+      {/* The next form may take a moment to load the first time. */}
+      <LinkPending className="-right-7 top-1/2 -translate-y-1/2" />
     </Link>
   ) : (
     <a href={href} className={className}>

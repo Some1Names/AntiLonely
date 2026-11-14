@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState, useTransition } from "react";
 import AuthCard, { AuthLink } from "@/component/AuthCard";
+import Spinner from "@/component/Spinner";
 import GoogleButton from "@/component/GoogleButton";
 import PasswordInput from "@/component/PasswordInput";
 import { authClient } from "@/lib/auth-client";
@@ -17,7 +18,23 @@ import {
 export default function LoginForm({ inModal = false }: { inModal?: boolean }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
+  // Signed in: the modal stays busy until the home page has taken over, so
+  // the button doesn't come back to life in between.
+  const [navigating, startNavigation] = useTransition();
+  const busy = pending || navigating;
   const [error, setError] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Next hides this form on close instead of unmounting it. Without this the
+  // next open would still show the last error and the typed password.
+  useLayoutEffect(() => {
+    const form = formRef.current;
+    return () => {
+      form?.reset();
+      setError(null);
+      setPending(false);
+    };
+  }, []);
 
   return (
     <AuthCard
@@ -26,9 +43,14 @@ export default function LoginForm({ inModal = false }: { inModal?: boolean }) {
       subtitle="เข้าสู่ระบบแล้วไปคุยกันต่อเลย"
     >
       <form
+        ref={formRef}
+        // If this is submitted before the page's script has loaded, the
+        // browser sends it itself: post keeps the password out of the URL.
+        method="post"
         className="flex flex-col gap-4"
         onSubmit={async (event) => {
           event.preventDefault();
+          if (busy) return;
           const formElement = event.currentTarget;
           const form = new FormData(formElement);
           setPending(true);
@@ -47,8 +69,10 @@ export default function LoginForm({ inModal = false }: { inModal?: boolean }) {
           formElement.reset();
           setPending(false);
           // Going to / closes the modal; refresh lets server components see the session.
-          router.push("/");
-          router.refresh();
+          startNavigation(() => {
+            router.push("/");
+            router.refresh();
+          });
         }}
       >
         <div className="flex flex-col gap-1">
@@ -70,12 +94,13 @@ export default function LoginForm({ inModal = false }: { inModal?: boolean }) {
             <label htmlFor="login-password" className="text-sm font-semibold">
               รหัสผ่าน
             </label>
-            <button
-              type="button"
+            <AuthLink
+              href="/forgot-password"
+              inModal={inModal}
               className="py-1 text-xs text-ink-soft hover:text-kmutt-orange-dark"
             >
               ลืมรหัสผ่าน?
-            </button>
+            </AuthLink>
           </div>
           <PasswordInput
             id="login-password"
@@ -91,10 +116,11 @@ export default function LoginForm({ inModal = false }: { inModal?: boolean }) {
         )}
         <button
           type="submit"
-          disabled={pending}
-          className={`py-2.5 ${primaryButtonClass} ${disabledButtonClass}`}
+          disabled={busy}
+          className={`flex items-center justify-center gap-2 py-2.5 ${primaryButtonClass} ${disabledButtonClass}`}
         >
-          {pending ? "กำลังเข้าสู่ระบบ…" : "เข้าสู่ระบบ"}
+          {busy && <Spinner />}
+          {busy ? "กำลังเข้าสู่ระบบ…" : "เข้าสู่ระบบ"}
         </button>
       </form>
       <GoogleButton label="เข้าสู่ระบบด้วย Google" />

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
+import { AdminSkeleton } from "@/component/PageSkeletons";
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -74,11 +75,7 @@ function getTimeAgo(date: Date) {
 export default function AdminPage() {
   return (
     <Suspense
-      fallback={
-        <div className="p-6 text-sm text-ink-soft">
-          กำลังโหลดข้อมูล Dashboard...
-        </div>
-      }
+      fallback={<AdminSkeleton label="กำลังโหลดข้อมูล Dashboard…" stats />}
     >
       <AdminDashboardData />
     </Suspense>

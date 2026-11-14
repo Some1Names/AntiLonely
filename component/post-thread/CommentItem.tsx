@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { memo, useState, useEffect, useCallback } from 'react';
 import type { ThreadComment, ThreadReply, ThreadBranch } from '@/types/post-thread';
 import { formatRelativeTimeThai, groupRepliesIntoBranches } from '@/lib/post-thread';
 import { ReactionBar } from './ReactionBar';
@@ -24,7 +24,10 @@ interface CommentItemProps {
   activeReplyTargetName?: string;
   activeReplyTargetId?: string;
   onExpandReplies: (commentId: string) => void;
-  onToggleReaction: (targetId: string, emoji: string) => void;
+  onToggleReaction: (
+    targetId: string,
+    emoji: string
+  ) => Promise<boolean | void> | boolean | void;
   onStartReply: (
     commentId: string,
     targetAuthorName: string,
@@ -38,7 +41,36 @@ interface CommentItemProps {
   onReportComment: (targetId: string) => void;
 }
 
-export function CommentItem({
+interface ReplyReactionBarProps {
+  replyId: string;
+  reactions: ThreadReply['reactions'];
+  onToggleReaction: (
+    targetId: string,
+    emoji: string
+  ) => Promise<boolean | void> | boolean | void;
+}
+
+const ReplyReactionBar = memo(function ReplyReactionBar({
+  replyId,
+  reactions,
+  onToggleReaction,
+}: ReplyReactionBarProps) {
+  const handleToggle = useCallback(
+    (emoji: string) => onToggleReaction(replyId, emoji),
+    [onToggleReaction, replyId]
+  );
+
+  return (
+    <ReactionBar
+      reactions={reactions}
+      onToggleReaction={handleToggle}
+      size="sm"
+      pickerId={`reply-${replyId}`}
+    />
+  );
+});
+
+export const CommentItem = memo(function CommentItem({
   comment,
   referenceTime,
   currentUserId,
@@ -94,6 +126,11 @@ export function CommentItem({
     : comment.replies.slice(0, initialLimit);
   const hiddenCount = Math.max(0, comment.replies.length - visibleReplies.length);
 
+  const handleToggleTopCommentReaction = useCallback(
+    (emoji: string) => onToggleReaction(comment.id, emoji),
+    [onToggleReaction, comment.id]
+  );
+
   const handleStartEdit = (targetId: string, currentContent: string) => {
     setOpenMenuId(null);
     setEditingId(targetId);
@@ -127,7 +164,7 @@ export function CommentItem({
     authorId: string,
     currentContent: string
   ) => {
-    const isOwner = authorId === currentUserId;
+    const isOwner = Boolean(currentUserId && authorId === currentUserId);
     const isMenuOpen = openMenuId === itemId;
 
     return (
@@ -282,7 +319,7 @@ export function CommentItem({
           <div className="flex items-center flex-wrap gap-x-2 gap-y-3 pt-0.5">
             <ReactionBar
               reactions={comment.reactions}
-              onToggleReaction={(emoji) => onToggleReaction(comment.id, emoji)}
+              onToggleReaction={handleToggleTopCommentReaction}
               size="sm"
               pickerId={`comment-${comment.id}`}
             />
@@ -429,13 +466,10 @@ export function CommentItem({
               )}
 
               <div className="flex items-center flex-wrap gap-x-2 gap-y-3 pt-0.5">
-                <ReactionBar
+                <ReplyReactionBar
+                  replyId={reply.id}
                   reactions={reply.reactions}
-                  onToggleReaction={(emoji) =>
-                    onToggleReaction(reply.id, emoji)
-                  }
-                  size="sm"
-                  pickerId={`reply-${reply.id}`}
+                  onToggleReaction={onToggleReaction}
                 />
                 <button
                   type="button"
@@ -583,4 +617,4 @@ export function CommentItem({
       })()}
     </div>
   );
-}
+});

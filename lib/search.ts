@@ -1,4 +1,4 @@
-import type { Room } from "@/lib/mock";
+import type { Room } from "@/types/room";
 
 // Lower case with runs of spaces squeezed to one, so " RoV " and "rov" compare
 // equal.

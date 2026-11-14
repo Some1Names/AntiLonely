@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { memo, useState, useRef, useEffect } from 'react';
 import type { PostThread } from '@/types/post-thread';
 import { formatRelativeTimeThai } from '@/lib/post-thread';
 import { ReactionBar } from './ReactionBar';
@@ -16,7 +16,7 @@ interface PostCardProps {
   thread: PostThread;
   referenceTime: number;
   isMuted: boolean;
-  onToggleReaction: (emoji: string) => void;
+  onToggleReaction: (emoji: string) => Promise<boolean | void> | boolean | void;
   onReplyClick: () => void;
   onShareClick: () => void;
   onCopyLinkClick: () => void;
@@ -24,7 +24,7 @@ interface PostCardProps {
   onReportClick: () => void;
 }
 
-export function PostCard({
+export const PostCard = memo(function PostCard({
   thread,
   referenceTime,
   isMuted,
@@ -176,5 +176,5 @@ export function PostCard({
       </div>
     </article>
   );
-}
+});
 

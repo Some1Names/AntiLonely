@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Icon from "@/component/Icon";
 import RoomList from "@/component/RoomList";
-import type { Room } from "@/lib/mock";
+import type { Room } from "@/types/room";
 import { fieldFrameClass } from "@/lib/styles";
 
 // The welcome note sits between the search bar and the room list it filters,

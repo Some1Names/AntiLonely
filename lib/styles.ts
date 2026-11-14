@@ -1,7 +1,7 @@
 // Class strings shared across components. The look is a scrapbook: white
 // paper and stickers with an ink outline and a hard shadow (see design.md).
 
-import type { Room } from "@/lib/mock";
+import type { Room } from "@/types/room";
 
 // A text field's frame without padding, for fields that place an icon inside.
 export const fieldFrameClass =
@@ -104,3 +104,9 @@ export const hintClass = "text-xs text-ink-soft";
 // A form-level error, such as a failed login.
 export const alertClass =
   "rounded-lg border-[1.5px] border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700";
+
+// A grey paper block standing in for content that's still loading. It
+// breathes gently, or just sits there with reduced motion. Give it a size
+// and a corner radius (rounded-md for a line of text, rounded-full for an
+// avatar or chip).
+export const skeletonClass = "bg-edge/70 motion-safe:animate-pulse";

@@ -1,24 +1,8 @@
 // Placeholder data for the wireframe. Replace with real data once there is a backend.
 
-export type Room = {
-  id: string;
-  name: string;
-  description: string;
-  members: number;
-  postsToday: number;
-  isPrivate: boolean;
-  isNew: boolean;
-  // Shown on the room's icon tile. Optional: rooms without one get 💬.
-  emoji?: string;
-};
+import type { MyRoom, Room } from "@/types/room";
 
-export type MyRoom = {
-  id: string;
-  name: string;
-  unread: number;
-  isPrivate: boolean;
-  emoji?: string;
-};
+export type { MyRoom, Room };
 
 export const defaultRoomEmoji = "💬";
 

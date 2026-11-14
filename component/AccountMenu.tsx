@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import Icon from "@/component/Icon";
+import LinkPending from "@/component/LinkPending";
 import { authClient } from "@/lib/auth-client";
 import { avatarClass, outlineButtonClass } from "@/lib/styles";
 
@@ -42,12 +43,13 @@ export default function AccountMenu() {
     return (
       <Link
         href="/login"
-        className={`flex h-9 items-center whitespace-nowrap px-2.5 min-[360px]:px-3 ${outlineButtonClass}`}
+        className={`relative flex h-9 items-center whitespace-nowrap px-2.5 min-[360px]:px-3 ${outlineButtonClass}`}
       >
         {/* On the narrowest phones the label doesn't fit beside the other
             header buttons, so it collapses to the icon like "สร้าง" does. */}
         <Icon name="user" className="size-4 min-[360px]:hidden" />
         <span className="max-[359px]:sr-only">เข้าสู่ระบบ</span>
+        <LinkPending />
       </Link>
     );
   }
