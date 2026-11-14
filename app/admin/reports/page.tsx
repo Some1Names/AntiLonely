@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
+import { AdminSkeleton } from "@/component/PageSkeletons";
 import { headers } from "next/headers";
 
 import { auth } from "@/lib/auth";
@@ -9,9 +10,7 @@ import AdminReports from "@/component/admin/AdminReports";
 export default function AdminReportsPage() {
   return (
     <Suspense
-      fallback={
-        <div className="p-6 text-sm text-ink-soft">กำลังโหลดรายงาน...</div>
-      }
+      fallback={<AdminSkeleton label="กำลังโหลดรายงาน…" />}
     >
       <AdminReportsData />
     </Suspense>

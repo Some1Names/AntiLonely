@@ -1,14 +1,13 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
+import { AdminSkeleton } from "@/component/PageSkeletons";
 import { prisma } from "@/lib/prisma";
 import AdminUsersClient from "./AdminUsersClient";
 
 export default function AdminUsersPage() {
   return (
     <Suspense
-      fallback={
-        <div className="p-6 text-sm text-ink-soft">กำลังโหลดผู้ใช้...</div>
-      }
+      fallback={<AdminSkeleton label="กำลังโหลดผู้ใช้…" />}
     >
       <AdminUsersData />
     </Suspense>

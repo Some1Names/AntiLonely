@@ -13,6 +13,7 @@ import { currentUser, myRooms } from "@/lib/mock";
 import {
   highlightClass,
   indexCardClass,
+  skeletonClass,
   tabClass,
   tabListClass,
 } from "@/lib/styles";
@@ -40,7 +41,7 @@ export default function ProfilePage() {
   // จำว่ากำลังเลือกแท็บไหนอยู่
   const [activeTab, setActiveTab] = useState<Tab>("posts");
   
-  const { data: session, refetch } = authClient.useSession();
+  const { data: session, isPending, refetch } = authClient.useSession();
 
   const user = session?.user;
   const joinedRoomCount = useJoinedCount(user?.id);
@@ -83,9 +84,18 @@ export default function ProfilePage() {
             </span>
             <div className="space-y-1">
               <h1 className="font-display text-2xl font-semibold">
-                <span className={highlightClass}>
-                  {user?.name ?? "ผู้ใช้งาน"}
-                </span>
+                {/* A grey bar until the session is known, not a stand-in name. */}
+                {isPending ? (
+                  <span
+                    className={`inline-block h-7 w-40 align-middle rounded-md ${skeletonClass}`}
+                  >
+                    <span className="sr-only">กำลังโหลด…</span>
+                  </span>
+                ) : (
+                  <span className={highlightClass}>
+                    {user?.name ?? "ผู้ใช้งาน"}
+                  </span>
+                )}
               </h1>
               <p className="text-sm text-ink-soft">เพิ่งมาอยู่กับเรา</p>
               <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm">

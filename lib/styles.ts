@@ -107,6 +107,6 @@ export const alertClass =
 
 // A grey paper block standing in for content that's still loading. It
 // breathes gently, or just sits there with reduced motion. Give it a size
-// and, where it stands for text, a rounded-full shape.
-export const skeletonClass =
-  "rounded-md bg-edge/70 motion-safe:animate-pulse";
+// and a corner radius (rounded-md for a line of text, rounded-full for an
+// avatar or chip).
+export const skeletonClass = "bg-edge/70 motion-safe:animate-pulse";
