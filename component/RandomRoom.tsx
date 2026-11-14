@@ -21,7 +21,7 @@ import {
 
 // "สุ่มห้องเลย": draws a room you haven't joined, shows it, and asks whether
 // to join it or draw again. Private rooms are left out: they can't be joined
-// from here.
+// from here. Signed out, the button opens log in instead.
 export default function RandomRoomButton({
   className,
   children,
@@ -29,7 +29,12 @@ export default function RandomRoomButton({
   className?: string;
   children: React.ReactNode;
 }) {
-  const { rooms: allRooms, membership } = useRoomMembership();
+  const {
+    rooms: allRooms,
+    membership,
+    signedIn,
+    askToSignIn,
+  } = useRoomMembership();
   const rooms = allRooms.filter((room) => !room.isPrivate);
   const [open, setOpen] = useState(false);
   const [room, setRoom] = useState<Room | null>(null);
@@ -47,6 +52,10 @@ export default function RandomRoomButton({
         type="button"
         aria-haspopup="dialog"
         onClick={() => {
+          if (!signedIn) {
+            askToSignIn();
+            return;
+          }
           draw();
           setOpen(true);
         }}

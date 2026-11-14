@@ -2,12 +2,13 @@ import Link from "next/link";
 import AccountMenu from "@/component/AccountMenu";
 import CreateButton from "@/component/CreateButton";
 import Icon from "@/component/Icon";
-import NotificationBadge from "@/component/NotificationBadge";
+import NotificationLink from "@/component/NotificationLink";
 import type { MyRoom } from "@/types/room";
 import { primaryButtonClass } from "@/lib/styles";
 
 // A strip of paper along the top with a stitched (dashed) edge. On phones
 // "สร้าง" and "โนติ" collapse to their icons so everything fits on one line.
+// The bell only shows for someone signed in.
 export default function Header({
   notifications,
   rooms = [],
@@ -42,14 +43,7 @@ export default function Header({
             <Icon name="plus" className="size-4" />
             <span className="sr-only sm:not-sr-only">สร้าง</span>
           </CreateButton>
-          <Link
-            href="/notifications"
-            className="flex h-9 items-center gap-1.5 rounded-lg border-[1.5px] border-ink bg-butter px-2.5 text-sm font-semibold hover:bg-highlight"
-          >
-            <Icon name="bell" className="size-4" />
-            <span className="sr-only sm:not-sr-only">โนติ</span>
-            <NotificationBadge count={notifications} />
-          </Link>
+          <NotificationLink count={notifications} />
           <AccountMenu />
         </div>
       </div>

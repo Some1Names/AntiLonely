@@ -4,6 +4,7 @@ import {
   ViewTransition,
   addTransitionType,
   startTransition,
+  useEffect,
   useRef,
   useState,
 } from "react";
@@ -11,6 +12,7 @@ import EmptyRooms from "@/component/EmptyRooms";
 import Icon from "@/component/Icon";
 import RoomCard from "@/component/RoomCard";
 import type { Room } from "@/types/room";
+import { ROOMS_PER_PAGE, nextRoomLimit, roomsToShow } from "@/lib/room-list";
 import { roomMatchesQuery } from "@/lib/search";
 import { highlightClass, stickerToggleClass } from "@/lib/styles";
 
@@ -19,8 +21,6 @@ const filters = [
   { id: "new", label: "มาใหม่", icon: "sparkle" },
   { id: "private", label: "ส่วนตัว", icon: "lock" },
 ] as const;
-
-const maxRoomsBeforeMore = 6;
 
 type FilterId = (typeof filters)[number]["id"];
 
@@ -52,6 +52,32 @@ export default function RoomList({
   const shown = rooms.filter(
     (room) => matchesFilter(room, filter) && roomMatchesQuery(room, search),
   );
+  // "ดูห้องเพิ่ม" opens up one more page at a time. Changing the filter or the
+  // search starts back at the first page, and stays there when you come back
+  // to the earlier filter or search.
+  const view = JSON.stringify([filter, search]);
+  const [more, setMore] = useState({ view, limit: ROOMS_PER_PAGE });
+  if (more.view !== view) setMore({ view, limit: ROOMS_PER_PAGE });
+  const limit = more.view === view ? more.limit : ROOMS_PER_PAGE;
+  const { visible, hasMore } = roomsToShow(shown, limit);
+  const listRef = useRef<HTMLUListElement>(null);
+  // Which card gets focus once the next page is on screen.
+  const focusIndex = useRef<number | null>(null);
+
+  // The button may be gone after the last page, and the new cards are what
+  // the press was for, so focus moves to the first of them.
+  useEffect(() => {
+    const index = focusIndex.current;
+    if (index === null) return;
+    focusIndex.current = null;
+    listRef.current?.children[index]?.querySelector("a")?.focus();
+  }, [limit]);
+
+  function showMore() {
+    focusIndex.current = limit;
+    // Tagged like a filter change so the new cards drop in.
+    changeFilter(() => setMore({ view, limit: nextRoomLimit(limit) }));
+  }
 
   function changeFilter(update: () => void) {
     startTransition(() => {
@@ -115,8 +141,11 @@ export default function RoomList({
         <>
           {/* From md the sidebar sits beside the list, which leaves too little
               room for two cards until lg. */}
-          <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2">
-            {shown.map((room) => (
+          <ul
+            ref={listRef}
+            className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2"
+          >
+            {visible.map((room) => (
               <ViewTransition
                 key={room.id}
                 enter={onFilterChange("room-in")}
@@ -129,10 +158,11 @@ export default function RoomList({
               </ViewTransition>
             ))}
           </ul>
-          {/* Nothing more to load when the list is short. */}
-          {shown.length > maxRoomsBeforeMore && (
+          {/* Gone once every matching room is on screen. */}
+          {hasMore && (
             <button
               type="button"
+              onClick={showMore}
               className="group flex items-center gap-1.5 self-center rounded-full px-4 py-2 text-sm font-semibold text-kmutt-orange-dark hover:bg-peach/70"
             >
               ดูห้องเพิ่ม

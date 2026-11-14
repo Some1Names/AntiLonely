@@ -31,6 +31,13 @@ type RoomMembershipValue = {
   join: (room: Room) => void;
   // Opens the leave modal; the room is only left once it's confirmed.
   askToLeave: (room: Room) => void;
+  // Whether the page was loaded for someone signed in. It's the server's
+  // answer, so it catches up with logging in and out when the forms refresh
+  // the page, and the welcome note, the random room button and the header's
+  // bell all switch together.
+  signedIn: boolean;
+  // Opens the log in modal over the page.
+  askToSignIn: () => void;
 };
 
 const RoomMembershipContext = createContext<RoomMembershipValue | null>(null);
@@ -47,6 +54,12 @@ export function useRoomMembership() {
 // a <RoomMembership> (the header's create button); those get `fallback`.
 export function useJoinedRooms(fallback: MyRoom[]) {
   return use(RoomMembershipContext)?.joinedRooms ?? fallback;
+}
+
+// Home's signed-in answer (see `signedIn` above), or undefined on pages without
+// a <RoomMembership>, which have to ask the session instead.
+export function usePageSignedIn() {
+  return use(RoomMembershipContext)?.signedIn;
 }
 
 type Change = { room: Room; action: "join" | "leave" };
@@ -82,10 +95,14 @@ export default function RoomMembership({
   // Why the last join or leave didn't go through.
   const [problem, setProblem] = useState<string | null>(null);
 
+  // The log in modal opens over the page.
+  function askToSignIn() {
+    router.push("/login");
+  }
+
   function change(room: Room, action: Change["action"]) {
-    // Signed out: the log in modal opens over the page.
     if (!signedIn) {
-      router.push("/login");
+      askToSignIn();
       return;
     }
     setProblem(null);
@@ -108,6 +125,8 @@ export default function RoomMembership({
     isJoined: (roomId) => membershipStatus(membership, roomId) === "joined",
     join: (room) => change(room, "join"),
     askToLeave: setLeaving,
+    signedIn,
+    askToSignIn,
   };
 
   return (
