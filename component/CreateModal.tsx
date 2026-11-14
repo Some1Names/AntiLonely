@@ -4,14 +4,17 @@ import { useState } from "react";
 import Icon, { type IconName } from "@/component/Icon";
 import Modal from "@/component/Modal";
 import Sheet from "@/component/Sheet";
+import Spinner from "@/component/Spinner";
+import { usePostToRoom } from "@/component/usePostToRoom";
+import { MAX_POST_CONTENT_LENGTH } from "@/lib/room-board";
 import type { MyRoom } from "@/types/room";
 import {
+  alertClass,
   choiceClass,
   disabledButtonClass,
   hintClass,
   inputClass,
   labelClass,
-  outlineButtonClass,
   primaryButtonClass,
   radioClass,
   secondaryButtonClass,
@@ -21,7 +24,6 @@ import {
 
 export type CreateTab = "post" | "room";
 
-const POST_MAX = 2000;
 const ROOM_NAME_MIN = 3;
 const ROOM_NAME_MAX = 40;
 
@@ -31,14 +33,16 @@ const tabs: { id: CreateTab; label: string }[] = [
 ];
 
 // "+ สร้าง" in the header: post a thread in a room you've joined, or start a
-// new room. No backend yet, so submitting just closes it.
+// new room. Posting saves the thread and opens it; the room tab has no
+// backend yet, so submitting it just closes the modal.
 export default function CreateModal({
   rooms,
   alias,
   initialTab = "post",
   onClose,
 }: {
-  rooms: MyRoom[];
+  // Null while the list is still loading.
+  rooms: MyRoom[] | null;
   alias: string;
   initialTab?: CreateTab;
   onClose: () => void;
@@ -90,37 +94,57 @@ function PostForm({
   alias,
   onClose,
 }: {
-  rooms: MyRoom[];
+  rooms: MyRoom[] | null;
   alias: string;
   onClose: () => void;
 }) {
   const [text, setText] = useState("");
-  const [image, setImage] = useState<string | null>(null);
-  const hasRooms = rooms.length > 0;
-  const canPost = hasRooms && text.trim().length > 0;
+  const [chosenId, setChosenId] = useState<string | null>(null);
+  const { post, pending, error, clearError } = usePostToRoom();
+  const loading = rooms === null;
+  const hasRooms = !loading && rooms.length > 0;
+  // The chosen room, or the first one if none was chosen.
+  const room =
+    rooms?.find((item) => item.id === chosenId) ?? rooms?.[0] ?? null;
+  const canPost = room !== null && text.trim().length > 0;
 
   return (
     <form
       className="flex flex-col gap-5"
       onSubmit={(event) => {
         event.preventDefault();
-        if (canPost) onClose();
+        if (!room || pending) return;
+        // Closing the modal also clears what was typed.
+        post({ room, content: text, onPosted: onClose });
       }}
     >
       <div className="flex flex-col gap-1">
         <label htmlFor="post-room" className={labelClass}>
           ห้อง
         </label>
-        <select id="post-room" name="room" disabled={!hasRooms} className={inputClass}>
-          {!hasRooms && <option>ยังไม่ได้เข้าห้องไหน</option>}
-          {rooms.map((room) => (
-            <option key={room.id} value={room.id}>
-              {room.name}
+        <select
+          id="post-room"
+          name="room"
+          disabled={!hasRooms}
+          value={room?.id ?? ""}
+          onChange={(event) => {
+            setChosenId(event.target.value);
+            if (error) clearError();
+          }}
+          className={inputClass}
+        >
+          {loading && <option value="">กำลังโหลดห้อง…</option>}
+          {!loading && !hasRooms && (
+            <option value="">ยังไม่ได้เข้าห้องไหน</option>
+          )}
+          {rooms?.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name}
             </option>
           ))}
         </select>
         <p className={hintClass}>
-          {hasRooms
+          {loading || hasRooms
             ? "เลือกได้เฉพาะห้องที่เข้าร่วมแล้วนะ"
             : "เข้าร่วมสักห้องก่อน แล้วค่อยมาตั้งกระทู้นะ"}
         </p>
@@ -132,42 +156,40 @@ function PostForm({
             ข้อความ
           </label>
           <span className={hintClass} aria-live="polite">
-            {text.length} / {POST_MAX}
+            {text.length} / {MAX_POST_CONTENT_LENGTH}
           </span>
         </div>
         <textarea
           id="post-text"
           name="text"
           rows={4}
-          maxLength={POST_MAX}
+          maxLength={MAX_POST_CONTENT_LENGTH}
           placeholder="อะไรก็ได้ตามใจฉัน...."
           value={text}
-          onChange={(event) => setText(event.target.value)}
+          onChange={(event) => {
+            setText(event.target.value);
+            if (error) clearError();
+          }}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? "post-error" : undefined}
           className={`resize-y ${inputClass}`}
         />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <label
-          className={`flex min-w-0 cursor-pointer items-center gap-2 px-4 py-2 ${outlineButtonClass} has-focus-visible:ring-3 has-focus-visible:ring-kmutt-yellow/40`}
-        >
-          <Icon name="image" className="size-4" />
-          <span className="max-w-48 truncate">{image ?? "แนบรูป"}</span>
-          <input
-            type="file"
-            name="image"
-            accept="image/*"
-            className="sr-only"
-            onChange={(event) => setImage(event.target.files?.[0]?.name ?? null)}
-          />
-        </label>
-        {alias && (
-          <span className="flex items-center gap-2 rounded-full border-[1.5px] border-butter-edge bg-butter px-3 py-1 text-sm">
-            <span aria-hidden="true" className="size-2 rounded-full bg-green-600" />
-            โพสต์ในชื่อ <span className="font-semibold">{alias}</span>
-          </span>
-        )}
-      </div>
+      {/* No "แนบรูป" yet: there is nowhere to keep pictures, so the control
+          comes back once there is. */}
+      {alias && (
+        <span className="flex w-fit items-center gap-2 rounded-full border-[1.5px] border-butter-edge bg-butter px-3 py-1 text-sm">
+          <span aria-hidden="true" className="size-2 rounded-full bg-green-600" />
+          โพสต์ในชื่อ <span className="font-semibold">{alias}</span>
+        </span>
+      )}
+
+      {error && (
+        <p id="post-error" role="alert" className={alertClass}>
+          {error}
+        </p>
+      )}
 
       <div className="flex justify-end gap-2">
         <button type="button" onClick={onClose} className={`px-4 py-2 ${secondaryButtonClass}`}>
@@ -176,9 +198,11 @@ function PostForm({
         <button
           type="submit"
           disabled={!canPost}
-          className={`px-4 py-2 ${primaryButtonClass} ${disabledButtonClass}`}
+          aria-disabled={pending || undefined}
+          className={`flex items-center gap-2 px-4 py-2 ${primaryButtonClass} ${disabledButtonClass} ${pending ? "cursor-wait" : ""}`}
         >
-          ตั้งกระทู้
+          {pending && <Spinner />}
+          {pending ? "กำลังตั้ง…" : "ตั้งกระทู้"}
         </button>
       </div>
     </form>

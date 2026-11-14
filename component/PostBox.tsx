@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import Icon from "@/component/Icon";
 import LinkPending from "@/component/LinkPending";
@@ -8,9 +9,14 @@ import {
   useJoinedRooms,
   usePageSignedIn,
 } from "@/component/RoomMembership";
+import Spinner from "@/component/Spinner";
 import Tape from "@/component/Tape";
+import { usePostToRoom } from "@/component/usePostToRoom";
+import { MAX_POST_CONTENT_LENGTH } from "@/lib/room-board";
 import type { MyRoom } from "@/types/room";
 import {
+  alertClass,
+  disabledButtonClass,
   fieldFrameClass,
   highlightClass,
   noteFieldClass,
@@ -38,6 +44,12 @@ export default function PostBox({
   // Home's answer, so the note switches together with the random room button
   // and the header's bell when you log in or out.
   const signedIn = usePageSignedIn() ?? name !== null;
+  const [text, setText] = useState("");
+  const [chosenId, setChosenId] = useState<string | null>(null);
+  // The chosen room, or the first one if it was left or none was chosen.
+  const room =
+    joinedRooms.find((item) => item.id === chosenId) ?? joinedRooms[0] ?? null;
+  const { post, pending, error, clearError } = usePostToRoom();
 
   if (!signedIn) {
     return (
@@ -85,7 +97,15 @@ export default function PostBox({
         วันนี้เป็นยังไงบ้าง? อยากถาม อยากเล่า หรืออยากระบายก็ได้นะ
         ที่นี่ไม่มีใครรู้ว่าเป็นคุณ
       </p>
-      <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+      {/* Enter in the text field posts, like pressing "ตั้งกระทู้". */}
+      <form
+        className="mt-5 flex flex-col gap-2 sm:flex-row"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!room || pending) return;
+          post({ room, content: text, onPosted: () => setText("") });
+        }}
+      >
         <div className="relative min-w-0 flex-1">
           <Icon
             name="pencil"
@@ -95,25 +115,56 @@ export default function PostBox({
             type="text"
             aria-label="เนื้อหากระทู้"
             placeholder="มีอะไรอยากเล่าไหม..."
+            value={text}
+            maxLength={MAX_POST_CONTENT_LENGTH}
+            onChange={(event) => {
+              setText(event.target.value);
+              if (error) clearError();
+            }}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? "postbox-error" : undefined}
             className={`py-2.5 pl-9 pr-3 ${noteFieldClass}`}
           />
         </div>
         <select
           aria-label="เลือกห้อง"
           disabled={joinedRooms.length === 0}
+          value={room?.id ?? ""}
+          onChange={(event) => {
+            setChosenId(event.target.value);
+            if (error) clearError();
+          }}
           className={`px-3 py-2.5 sm:w-auto ${fieldFrameClass}`}
         >
-          {joinedRooms.length === 0 && <option>ยังไม่ได้เข้าห้องไหน</option>}
-          {joinedRooms.map((room) => (
-            <option key={room.id} value={room.id}>
-              {room.name}
+          {joinedRooms.length === 0 && (
+            <option value="">ยังไม่ได้เข้าห้องไหน</option>
+          )}
+          {joinedRooms.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name}
             </option>
           ))}
         </select>
-        <button type="button" className={`px-5 py-2.5 ${primaryButtonClass}`}>
-          ตั้งกระทู้
+        <button
+          type="submit"
+          disabled={!room}
+          aria-disabled={pending || undefined}
+          className={`flex items-center justify-center gap-2 px-5 py-2.5 ${primaryButtonClass} ${disabledButtonClass} ${pending ? "cursor-wait" : ""}`}
+        >
+          {pending && <Spinner />}
+          {pending ? "กำลังตั้ง…" : "ตั้งกระทู้"}
         </button>
-      </div>
+      </form>
+      {error && (
+        <p id="postbox-error" role="alert" className={`mt-3 ${alertClass}`}>
+          {error}
+        </p>
+      )}
+      {!room && (
+        <p className="mt-2 text-xs text-ink-soft">
+          เข้าร่วมสักห้องก่อน แล้วค่อยมาตั้งกระทู้นะ
+        </p>
+      )}
     </Note>
   );
 }

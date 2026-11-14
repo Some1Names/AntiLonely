@@ -124,3 +124,31 @@ export async function getHomeData(): Promise<HomeData> {
       : null,
   };
 }
+
+// The rooms the signed-in person has joined and can post in, for the create
+// modal on pages that don't have Home's list. Empty when signed out.
+export async function getMyRooms(): Promise<MyRoom[]> {
+  const viewer = await getViewerUser();
+  if (!viewer) return [];
+  const memberships = await prisma.roomMember.findMany({
+    where: {
+      userId: viewer.id,
+      status: "active",
+      room: { status: "active" },
+    },
+    orderBy: { joinedAt: "asc" },
+    select: {
+      room: {
+        select: { id: true, slug: true, name: true, passwordHash: true },
+      },
+    },
+  });
+  return memberships.map(({ room }) => ({
+    id: room.id,
+    slug: room.slug,
+    name: room.name,
+    unread: 0,
+    isPrivate: Boolean(room.passwordHash),
+    emoji: DEFAULT_ROOM_EMOJI,
+  }));
+}
