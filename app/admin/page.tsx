@@ -2,6 +2,9 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { AdminSkeleton } from "@/component/PageSkeletons";
 import { prisma } from "@/lib/prisma";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
 import AdminDashboard from "@/component/admin/AdminDashboard";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -81,6 +84,35 @@ export default function AdminPage() {
 
 async function AdminDashboardData() {
   await connection();
+
+    // 1. ตรวจสอบ Session
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  // ถ้าไม่ได้ Login ให้กลับไปหน้า Login
+  if (!session) {
+    redirect("/login");
+  }
+
+  // 2. ตรวจสอบสิทธิ์
+  const role = session.user.role;
+
+  if (role !== "admin" && role !== "moderator") {
+    return (
+      <div className="rounded-xl border border-red-200 bg-white p-8">
+        <h1 className="text-xl font-semibold text-red-600">
+          ไม่มีสิทธิ์เข้าถึง
+        </h1>
+        <p className="mt-2 text-sm text-gray-500">
+          Role ปัจจุบันของบัญชี: {role}
+        </p>
+        <p className="mt-2 text-sm text-gray-500">
+          หน้านี้สำหรับ Admin และ Moderator เท่านั้น
+        </p>
+      </div>
+    );
+  }
 
   const todayStart = getBangkokTodayStart();
 

@@ -75,9 +75,18 @@ export default function AccountMenu() {
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className={`${avatarClass} active:translate-0.5 active:shadow-none`}
+        className={`${avatarClass} overflow-hidden active:translate-0.5 active:shadow-none`}
       >
-        {name.charAt(0).toUpperCase()}
+        {session.user.image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={session.user.image}
+            alt=""
+            className="size-full object-cover"
+          />
+        ) : (
+          name.charAt(0).toUpperCase()
+        )}
       </button>
       {open && (
         <div
