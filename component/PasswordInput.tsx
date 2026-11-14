@@ -1,12 +1,18 @@
 "use client";
 
-import { useState, type ComponentProps } from "react";
+import { useLayoutEffect, useState, type ComponentProps } from "react";
 
 export default function PasswordInput({
   invalid = false,
   ...props
 }: ComponentProps<"input"> & { invalid?: boolean }) {
   const [visible, setVisible] = useState(false);
+
+  // Next hides a closed form instead of unmounting it; the next open starts
+  // with the password covered again.
+  useLayoutEffect(() => {
+    return () => setVisible(false);
+  }, []);
 
   return (
     <div

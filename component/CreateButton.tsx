@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import CreateModal, { type CreateTab } from "@/component/CreateModal";
-import type { MyRoom } from "@/lib/mock";
+import { useJoinedRooms } from "@/component/RoomMembership";
+import type { MyRoom } from "@/types/room";
 
 // Opens the create modal on a given tab. Lets server components (Header,
 // Sidebar) place the button without becoming client components.
@@ -20,6 +21,8 @@ export default function CreateButton({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  // On Home the list follows what you join and leave.
+  const joinedRooms = useJoinedRooms(rooms);
 
   return (
     <>
@@ -33,7 +36,7 @@ export default function CreateButton({
       </button>
       {open && (
         <CreateModal
-          rooms={rooms}
+          rooms={joinedRooms}
           alias={alias}
           initialTab={tab}
           onClose={() => setOpen(false)}

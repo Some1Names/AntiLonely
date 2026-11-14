@@ -1,7 +1,15 @@
 "use client";
 
-import { createContext, use, useEffect, useState } from "react";
-import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
+import {
+  createContext,
+  use,
+  useOptimistic,
+  useState,
+  useTransition,
+} from "react";
+import { changeRoomMembership } from "@/app/home-actions";
+import Icon from "@/component/Icon";
 import LeaveRoomModal from "@/component/LeaveRoomModal";
 import {
   joinedRooms as listJoinedRooms,
@@ -9,11 +17,9 @@ import {
   leaveRoom,
   membershipFrom,
   membershipStatus,
-  membershipStorageKey,
   type Membership,
-  type MembershipStatus,
 } from "@/lib/membership";
-import type { MyRoom, Room } from "@/lib/mock";
+import type { MyRoom, Room } from "@/types/room";
 
 type RoomMembershipValue = {
   // Every room, for the random draw.
@@ -21,9 +27,8 @@ type RoomMembershipValue = {
   membership: Membership;
   // "ห้องของฉัน" as it stands now.
   joinedRooms: MyRoom[];
-  statusOf: (roomId: string) => MembershipStatus | null;
+  isJoined: (roomId: string) => boolean;
   join: (room: Room) => void;
-  cancelRequest: (roomId: string) => void;
   // Opens the leave modal; the room is only left once it's confirmed.
   askToLeave: (room: Room) => void;
 };
@@ -38,65 +43,70 @@ export function useRoomMembership() {
   return value;
 }
 
-// Which rooms you've joined or asked to join, shared by Home's room cards,
-// sidebar and modals. It starts from the mock "ห้องของฉัน" and isn't saved
-// anywhere yet, so a reload starts over. The leave modal renders here rather
-// than in the card that asked for it: cards tilt on hover, and a transformed
-// parent would pin the modal's fixed overlay to the card.
+// "ห้องของฉัน" as it stands now, for parts that also render on pages without
+// a <RoomMembership> (the header's create button); those get `fallback`.
+export function useJoinedRooms(fallback: MyRoom[]) {
+  return use(RoomMembershipContext)?.joinedRooms ?? fallback;
+}
+
+type Change = { room: Room; action: "join" | "leave" };
+
+// Which rooms you've joined, shared by Home's room cards, sidebar and modals.
+// `myRooms` comes from the database; joining and leaving saves there, and the
+// page shows the change straight away while that is on its way. The leave
+// modal renders here rather than in the card that asked for it: cards tilt on
+// hover, and a transformed parent would pin the modal's fixed overlay to the
+// card.
 export default function RoomMembership({
   myRooms,
   rooms,
+  signedIn,
   children,
 }: {
   myRooms: MyRoom[];
   rooms: Room[];
+  signedIn: boolean;
   children: React.ReactNode;
 }) {
-  const [membership, setMembership] = useState(() => membershipFrom(myRooms));
+  const router = useRouter();
+  // Goes back to what the database says once the save has finished.
+  const [membership, showChange] = useOptimistic(
+    membershipFrom(myRooms),
+    (current: Membership, { room, action }: Change) =>
+      action === "join"
+        ? joinRoom(current, { id: room.id, isPrivate: false })
+        : leaveRoom(current, room.id),
+  );
+  const [, startTransition] = useTransition();
   const [leaving, setLeaving] = useState<Room | null>(null);
-  const userId = authClient.useSession().data?.user.id;
-  const storageKey = userId ? membershipStorageKey(userId) : null;
-  // Which user's saved membership is already loaded, so we don't save the
-  // starting mock list over it before it has been read.
-  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  // Why the last join or leave didn't go through.
+  const [problem, setProblem] = useState<string | null>(null);
 
-  // Once we know who is signed in, pick up what they joined last time.
-  useEffect(() => {
-    if (!storageKey) return;
-    let cancelled = false;
-    // Deferred so the state update isn't synchronous inside the effect.
-    queueMicrotask(() => {
-      if (cancelled) return;
-      try {
-        const saved = localStorage.getItem(storageKey);
-        if (saved) setMembership(JSON.parse(saved) as Membership);
-      } catch {
-        // Storage blocked or corrupt: keep the starting list.
-      }
-      setLoadedKey(storageKey);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [storageKey]);
-
-  useEffect(() => {
-    if (!storageKey || loadedKey !== storageKey) return;
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(membership));
-    } catch {
-      // Not saved; membership still works for this visit.
+  function change(room: Room, action: Change["action"]) {
+    // Signed out: the log in modal opens over the page.
+    if (!signedIn) {
+      router.push("/login");
+      return;
     }
-  }, [membership, storageKey, loadedKey]);
+    setProblem(null);
+    startTransition(async () => {
+      // A private room is going to be refused, so don't show it as joined.
+      if (action === "leave" || !room.isPrivate) showChange({ room, action });
+      try {
+        const result = await changeRoomMembership({ roomId: room.id, action });
+        if (!result.ok) setProblem(result.error);
+      } catch {
+        setProblem("บันทึกไม่สำเร็จ ลองใหม่อีกครั้งนะ");
+      }
+    });
+  }
 
   const value: RoomMembershipValue = {
     rooms,
     membership,
     joinedRooms: listJoinedRooms(myRooms, rooms, membership),
-    statusOf: (roomId) => membershipStatus(membership, roomId),
-    join: (room) => setMembership((current) => joinRoom(current, room)),
-    cancelRequest: (roomId) =>
-      setMembership((current) => leaveRoom(current, roomId)),
+    isJoined: (roomId) => membershipStatus(membership, roomId) === "joined",
+    join: (room) => change(room, "join"),
     askToLeave: setLeaving,
   };
 
@@ -107,10 +117,24 @@ export default function RoomMembership({
         <LeaveRoomModal
           room={leaving}
           onClose={() => setLeaving(null)}
-          onLeave={() =>
-            setMembership((current) => leaveRoom(current, leaving.id))
-          }
+          onLeave={() => change(leaving, "leave")}
         />
+      )}
+      {problem && (
+        <p
+          role="alert"
+          className="fixed inset-x-4 bottom-4 z-40 mx-auto flex w-fit max-w-md items-center gap-2 rounded-lg border-[1.5px] border-ink bg-white py-2 pl-4 pr-2 text-sm shadow-sticker-lg"
+        >
+          {problem}
+          <button
+            type="button"
+            aria-label="ปิด"
+            onClick={() => setProblem(null)}
+            className="flex size-8 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-butter hover:text-ink"
+          >
+            <Icon name="x" className="size-4" />
+          </button>
+        </p>
       )}
     </RoomMembershipContext>
   );

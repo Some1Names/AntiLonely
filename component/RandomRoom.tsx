@@ -9,7 +9,8 @@ import { useRoomMembership } from "@/component/RoomMembership";
 import Sheet from "@/component/Sheet";
 import Tape from "@/component/Tape";
 import { pickRandomRoom, roomsToDiscover } from "@/lib/membership";
-import { defaultRoomEmoji, type Room } from "@/lib/mock";
+import { DEFAULT_ROOM_EMOJI } from "@/lib/room-board";
+import type { Room } from "@/types/room";
 import {
   disabledButtonClass,
   hintClass,
@@ -18,8 +19,9 @@ import {
   roomLook,
 } from "@/lib/styles";
 
-// "สุ่มห้องเลย": draws a room you haven't joined or asked to join, shows it,
-// and asks whether to join it or draw again.
+// "สุ่มห้องเลย": draws a room you haven't joined, shows it, and asks whether
+// to join it or draw again. Private rooms are left out: they can't be joined
+// from here.
 export default function RandomRoomButton({
   className,
   children,
@@ -27,7 +29,8 @@ export default function RandomRoomButton({
   className?: string;
   children: React.ReactNode;
 }) {
-  const { rooms, membership } = useRoomMembership();
+  const { rooms: allRooms, membership } = useRoomMembership();
+  const rooms = allRooms.filter((room) => !room.isPrivate);
   const [open, setOpen] = useState(false);
   const [room, setRoom] = useState<Room | null>(null);
   // Counts draws, so each one replays the card's drop-in and turns the dice.
@@ -117,7 +120,7 @@ function RandomRoomModal({
                 }}
                 className={`px-4 py-2 ${primaryButtonClass}`}
               >
-                {room.isPrivate ? "ขอเข้าร่วม" : "เข้าร่วม"}
+                เข้าร่วม
               </button>
             </div>
           </>
@@ -125,7 +128,7 @@ function RandomRoomModal({
           <EmptyNote
             icon="dice"
             title="ไม่มีห้องให้สุ่มแล้ว"
-            description="คุณเข้าร่วมหรือขอเข้าร่วมครบทุกห้องแล้ว ไว้มีห้องใหม่ ๆ ค่อยมาสุ่มกันนะ"
+            description="คุณเข้าร่วมครบทุกห้องที่เปิดให้เข้าแล้ว ไว้มีห้องใหม่ ๆ ค่อยมาสุ่มกันนะ"
           >
             <button
               type="button"
@@ -156,7 +159,7 @@ function RoomPreview({ room }: { room: Room }) {
           aria-hidden="true"
           className={`flex size-12 shrink-0 items-center justify-center rounded-lg border-[1.5px] text-2xl ${tile}`}
         >
-          {room.emoji ?? defaultRoomEmoji}
+          {room.emoji ?? DEFAULT_ROOM_EMOJI}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-start justify-between gap-2">

@@ -4,7 +4,7 @@ import Link from "next/link";
 import Icon from "@/component/Icon";
 import RandomRoomButton from "@/component/RandomRoom";
 import { useRoomMembership } from "@/component/RoomMembership";
-import { defaultRoomEmoji } from "@/lib/mock";
+import { DEFAULT_ROOM_EMOJI } from "@/lib/room-board";
 import { indexCardClass, outlineButtonClass } from "@/lib/styles";
 
 // Room icons sit on pastel paper squares. Private rooms are always blue grey
@@ -33,7 +33,7 @@ export default function Sidebar() {
           {joinedRooms.map((room, index) => (
             <li key={room.id}>
               <Link
-                href={`/rooms/${room.id}`}
+                href={`/rooms/${room.slug ?? room.id}`}
                 className="group flex w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-butter/70"
               >
                 <span
@@ -44,7 +44,7 @@ export default function Sidebar() {
                       : tileColors[index % tileColors.length]
                   }`}
                 >
-                  {room.emoji ?? defaultRoomEmoji}
+                  {room.emoji ?? DEFAULT_ROOM_EMOJI}
                 </span>
                 <span className="flex-1 truncate">{room.name}</span>
                 {room.unread > 0 ? (
