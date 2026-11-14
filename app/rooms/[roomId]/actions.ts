@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
+import { toggleMessageReaction } from '@/lib/reaction-service';
 import {
   formatReportReason,
   getViewerUser,
@@ -11,10 +12,8 @@ import {
 } from '@/lib/server-action-helpers';
 import type { MyRoom, Room } from '@/types/room';
 import {
-  aggregateReactions,
   canMemberEditPostInRoom,
   canMemberPostInRoom,
-  canMemberReactInRoom,
   DEFAULT_ROOM_EMOJI,
   isUuid,
   mapDbMembershipToBoardState,
@@ -497,99 +496,26 @@ export async function toggleRoomPostReaction(input: {
   roomId: string;
   postId: string;
   emoji: string;
+  active?: boolean;
 }): Promise<ActionResult<{ postId: string; reactions: ReactionItem[] }>> {
   return runSafeMutation(async () => {
-    const viewer = await getViewerUser();
-    if (!viewer) {
-      return { ok: false, error: 'กรุณาเข้าสู่ระบบก่อนกดรีแอคชัน' };
-    }
-
-    const emoji = input.emoji.trim();
-    if (!emoji || emoji.length > 32) {
-      return { ok: false, error: 'อีโมจิไม่ถูกต้อง' };
-    }
-
-    if (!isUuid(input.roomId) || !isUuid(input.postId)) {
-      return { ok: false, error: 'ไม่พบกระทู้ที่ต้องการรีแอคชัน' };
-    }
-
-    const [post, member] = await Promise.all([
-      prisma.message.findFirst({
-        where: {
-          id: input.postId,
-          roomId: input.roomId,
-          parentId: null,
-          status: 'visible',
-        },
-        select: {
-          id: true,
-          room: { select: { slug: true, status: true, passwordHash: true } },
-        },
-      }),
-      prisma.roomMember.findUnique({
-        where: {
-          userId_roomId: {
-            userId: viewer.id,
-            roomId: input.roomId,
-          },
-        },
-        select: { status: true },
-      }),
-    ]);
-
-    if (!post || post.room.status !== 'active') {
-      return { ok: false, error: 'ไม่พบกระทู้ที่ต้องการรีแอคชัน' };
-    }
-
-    const reactPermission = canMemberReactInRoom({
-      isPrivate: Boolean(post.room.passwordHash),
-      memberStatus: member?.status,
+    const result = await toggleMessageReaction({
+      roomId: input.roomId,
+      messageId: input.postId,
+      emoji: input.emoji,
+      active: input.active,
     });
-    if (!reactPermission.ok) {
-      return reactPermission;
+    if (!result.ok) {
+      return { ok: false, error: result.error };
     }
-
-    const updatedReactions = await prisma.$transaction(async (tx) => {
-      const existing = await tx.reaction.findUnique({
-        where: {
-          messageId_userId_emojiType: {
-            messageId: post.id,
-            userId: viewer.id,
-            emojiType: emoji,
-          },
-        },
-        select: { id: true },
-      });
-
-      if (existing) {
-        await tx.reaction.delete({ where: { id: existing.id } });
-      } else {
-        await tx.reaction.create({
-          data: {
-            messageId: post.id,
-            userId: viewer.id,
-            emojiType: emoji,
-          },
-        });
-      }
-
-      return tx.reaction.findMany({
-        where: { messageId: post.id },
-        orderBy: { createdAt: 'asc' },
-        select: {
-          emojiType: true,
-          userId: true,
-        },
-      });
-    });
-
-    revalidateRoomPaths(input.roomId, post.room.slug);
-
+    revalidateRoomPaths(result.data.roomId, result.data.roomSlug);
+    revalidatePath(`/rooms/${result.data.roomSlug}/posts/${result.data.postId}`);
+    revalidatePath(`/rooms/${result.data.roomId}/posts/${result.data.postId}`);
     return {
       ok: true,
       data: {
-        postId: post.id,
-        reactions: aggregateReactions(updatedReactions, viewer.id),
+        postId: result.data.messageId,
+        reactions: result.data.reactions,
       },
     };
   }, 'ไม่สามารถอัปเดตรีแอคชันได้ กรุณาลองใหม่อีกครั้ง');

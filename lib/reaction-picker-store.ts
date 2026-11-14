@@ -42,18 +42,25 @@ export const reactionPickerStore = {
   },
 };
 
+const subscribeServer = () => false;
+
 export function useActiveReactionPicker(id: string): {
   isOpen: boolean;
   open: () => void;
   close: () => void;
 } {
-  const activeId = useSyncExternalStore(
-    reactionPickerStore.subscribe,
-    reactionPickerStore.getSnapshot,
-    () => null
+  const getIsOpenSnapshot = useCallback(
+    () => reactionPickerStore.getSnapshot() === id,
+    [id]
   );
 
-  const isOpen = activeId === id;
+  // Return a boolean snapshot per picker id so opening or closing one picker
+  // only re-renders the affected picker(s) instead of every ReactionBar on page.
+  const isOpen = useSyncExternalStore(
+    reactionPickerStore.subscribe,
+    getIsOpenSnapshot,
+    subscribeServer
+  );
 
   const open = useCallback(() => {
     reactionPickerStore.open(id);
