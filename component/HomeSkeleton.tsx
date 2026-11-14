@@ -17,9 +17,9 @@ export default function HomeSkeleton() {
         className={`flex flex-col gap-2 self-start p-3 ${indexCardClass}`}
       >
         <div className="mb-1 border-b-[1.5px] border-dashed border-edge px-2 pb-2">
-          <div className={`h-5 w-24 ${skeletonClass}`} />
+          <div className={`h-5 w-24 rounded-md ${skeletonClass}`} />
         </div>
-        <div className={`mx-2 h-4 w-4/5 ${skeletonClass}`} />
+        <div className={`mx-2 h-4 w-4/5 rounded-md ${skeletonClass}`} />
         <div className={`mt-2 h-10 rounded-lg ${skeletonClass}`} />
       </div>
       <div aria-hidden="true" className="flex min-w-0 flex-col gap-6">
@@ -27,13 +27,13 @@ export default function HomeSkeleton() {
           className={`h-[42px] rounded-lg border-[1.5px] border-edge-strong bg-white shadow-[3px_3px_0_var(--color-edge)]`}
         />
         <div className="-rotate-[0.4deg] rounded-lg border-[1.5px] border-ink bg-butter p-6 shadow-sticker-lg sm:p-7">
-          <div className={`h-8 w-3/5 bg-butter-edge ${skeletonClass}`} />
-          <div className={`mt-3 h-4 w-11/12 bg-butter-edge ${skeletonClass}`} />
+          <div className={`h-8 w-3/5 bg-butter-edge rounded-md ${skeletonClass}`} />
+          <div className={`mt-3 h-4 w-11/12 bg-butter-edge rounded-md ${skeletonClass}`} />
           <div className={`mt-5 h-[42px] rounded-lg bg-butter-edge ${skeletonClass}`} />
         </div>
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className={`h-8 w-32 ${skeletonClass}`} />
+            <div className={`h-8 w-32 rounded-md ${skeletonClass}`} />
             <div className="flex gap-2">
               {[16, 20, 20].map((width, index) => (
                 <div
@@ -63,12 +63,12 @@ function RoomCardSkeleton() {
       <div className="flex items-start gap-3">
         <div className={`size-11 shrink-0 rounded-lg ${skeletonClass}`} />
         <div className="flex min-w-0 flex-1 flex-col gap-2 pt-0.5">
-          <div className={`h-5 w-1/2 ${skeletonClass}`} />
-          <div className={`h-4 w-5/6 ${skeletonClass}`} />
+          <div className={`h-5 w-1/2 rounded-md ${skeletonClass}`} />
+          <div className={`h-4 w-5/6 rounded-md ${skeletonClass}`} />
         </div>
       </div>
       <div className="mt-auto flex items-center justify-between gap-2 border-t-[1.5px] border-dashed border-edge pt-3">
-        <div className={`h-4 w-40 ${skeletonClass}`} />
+        <div className={`h-4 w-40 rounded-md ${skeletonClass}`} />
         <div className={`h-8 w-20 rounded-lg ${skeletonClass}`} />
       </div>
     </div>

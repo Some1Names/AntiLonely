@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { connection } from 'next/server';
+import { PostThreadSkeleton } from '@/component/PageSkeletons';
 import { notFound, redirect } from 'next/navigation';
 import Header from '@/component/Header';
 import { PostThreadClient } from '@/component/post-thread/PostThreadClient';
@@ -57,6 +58,7 @@ export default function PostThreadPage(props: PostThreadPageProps) {
       fallback={
         <div className="min-h-screen flex flex-col">
           <Header notifications={0} rooms={[]} alias="ผู้เยี่ยมชม" />
+          <PostThreadSkeleton />
         </div>
       }
     >

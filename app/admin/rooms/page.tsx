@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
+import { AdminSkeleton } from "@/component/PageSkeletons";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -8,9 +9,7 @@ import AdminRooms from "@/component/admin/AdminRooms";
 export default function AdminRoomsPage() {
   return (
     <Suspense
-      fallback={
-        <div className="p-6 text-sm text-ink-soft">กำลังโหลดห้องแชท...</div>
-      }
+      fallback={<AdminSkeleton label="กำลังโหลดห้องแชท…" />}
     >
       <AdminRoomsData />
     </Suspense>

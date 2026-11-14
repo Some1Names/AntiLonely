@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { connection } from 'next/server';
+import { NotificationsSkeleton } from '@/component/PageSkeletons';
 import Header from '@/component/Header';
 import { NotificationsClient } from '@/component/notifications/NotificationsClient';
 import { currentUser, myRooms } from '@/lib/mock';
@@ -28,6 +29,7 @@ export default function NotificationsPage() {
       fallback={
         <div className="flex flex-1 flex-col">
           <Header notifications={0} rooms={myRooms} alias={currentUser.alias} />
+          <NotificationsSkeleton />
         </div>
       }
     >

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
+import { RoomSkeleton } from "@/component/PageSkeletons";
 import { notFound, redirect } from "next/navigation";
 import Header from "@/component/Header";
 import RoomBoardFeed from "@/component/RoomBoardFeed";
@@ -43,6 +44,7 @@ export default function RoomBoardFeedPage(props: Props) {
       fallback={
         <div className="flex flex-1 flex-col">
           <Header notifications={0} />
+          <RoomSkeleton />
         </div>
       }
     >

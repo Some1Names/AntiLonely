@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminSkeleton } from "@/component/PageSkeletons";
 import { useState } from "react";
 import { useNow } from "@/component/useNow";
 
@@ -122,7 +123,8 @@ export default function AdminLogsPage() {
   const [admin, setAdmin] = useState("all");
   const [page, setPage] = useState(1);
   const now = useNow();
-  if (now === null) return null;
+  // The time is only known in the browser; until then, a skeleton.
+  if (now === null) return <AdminSkeleton label="กำลังโหลดบันทึก…" />;
 
   // ตัวเลือกใน dropdown สร้างจากข้อมูลจริง
   const actionOptions = Array.from(new Set(logs.map((l) => baseAction(l.action))));
