@@ -24,7 +24,10 @@ interface CommentItemProps {
   activeReplyTargetName?: string;
   activeReplyTargetId?: string;
   onExpandReplies: (commentId: string) => void;
-  onToggleReaction: (targetId: string, emoji: string) => void;
+  onToggleReaction: (
+    targetId: string,
+    emoji: string
+  ) => Promise<boolean | void> | boolean | void;
   onStartReply: (
     commentId: string,
     targetAuthorName: string,
@@ -127,7 +130,7 @@ export function CommentItem({
     authorId: string,
     currentContent: string
   ) => {
-    const isOwner = authorId === currentUserId;
+    const isOwner = Boolean(currentUserId && authorId === currentUserId);
     const isMenuOpen = openMenuId === itemId;
 
     return (
