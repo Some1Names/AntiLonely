@@ -13,7 +13,7 @@ import {
   disabledButtonClass,
   secondaryButtonClass,
 } from "@/lib/styles";
-import type { ReactionItem } from "@/types/post-thread";
+import type { ReactionItem, ReportReason } from "@/types/post-thread";
 
 type Props = {
   id?: string | number;
@@ -29,6 +29,8 @@ type Props = {
   replyCount: number;
   onEditPost?: (newContent: string) => void;
   onDeletePost?: () => void;
+  onToggleReaction?: (emoji: string) => boolean | void | Promise<boolean | void>;
+  onReportPost?: (reason: ReportReason, details: string) => void | Promise<void>;
   onReportSubmitted?: (message?: string) => void;
 };
 
@@ -60,17 +62,20 @@ export default function PostCard({
   replyCount,
   onEditPost,
   onDeletePost,
+  onToggleReaction,
+  onReportPost,
   onReportSubmitted,
 }: Props) {
+  const reactionSig = initialReactions
+    .map((r) => `${r.emoji}:${r.count}:${Boolean(r.reactedByMe)}`)
+    .join("|");
+  const [prevReactionSig, setPrevReactionSig] = useState(reactionSig);
   const [reactions, setReactions] = useState<ReactionItem[]>(() =>
     toReactionItems(initialReactions)
   );
 
-  // When the parent sends a new list, start again from it. Done while
-  // rendering (not in an effect) so there's no extra render with stale data.
-  const [seenReactions, setSeenReactions] = useState(initialReactions);
-  if (seenReactions !== initialReactions) {
-    setSeenReactions(initialReactions);
+  if (reactionSig !== prevReactionSig) {
+    setPrevReactionSig(reactionSig);
     setReactions(toReactionItems(initialReactions));
   }
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -111,6 +116,9 @@ export default function PostCard({
   }, [isMenuOpen]);
 
   const handleToggleReaction = (emoji: string) => {
+    if (onToggleReaction) {
+      return onToggleReaction(emoji);
+    }
     setReactions((prev) => toggleReaction(prev, emoji));
   };
 
@@ -385,9 +393,13 @@ export default function PostCard({
         isOpen={isReporting}
         targetType="post"
         onClose={() => setIsReporting(false)}
-        onSubmit={() => {
+        onSubmit={(reason, details) => {
           setIsReporting(false);
-          onReportSubmitted?.("ส่งรายงานกระทู้ให้ทีมงานตรวจสอบเรียบร้อยแล้ว");
+          if (onReportPost) {
+            void onReportPost(reason, details);
+          } else {
+            onReportSubmitted?.("ส่งรายงานกระทู้ให้ทีมงานตรวจสอบเรียบร้อยแล้ว");
+          }
         }}
       />
     </article>

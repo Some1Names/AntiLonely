@@ -16,6 +16,7 @@ import {
   INITIAL_PICKER_EMOJIS,
   REMAINING_PICKER_EMOJIS,
   REACTION_SIZES,
+  toggleReaction,
   type ReactionSize,
 } from '@/lib/post-thread';
 import {
@@ -41,7 +42,7 @@ const pickerCellFocusClass = 'focus-visible:bg-highlight';
 
 export interface ReactionBarProps {
   reactions: ReactionItem[];
-  onToggleReaction: (emoji: string) => Promise<void> | void;
+  onToggleReaction: (emoji: string) => Promise<boolean | void> | boolean | void;
   size?: ReactionSize;
   avoidRef?: React.RefObject<HTMLElement | null>;
   pickerId?: string;
@@ -75,6 +76,7 @@ export function ReactionBar({
   const [isDragging, setIsDragging] = useState(false);
   const dragStartYRef = useRef(0);
   const dragStartTimeRef = useRef(0);
+  const pendingEmojisRef = useRef<Set<string>>(new Set());
 
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -290,34 +292,22 @@ export function ReactionBar({
   }, [isOpen, isMobile, handleClose, updatePosition]);
 
   const handleToggle = async (emoji: string) => {
-    const previous = optimisticReactions;
-    const existingIndex = previous.findIndex((r) => r.emoji === emoji);
+    const key = emoji.trim();
+    if (!key || pendingEmojisRef.current.has(key)) return;
 
-    let updated: ReactionItem[];
-    if (existingIndex >= 0) {
-      const item = previous[existingIndex];
-      const nextReacted = !item.reactedByMe;
-      const nextCount = nextReacted ? item.count + 1 : Math.max(0, item.count - 1);
-      if (nextCount === 0) {
-        updated = previous.filter((_, idx) => idx !== existingIndex);
-      } else {
-        updated = previous.map((r, idx) =>
-          idx === existingIndex
-            ? { ...r, reactedByMe: nextReacted, count: nextCount }
-            : r
-        );
-      }
-    } else {
-      updated = [...previous, { emoji, count: 1, reactedByMe: true }];
-    }
-
-    setOptimisticReactions(updated);
+    pendingEmojisRef.current.add(key);
+    setOptimisticReactions((curr) => toggleReaction(curr, key));
 
     try {
-      await onToggleReaction(emoji);
+      const accepted = await onToggleReaction(key);
+      if (accepted === false) {
+        setOptimisticReactions((curr) => toggleReaction(curr, key));
+      }
     } catch {
       // rollback
-      setOptimisticReactions(previous);
+      setOptimisticReactions((curr) => toggleReaction(curr, key));
+    } finally {
+      pendingEmojisRef.current.delete(key);
     }
   };
 
