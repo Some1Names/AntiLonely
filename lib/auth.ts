@@ -122,7 +122,10 @@ export const auth = betterAuth({
         },
       },
       update: {
-        before: async (user) => prepareUserUpdatePayload(user),
+        before: async (user) => {
+          const updated = prepareUserUpdatePayload(user);
+          if (updated) return updated;
+        },
       },
     },
     session: {
